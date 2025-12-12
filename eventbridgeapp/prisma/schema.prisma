@@ -12,3 +12,21 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum AccountType {
+  VENDOR
+  CUSTOMER
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  password      String
+  firstName     String
+  lastName      String
+  accountType   AccountType
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  @@map("users")
+}

@@ -1,0 +1,126 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+
+export default function ResetPasswordPage() {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    // TODO: Implement reset password logic
+    console.log({ newPassword });
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Left side - Form */}
+      <div className="flex w-full flex-col justify-between bg-[#0a0a0a] p-8 lg:w-1/2 lg:p-16">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="Event Bridge Logo"
+              width={32}
+              height={32}
+              className="text-orange-500"
+            />
+            <span className="text-xl font-semibold text-white">Event Bridge</span>
+          </div>
+          <Link
+            href="/"
+            className="rounded-full bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700"
+          >
+            Back to Website →
+          </Link>
+        </div>
+
+        <div className="mx-auto w-full max-w-md">
+          <h1 className="mb-2 text-4xl font-bold text-white">
+            <span className="text-orange-500">Reset</span> your
+            <br />
+            password
+          </h1>
+          <p className="mb-8 text-sm text-zinc-400">
+            Enter an confirm your new password in the fields.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              >
+                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 transition-colors"
+            >
+              Reset Password
+            </button>
+
+            <Link
+              href="/login"
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white"
+            >
+              ← Back to <span className="text-orange-500">Login</span>
+            </Link>
+          </form>
+        </div>
+
+        <div />
+      </div>
+
+      {/* Right side - Image */}
+      <div className="hidden lg:block lg:w-1/2">
+        <div className="relative h-full w-full">
+          <Image
+            src="/11c6ee899cbfbd43d17ad826a87c273c002600b9.jpg"
+            alt="Security Lock"
+            fill
+            className="object-cover"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
