@@ -22,10 +22,21 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-col-reverse lg:flex-row">
       {/* Left side - Form */}
-      <div className="flex w-full flex-col justify-between bg-[#0a0a0a] p-8 lg:w-1/2 lg:p-16">
-        <div className="flex items-center justify-between">
+      <div className="flex w-full flex-col justify-center bg-[#0a0a0a] p-8 lg:w-1/2 lg:p-16">
+        <div className="mx-auto w-full max-w-md">
+          {step === 'accountType' ? (
+            <AccountTypeSelection onSelect={handleAccountTypeSelect} />
+          ) : (
+            <SignupForm accountType={accountType!} onBack={handleBack} />
+          )}
+        </div>
+      </div>
+
+      {/* Right side - Image */}
+      <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
           <div className="flex items-center gap-2">
             <Image
               src="/logo.svg"
@@ -38,28 +49,14 @@ export default function SignupPage() {
           </div>
           <Link
             href="/"
-            className="rounded-full bg-zinc-800 px-4 py-2 text-sm text-white hover:bg-zinc-700"
+            className="rounded-full bg-zinc-800/80 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-zinc-700"
           >
             Back to Website →
           </Link>
         </div>
-
-        <div className="mx-auto w-full max-w-md">
-          {step === 'accountType' ? (
-            <AccountTypeSelection onSelect={handleAccountTypeSelect} />
-          ) : (
-            <SignupForm accountType={accountType!} onBack={handleBack} />
-          )}
-        </div>
-
-        <div />
-      </div>
-
-      {/* Right side - Image */}
-      <div className="hidden lg:block lg:w-1/2">
         <div className="relative h-full w-full">
           <Image
-            src="/signup.jpg"
+            src={step === 'accountType' ? '/signup.jpg' : '/signup2.jpg'}
             alt="Event"
             fill
             className="object-cover"
