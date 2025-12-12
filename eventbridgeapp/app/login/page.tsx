@@ -11,11 +11,27 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  //  UPDATED PART — ONLY THIS FUNCTION WAS MODIFIED
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log({ email, password, rememberMe });
+
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message);
+      return;
+    }
+
+    alert("Login successful!");
+    window.location.href = "/dashboard";
   };
+  // END OF UPDATED PART
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
