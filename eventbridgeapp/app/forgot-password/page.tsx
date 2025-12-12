@@ -16,14 +16,14 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
       {/* Left side - Form */}
-      <div className="flex w-full flex-col justify-center bg-[#0a0a0a] p-8 lg:w-1/2 lg:p-16">
+      <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
-          <h1 className="mb-2 text-4xl font-bold text-white">
-            <span className="text-orange-500">Forgot</span>
+          <h1 className="mb-2 text-4xl font-bold text-shades-black">
+            <span className="text-primary-01">Forgot</span>
             <br />
             password
           </h1>
-          <p className="mb-8 text-sm text-zinc-400">
+          <p className="mb-8 text-sm text-neutrals-07">
             No worries, we'll send you reset instructions.
           </p>
 
@@ -34,23 +34,23 @@ export default function ForgotPasswordPage() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 transition-colors"
+              className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors"
             >
               Send Email
             </button>
 
             <Link
               href="/login"
-              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white"
+              className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-shades-black"
             >
-              ← Back to <span className="text-orange-500">Login</span>
+              ← Back to <span className="text-primary-01">Login</span>
             </Link>
           </form>
         </div>
@@ -65,20 +65,20 @@ export default function ForgotPasswordPage() {
               alt="Event Bridge Logo"
               width={32}
               height={32}
-              className="text-orange-500"
+              className="text-primary-01"
             />
-            <span className="text-xl font-semibold text-white">Event Bridge</span>
+            <span className="text-xl font-semibold text-shades-white">Event Bridge</span>
           </div>
           <Link
             href="/"
-            className="rounded-full bg-zinc-800/80 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-zinc-700"
+            className="rounded-full bg-shades-black-30 backdrop-blur-sm px-4 py-2 text-sm text-shades-white hover:bg-neutrals-08"
           >
             Back to Website →
           </Link>
         </div>
         <div className="relative h-full w-full">
           <Image
-            src="/11c6ee899cbfbd43d17ad826a87c273c002600b9.jpg"
+            src="/forgotpassword.png"
             alt="Security Lock"
             fill
             className="object-cover"

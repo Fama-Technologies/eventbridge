@@ -24,7 +24,7 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
       {/* Left side - Form */}
-      <div className="flex w-full flex-col justify-center bg-[#0a0a0a] p-8 lg:w-1/2 lg:p-16">
+      <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           {step === 'accountType' ? (
             <AccountTypeSelection onSelect={handleAccountTypeSelect} />
@@ -43,13 +43,13 @@ export default function SignupPage() {
               alt="Event Bridge Logo"
               width={32}
               height={32}
-              className="text-orange-500"
+              className="text-primary-01"
             />
-            <span className="text-xl font-semibold text-white">Event Bridge</span>
+            <span className="text-xl font-semibold text-shades-white">Event Bridge</span>
           </div>
           <Link
             href="/"
-            className="rounded-full bg-zinc-800/80 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-zinc-700"
+            className="rounded-full bg-shades-black-30 backdrop-blur-sm px-4 py-2 text-sm text-shades-white hover:bg-neutrals-08"
           >
             Back to Website →
           </Link>
@@ -70,56 +70,56 @@ export default function SignupPage() {
 function AccountTypeSelection({ onSelect }: { onSelect: (type: 'VENDOR' | 'CUSTOMER') => void }) {
   return (
     <>
-      <h1 className="mb-2 text-4xl font-bold text-white">
-        Choose <span className="text-orange-500">an</span>
+      <h1 className="mb-2 text-4xl font-bold text-shades-black">
+        Choose <span className="text-primary-01">an</span>
         <br />
         Account Type
       </h1>
-      <p className="mb-8 text-sm text-zinc-400">What type of account are you making?</p>
+      <p className="mb-8 text-sm text-neutrals-07">What type of account are you making?</p>
 
       <div className="space-y-6">
-        <p className="text-sm text-zinc-400">
-          Pick an <span className="text-orange-500">Account</span> Type
+        <p className="text-sm text-neutrals-07">
+          Pick an <span className="text-primary-01">Account</span> Type
         </p>
 
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => onSelect('VENDOR')}
-            className="group flex flex-col items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-900 p-8 transition-all hover:border-orange-500 hover:bg-zinc-800"
+            className="group flex flex-col items-center gap-4 rounded-lg border border-neutrals-04 bg-neutrals-02 p-8 transition-all hover:border-primary-01 hover:bg-neutrals-03"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-orange-500/10">
-              <Store size={32} className="text-white group-hover:text-orange-500" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-neutrals-03 group-hover:bg-accents-peach">
+              <Store size={32} className="text-shades-black group-hover:text-primary-01" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-zinc-400">Are you a</p>
-              <p className="font-semibold text-white">Vendor?</p>
+              <p className="text-sm text-neutrals-07">Are you a</p>
+              <p className="font-semibold text-shades-black">Vendor?</p>
             </div>
           </button>
 
           <button
             onClick={() => onSelect('CUSTOMER')}
-            className="group flex flex-col items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-900 p-8 transition-all hover:border-orange-500 hover:bg-zinc-800"
+            className="group flex flex-col items-center gap-4 rounded-lg border border-neutrals-04 bg-neutrals-02 p-8 transition-all hover:border-primary-01 hover:bg-neutrals-03"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-zinc-800 group-hover:bg-orange-500/10">
-              <User size={32} className="text-white group-hover:text-orange-500" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-neutrals-03 group-hover:bg-accents-peach">
+              <User size={32} className="text-shades-black group-hover:text-primary-01" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-zinc-400">Are you a</p>
-              <p className="font-semibold text-white">Customer?</p>
+              <p className="text-sm text-neutrals-07">Are you a</p>
+              <p className="font-semibold text-shades-black">Customer?</p>
             </div>
           </button>
         </div>
 
         <button
           type="button"
-          className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 transition-colors"
+          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors"
         >
           Continue
         </button>
 
         <Link
           href="/login"
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white"
+          className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-shades-black"
         >
           ← Back
         </Link>
@@ -144,12 +144,12 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
 
   return (
     <>
-      <h1 className="mb-2 text-4xl font-bold text-white">
-        Create <span className="text-orange-500">an</span>
+      <h1 className="mb-2 text-4xl font-bold text-shades-black">
+        Create <span className="text-primary-01">an</span>
         <br />
         Account
       </h1>
-      <p className="mb-8 text-sm text-zinc-400">Create and manage your events seamlessly.</p>
+      <p className="mb-8 text-sm text-neutrals-07">Create and manage your events seamlessly.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -158,7 +158,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             placeholder="First Name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
             required
           />
           <input
@@ -166,7 +166,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             placeholder="Last Name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
             required
           />
         </div>
@@ -176,7 +176,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+          className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
           required
         />
 
@@ -186,29 +186,29 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
             required
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black"
           >
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </button>
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-white">
+        <label className="flex items-start gap-2 text-sm text-shades-black">
           <input
             type="checkbox"
             checked={agreeToTerms}
             onChange={(e) => setAgreeToTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-zinc-700 bg-transparent text-orange-500 focus:ring-orange-500"
+            className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01"
             required
           />
           <span>
             I agree to the{' '}
-            <Link href="/terms" className="text-orange-500 hover:text-orange-400">
+            <Link href="/terms" className="text-accents-link hover:text-primary-01">
               Terms of Service
             </Link>
           </span>
@@ -216,37 +216,37 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
 
         <button
           type="submit"
-          className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 transition-colors"
+          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors"
         >
           Sign in
         </button>
 
         <div className="flex items-center gap-4">
-          <div className="h-px flex-1 bg-zinc-700" />
-          <span className="text-sm text-zinc-400">Sign up with</span>
-          <div className="h-px flex-1 bg-zinc-700" />
+          <div className="h-px flex-1 bg-neutrals-04" />
+          <span className="text-sm text-neutrals-07">Sign up with</span>
+          <div className="h-px flex-1 bg-neutrals-04" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white hover:bg-zinc-800 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors"
           >
             <Image src="/google.svg" alt="Google" width={20} height={20} />
             Sign up with Google
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white hover:bg-zinc-800 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors"
           >
             <Image src="/apple.svg" alt="Apple" width={20} height={20} />
             Sign up with Apple
           </button>
         </div>
 
-        <p className="text-center text-sm text-zinc-400">
+        <p className="text-center text-sm text-neutrals-07">
           Already have an account?{' '}
-          <Link href="/login" className="text-orange-500 hover:text-orange-400">
+          <Link href="/login" className="text-accents-link hover:text-primary-01">
             Login
           </Link>
         </p>
