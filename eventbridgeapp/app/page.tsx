@@ -1,112 +1,164 @@
 'use client';
 
-import { ThemeToggle } from "./components/theme-toggle";
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
-export default function Home() {
+export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // ✅ UPDATED PART — ONLY THIS FUNCTION WAS MODIFIED
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message);
+      return;
+    }
+
+    alert("Login successful!");
+    window.location.href = "/dashboard";
+  };
+  // ✅ END OF UPDATED PART
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutrals-01 font-sans">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-shades-white sm:items-start">
-        <div className="w-full flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-shades-black">EventBridge App</h1>
-          <ThemeToggle />
-        </div>
-        
-        <div className="flex flex-col gap-8 w-full">
-          {/* Color Showcase Section */}
-          <section>
-            <h2 className="text-xl font-semibold text-shades-black mb-4">Theme Colors</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Primary Colors */}
-              <div className="flex flex-col gap-2">
-                <div className="h-20 rounded-lg bg-primary-01 flex items-center justify-center">
-                  <span className="text-shades-white text-sm font-medium">Primary 01</span>
-                </div>
-                <div className="h-20 rounded-lg bg-primary-02 flex items-center justify-center">
-                  <span className="text-shades-white text-sm font-medium">Primary 02</span>
-                </div>
-              </div>
-              
-              {/* Neutrals */}
-              <div className="flex flex-col gap-2">
-                <div className="h-20 rounded-lg bg-neutrals-03 flex items-center justify-center">
-                  <span className="text-shades-black text-sm font-medium">Neutrals 03</span>
-                </div>
-                <div className="h-20 rounded-lg bg-neutrals-07 flex items-center justify-center">
-                  <span className="text-shades-white text-sm font-medium">Neutrals 07</span>
-                </div>
-              </div>
-              
-              {/* Accents */}
-              <div className="flex flex-col gap-2">
-                <div className="h-20 rounded-lg bg-accents-orange flex items-center justify-center">
-                  <span className="text-shades-white text-sm font-medium">Orange</span>
-                </div>
-                <div className="h-20 rounded-lg bg-accents-peach flex items-center justify-center">
-                  <span className="text-shades-black text-sm font-medium">Peach</span>
-                </div>
-              </div>
-              
-              {/* Special */}
-              <div className="flex flex-col gap-2">
-                <div className="h-20 rounded-lg bg-accents-discount flex items-center justify-center">
-                  <span className="text-shades-white text-sm font-medium">Discount</span>
-                </div>
-                <div className="h-20 rounded-lg bg-accents-link flex items-center justify-center">
-                  <span className="text-shades-white text-sm font-medium">Link</span>
-                </div>
-              </div>
+    <div className="flex min-h-screen flex-col-reverse lg:flex-row">
+      {/* Left side - Form */}
+      <div className="flex w-full flex-col justify-center bg-[#0a0a0a] p-8 lg:w-1/2 lg:p-16">
+        <div className="mx-auto w-full max-w-md">
+          <h1 className="mb-2 text-4xl font-bold text-white">
+            Hello
+            <br />
+            <span className="text-orange-500">Welcome</span> Back
+          </h1>
+          <p className="mb-8 text-sm text-zinc-400">Want to plan for another event?</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="email"
+                placeholder="Enter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                required
+              />
             </div>
-          </section>
 
-          {/* Example Cards */}
-          <section>
-            <h2 className="text-xl font-semibold text-shades-black mb-4">UI Components</h2>
-            <div className="grid gap-4">
-              {/* Primary Card */}
-              <div className="p-6 rounded-lg bg-neutrals-02 border border-neutrals-03">
-                <h3 className="text-lg font-semibold text-shades-black mb-2">Welcome to EventBridge</h3>
-                <p className="text-neutrals-07 mb-4">
-                  This is an example card using the custom color theme. The theme automatically switches between light and dark modes.
-                </p>
-                <button className="px-4 py-2 rounded-md bg-primary-01 text-shades-white hover:bg-primary-02 transition-colors">
-                  Get Started
-                </button>
-              </div>
-
-              {/* Info Card */}
-              <div className="p-6 rounded-lg bg-neutrals-01 border border-neutrals-03">
-                <h3 className="text-lg font-semibold text-shades-black mb-2">Theme Features</h3>
-                <ul className="space-y-2 text-neutrals-08">
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-accents-discount"></span>
-                    Automatic dark mode support
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-accents-discount"></span>
-                    System preference detection
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-accents-discount"></span>
-                    Manual theme switching
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-accents-discount"></span>
-                    Persistent theme selection
-                  </li>
-                </ul>
-              </div>
-
-              {/* Error Example */}
-              <div className="p-6 rounded-lg bg-errors-bg border border-errors-main">
-                <h3 className="text-lg font-semibold text-errors-main mb-2">Error State Example</h3>
-                <p className="text-neutrals-08">
-                  This demonstrates how error states look with the custom theme colors.
-                </p>
-              </div>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
-          </section>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-white">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-700 bg-transparent text-orange-500 focus:ring-orange-500"
+                />
+                Remember me
+              </label>
+              <Link href="/forgot-password" className="text-sm text-orange-500 hover:text-orange-400">
+                Forget Password
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 transition-colors"
+            >
+              Sign in
+            </button>
+
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-zinc-700" />
+              <span className="text-sm text-zinc-400">Login with</span>
+              <div className="h-px flex-1 bg-zinc-700" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white hover:bg-zinc-800 transition-colors"
+              >
+                <Image src="/google.svg" alt="Google" width={20} height={20} />
+                Sign in with Google
+              </button>
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-transparent px-4 py-3 text-white hover:bg-zinc-800 transition-colors"
+              >
+                <Image src="/apple.svg" alt="Apple" width={20} height={20} />
+                Sign in with Apple
+              </button>
+            </div>
+
+            <p className="text-center text-sm text-zinc-400">
+              Don't have an account?{' '}
+              <Link href="/signup" className="text-orange-500 hover:text-orange-400">
+                Sign up
+              </Link>
+            </p>
+          </form>
         </div>
-      </main>
+      </div>
+
+      {/* Right side - Image */}
+      <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="Event Bridge Logo"
+              width={32}
+              height={32}
+              className="text-orange-500"
+            />
+            <span className="text-xl font-semibold text-white">Event Bridge</span>
+          </div>
+          <Link
+            href="/"
+            className="rounded-full bg-zinc-800/80 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-zinc-700"
+          >
+            Back to Website →
+          </Link>
+        </div>
+        <div className="relative h-full w-full">
+          <Image
+            src="/login.jpg"
+            alt="Event"
+            fill
+            className="object-cover"
+          />
+        </div>
+      </div>
     </div>
   );
 }
