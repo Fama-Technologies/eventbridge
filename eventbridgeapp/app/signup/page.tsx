@@ -138,9 +138,65 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement signup logic
-    console.log({ firstName, lastName, email, password, accountType, agreeToTerms });
+
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          password,
+          accountType,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.message || "Signup failed");
+        return;
+      }
+
+      alert("Account created successfully!");
+      window.location.href = "/login";
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Try again.");
+    }
   };
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("/api/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        email,
+        password,
+        accountType,
+      }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      alert(error.message || "Signup failed");
+      return;
+    }
+
+    alert("Account created successfully!");
+    window.location.href = "/login"; // redirect to login
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong. Try again.");
+  }
+};
+
 
   return (
     <>
