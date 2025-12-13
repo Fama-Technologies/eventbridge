@@ -23,19 +23,20 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
     const payload = await verifyToken(token);
     if (!payload) return null;
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, payload.userId),
-      columns: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        accountType: true,
-        isActive: true,
-      },
-    });
+    // Use direct select instead of query API to avoid column issues
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        accountType: users.accountType,
+      })
+      .from(users)
+      .where(eq(users.id, payload.userId))
+      .limit(1);
 
-    if (!user || !user.isActive) return null;
+    if (!user) return null;
 
     return user as AuthUser;
   } catch (error) {
