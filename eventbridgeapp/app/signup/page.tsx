@@ -27,7 +27,10 @@ export default function SignupPage() {
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           {step === 'accountType' ? (
-            <AccountTypeSelection onSelect={handleAccountTypeSelect} />
+            <AccountTypeSelection 
+              onSelect={handleAccountTypeSelect}
+              selectedType={accountType}
+            />
           ) : (
             <SignupForm accountType={accountType!} onBack={handleBack} />
           )}
@@ -67,7 +70,21 @@ export default function SignupPage() {
   );
 }
 
-function AccountTypeSelection({ onSelect }: { onSelect: (type: 'VENDOR' | 'CUSTOMER') => void }) {
+function AccountTypeSelection({ 
+  onSelect, 
+  selectedType 
+}: { 
+  onSelect: (type: 'VENDOR' | 'CUSTOMER') => void;
+  selectedType: 'VENDOR' | 'CUSTOMER' | null;
+}) {
+  const [tempSelection, setTempSelection] = useState<'VENDOR' | 'CUSTOMER' | null>(selectedType);
+
+  const handleContinue = () => {
+    if (tempSelection) {
+      onSelect(tempSelection);
+    }
+  };
+
   return (
     <>
       <h1 className="mb-2 text-4xl font-bold text-shades-black">
@@ -84,11 +101,24 @@ function AccountTypeSelection({ onSelect }: { onSelect: (type: 'VENDOR' | 'CUSTO
 
         <div className="grid grid-cols-2 gap-4">
           <button
-            onClick={() => onSelect('VENDOR')}
-            className="group flex flex-col items-center gap-4 rounded-lg border border-neutrals-04 bg-neutrals-02 p-8 transition-all hover:border-primary-01 hover:bg-neutrals-03"
+            type="button"
+            onClick={() => setTempSelection('VENDOR')}
+            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${
+              tempSelection === 'VENDOR'
+                ? 'border-primary-01 bg-neutrals-03'
+                : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
+            }`}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-neutrals-03 group-hover:bg-accents-peach">
-              <Store size={32} className="text-shades-black group-hover:text-primary-01" />
+            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${
+              tempSelection === 'VENDOR'
+                ? 'bg-accents-peach'
+                : 'bg-neutrals-03 group-hover:bg-accents-peach'
+            }`}>
+              <Store size={32} className={`transition-all ${
+                tempSelection === 'VENDOR'
+                  ? 'text-primary-01'
+                  : 'text-shades-black group-hover:text-primary-01'
+              }`} />
             </div>
             <div className="text-center">
               <p className="text-sm text-neutrals-07">Are you a</p>
@@ -97,11 +127,24 @@ function AccountTypeSelection({ onSelect }: { onSelect: (type: 'VENDOR' | 'CUSTO
           </button>
 
           <button
-            onClick={() => onSelect('CUSTOMER')}
-            className="group flex flex-col items-center gap-4 rounded-lg border border-neutrals-04 bg-neutrals-02 p-8 transition-all hover:border-primary-01 hover:bg-neutrals-03"
+            type="button"
+            onClick={() => setTempSelection('CUSTOMER')}
+            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${
+              tempSelection === 'CUSTOMER'
+                ? 'border-primary-01 bg-neutrals-03'
+                : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
+            }`}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-neutrals-03 group-hover:bg-accents-peach">
-              <User size={32} className="text-shades-black group-hover:text-primary-01" />
+            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${
+              tempSelection === 'CUSTOMER'
+                ? 'bg-accents-peach'
+                : 'bg-neutrals-03 group-hover:bg-accents-peach'
+            }`}>
+              <User size={32} className={`transition-all ${
+                tempSelection === 'CUSTOMER'
+                  ? 'text-primary-01'
+                  : 'text-shades-black group-hover:text-primary-01'
+              }`} />
             </div>
             <div className="text-center">
               <p className="text-sm text-neutrals-07">Are you a</p>
@@ -112,7 +155,9 @@ function AccountTypeSelection({ onSelect }: { onSelect: (type: 'VENDOR' | 'CUSTO
 
         <button
           type="button"
-          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors"
+          onClick={handleContinue}
+          disabled={!tempSelection}
+          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue
         </button>
@@ -135,9 +180,13 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
   const [password, setPassword] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
     try {
       const res = await fetch("/api/signup", {
@@ -152,51 +201,22 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const error = await res.json();
-        alert(error.message || "Signup failed");
+        setError(data.message || "Signup failed");
+        setIsLoading(false);
         return;
       }
 
-      alert("Account created successfully!");
+      // Success - redirect to login
       window.location.href = "/login";
     } catch (err) {
       console.error(err);
-      alert("Something went wrong. Try again.");
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
     }
   };
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  try {
-    const res = await fetch("/api/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        email,
-        password,
-        accountType,
-      }),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      alert(error.message || "Signup failed");
-      return;
-    }
-
-    alert("Account created successfully!");
-    window.location.href = "/login"; // redirect to login
-  } catch (err) {
-    console.error(err);
-    alert("Something went wrong. Try again.");
-  }
-};
-
 
   return (
     <>
@@ -216,6 +236,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             onChange={(e) => setFirstName(e.target.value)}
             className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
             required
+            disabled={isLoading}
           />
           <input
             type="text"
@@ -224,6 +245,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             onChange={(e) => setLastName(e.target.value)}
             className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -234,6 +256,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           onChange={(e) => setEmail(e.target.value)}
           className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
           required
+          disabled={isLoading}
         />
 
         <div className="relative">
@@ -244,11 +267,14 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
             required
+            minLength={8}
+            disabled={isLoading}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black"
+            disabled={isLoading}
           >
             {showPassword ? '👁️' : '👁️‍🗨️'}
           </button>
@@ -261,6 +287,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             onChange={(e) => setAgreeToTerms(e.target.checked)}
             className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01"
             required
+            disabled={isLoading}
           />
           <span>
             I agree to the{' '}
@@ -270,11 +297,26 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           </span>
         </label>
 
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         <button
           type="submit"
-          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors"
+          disabled={isLoading}
+          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign in
+          {isLoading ? 'Creating Account...' : 'Sign Up'}
+        </button>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full text-sm text-neutrals-07 hover:text-shades-black"
+        >
+          ← Back to account type
         </button>
 
         <div className="flex items-center gap-4">
@@ -287,6 +329,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           <button
             type="button"
             className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors"
+            disabled={isLoading}
           >
             <Image src="/google.svg" alt="Google" width={20} height={20} />
             Sign up with Google
@@ -294,6 +337,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           <button
             type="button"
             className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors"
+            disabled={isLoading}
           >
             <Image src="/apple.svg" alt="Apple" width={20} height={20} />
             Sign up with Apple
