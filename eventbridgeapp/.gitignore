@@ -40,4 +40,23 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma
 /lib/generated/prisma
+
+# drizzle
+/drizzle/migrations
+/drizzle/*.sql
+drizzle-kit.config.ts.timestamp-*
+
+# local database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
