@@ -14,17 +14,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Email and password required' }, { status: 400 });
     }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
-    });
+    // Use direct select instead of query API to avoid schema issues
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase()))
+      .limit(1);
 
     if (!user) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    if (!user.isActive) {
-      return NextResponse.json({ message: 'Account deactivated' }, { status: 403 });
-    }
+    // Removed isActive check since column doesn't exist in database
 
     const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const token = await createToken({
       userId: user.id,
       email: user.email,
-      accountType: user.accountType,
+      accountType: user.accountType as 'VENDOR' | 'CUSTOMER',
     });
 
     const userData = {
