@@ -17,13 +17,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Password must be at least 8 characters' }, { status: 400 });
     }
 
-    const resetToken = await db.query.passwordResetTokens.findFirst({
-      where: and(
-        eq(passwordResetTokens.token, token),
-        eq(passwordResetTokens.used, false),
-        gt(passwordResetTokens.expiresAt, new Date())
-      ),
-    });
+    // Use direct select instead of query API
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          eq(passwordResetTokens.used, false),
+          gt(passwordResetTokens.expiresAt, new Date())
+        )
+      )
+      .limit(1);
 
     if (!resetToken) {
       return NextResponse.json({ message: 'Invalid or expired token' }, { status: 400 });
@@ -31,9 +36,9 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await hash(newPassword, 12);
 
+    // Removed updatedAt since it doesn't exist in database
     await db.update(users).set({ 
       password: hashedPassword,
-      updatedAt: new Date()
     }).where(eq(users.id, resetToken.userId));
 
     await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, resetToken.id));
