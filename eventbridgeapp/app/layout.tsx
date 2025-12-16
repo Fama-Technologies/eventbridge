@@ -3,8 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/providers/theme-provider";
-import { ToastProvider } from "../components/ui/toast";
-
+import { ToastProvider } from "@/components/ui/toast"; 
 
 const inter = Inter({
   subsets: ["latin"],
