@@ -15,21 +15,33 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        alert("Server error. Please try again.");
+        return;
+      }
 
-    if (!res.ok) {
-      alert(data.message);
-      return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert("Login successful!");
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again.");
     }
-
-    alert("Login successful!");
-    window.location.href = "/dashboard";
   };
   // ✅ END OF UPDATED PART
 
@@ -139,13 +151,12 @@ export default function LoginPage() {
               alt="Event Bridge Logo"
               width={32}
               height={32}
-              className="text-primary-01"
             />
-            <span className="text-xl font-semibold text-shades-white">Event Bridge</span>
+            <span className="text-xl font-semibold text-white">Event Bridge</span>
           </div>
           <Link
             href="/"
-            className="rounded-full bg-shades-black-30 backdrop-blur-sm px-4 py-2 text-sm text-shades-white hover:bg-neutrals-08"
+            className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
           >
             Back to Website →
           </Link>

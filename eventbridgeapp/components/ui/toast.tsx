@@ -20,48 +20,7 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
-
-  const addToast = useCallback(
-    (message: string, type: ToastType = 'info', duration: number = 4000) => {
-      const id = Math.random().toString(36).substring(2, 9);
-      const newToast: Toast = { id, message, type, duration };
-
-      setToasts((prev) => [...prev, newToast]);
-
-      if (duration > 0) {
-        setTimeout(() => {
-          removeToast(id);
-        }, duration);
-      }
-    },
-    [removeToast]
-  );
-
-  return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
-      {children}
-      <ToastContainer />
-    </ToastContext.Provider>
-  );
-}
-
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-}
-
-function ToastContainer() {
-  const { toasts, removeToast } = useToast();
-
+function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast: (id: string) => void }) {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
@@ -88,18 +47,19 @@ function ToastContainer() {
     }
   };
 
+  if (toasts.length === 0) return null;
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
       {toasts.map((toast, index) => (
         <div
           key={toast.id}
           className={`
             flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-lg
             ${getStyles(toast.type)}
-            animate-slide-in-right
           `}
           style={{
-            animation: `slideInRight 0.3s ease-out ${index * 0.1}s both`,
+            animation: `slideInDown 0.3s ease-out ${index * 0.1}s both`,
           }}
         >
           {getIcon(toast.type)}
@@ -114,4 +74,43 @@ function ToastContainer() {
       ))}
     </div>
   );
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const addToast = useCallback(
+    (message: string, type: ToastType = 'info', duration: number = 4000) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      const newToast: Toast = { id, message, type, duration };
+
+      setToasts((prev) => [...prev, newToast]);
+
+      if (duration > 0) {
+        setTimeout(() => {
+          removeToast(id);
+        }, duration);
+      }
+    },
+    [removeToast]
+  );
+
+  return (
+    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+      {children}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
 }

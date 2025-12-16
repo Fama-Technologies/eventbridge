@@ -46,13 +46,12 @@ export default function SignupPage() {
               alt="Event Bridge Logo"
               width={32}
               height={32}
-              className="text-primary-01"
             />
-            <span className="text-xl font-semibold text-shades-white">Event Bridge</span>
+            <span className="text-xl font-semibold text-white">Event Bridge</span>
           </div>
           <Link
             href="/"
-            className="rounded-full bg-shades-black-30 backdrop-blur-sm px-4 py-2 text-sm text-shades-white hover:bg-neutrals-08"
+            className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
           >
             Back to Website →
           </Link>

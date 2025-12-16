@@ -29,6 +29,15 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
 
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        setError('Server error. Please try again.');
+        addToast('Server error. Please try again.', 'error');
+        setIsLoading(false);
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -128,13 +137,12 @@ export default function ForgotPasswordPage() {
                 alt="Event Bridge Logo"
                 width={32}
                 height={32}
-                className="text-primary-01"
               />
-              <span className="text-xl font-semibold text-shades-white">Event Bridge</span>
+              <span className="text-xl font-semibold text-white">Event Bridge</span>
             </div>
             <Link
               href="/"
-              className="rounded-full bg-shades-black-30 backdrop-blur-sm px-4 py-2 text-sm text-shades-white hover:bg-neutrals-08"
+              className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
             >
               Back to Website →
             </Link>

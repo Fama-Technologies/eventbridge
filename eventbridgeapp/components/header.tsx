@@ -64,7 +64,7 @@ export default function Header() {
 
           {/* Language Icon */}
           <button
-            className="p-2 rounded text-shades-black transition-colors duration-200 hover:text-primary-01"
+            className="w-10 h-10 rounded-full border border-neutrals-04 flex items-center justify-center text-shades-black transition-all duration-200 hover:text-primary-01 hover:border-primary-01"
             aria-label="Language"
           >
             <Globe size={20} />
@@ -73,7 +73,7 @@ export default function Header() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="relative p-2 rounded-full text-shades-black transition-all duration-300 hover:text-primary-01 hover:bg-neutrals-02"
+            className="w-10 h-10 rounded-full border border-neutrals-04 flex items-center justify-center text-shades-black transition-all duration-300 hover:text-primary-01 hover:border-primary-01"
             aria-label="Toggle theme"
           >
             {mounted && (
@@ -102,7 +102,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded text-shades-black transition-colors duration-200 hover:text-primary-01"
+            className="md:hidden w-10 h-10 rounded-full border border-neutrals-04 flex items-center justify-center text-shades-black transition-all duration-200 hover:text-primary-01 hover:border-primary-01"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Menu"
           >
