@@ -17,7 +17,7 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["app/*"]
+      "@/*": ["./*"]  // Changed from ["app/*"] to ["./*"]
     },
 
     "plugins": [
