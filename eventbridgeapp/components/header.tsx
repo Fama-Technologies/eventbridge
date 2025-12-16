@@ -4,19 +4,25 @@ import Link from 'next/link';
 import { Menu, Globe, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useTheme } from '@/app/providers/theme-provider';
+import { useTheme } from '@/providers/theme-provider'; // FIXED IMPORT PATH
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // SAFE: Only access theme AFTER component mounts (client-side)
+  const theme = mounted ? useTheme() : null;
+  const resolvedTheme = theme?.resolvedTheme || 'light';
+  const setTheme = theme?.setTheme || (() => {});
+
   const toggleTheme = () => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+    if (theme) {
+      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+    }
   };
 
   return (
