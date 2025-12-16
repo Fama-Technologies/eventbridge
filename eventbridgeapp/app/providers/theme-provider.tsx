@@ -20,25 +20,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    // Get theme from localStorage or default to 'system'
+
     const savedTheme = localStorage.getItem('theme') as ThemeMode | null;
     if (savedTheme) {
       setThemeState(savedTheme);
     }
-    
-    // Apply theme immediately to prevent flash
+
     const root = document.documentElement;
+
     const applyTheme = (mode: 'light' | 'dark') => {
       root.setAttribute('data-theme', mode);
       setResolvedTheme(mode);
     };
-    
+
     const currentTheme = savedTheme || 'system';
+
     if (currentTheme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       applyTheme(mediaQuery.matches ? 'dark' : 'light');
     } else {
-      applyTheme(currentTheme as 'light' | 'dark');
+      applyTheme(currentTheme);
     }
   }, []);
 
@@ -46,7 +47,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (!mounted) return;
 
     const root = document.documentElement;
-    
+
     const applyTheme = (mode: 'light' | 'dark') => {
       root.setAttribute('data-theme', mode);
       setResolvedTheme(mode);
@@ -81,7 +82,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
