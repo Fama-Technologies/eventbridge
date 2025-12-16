@@ -2,12 +2,23 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Store, User } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<'accountType' | 'details'>('accountType');
   const [accountType, setAccountType] = useState<'VENDOR' | 'CUSTOMER' | null>(null);
+
+  // Auto-select VENDOR if coming from "Become a Vendor" button
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'vendor') {
+      setAccountType('VENDOR');
+      setStep('details'); // Skip to signup form
+    }
+  }, [searchParams]);
 
   const handleAccountTypeSelect = (type: 'VENDOR' | 'CUSTOMER') => {
     setAccountType(type);

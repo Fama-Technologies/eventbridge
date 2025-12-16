@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Menu, Globe, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useTheme } from '@/providers/theme-provider'; // FIXED IMPORT PATH
+import { useTheme } from '@/providers/theme-provider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -14,7 +14,6 @@ export default function Header() {
     setMounted(true);
   }, []);
 
-  // SAFE: Only access theme AFTER component mounts (client-side)
   const theme = mounted ? useTheme() : null;
   const resolvedTheme = theme?.resolvedTheme || 'light';
   const setTheme = theme?.setTheme || (() => {});
@@ -60,9 +59,9 @@ export default function Header() {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* Become a Vendor Button */}
+          {/* Become a Vendor Button - UPDATED */}
           <Link
-            href="/become-vendor"
+            href="/signup?type=vendor"
             className="hidden sm:block px-4 py-2 rounded font-semibold text-primary-01 transition-opacity duration-200 hover:opacity-90"
           >
             Become a Vendor
@@ -84,7 +83,6 @@ export default function Header() {
           >
             {mounted && (
               <div className="relative w-5 h-5">
-                {/* Sun icon */}
                 <Sun
                   size={20}
                   className={`absolute inset-0 transition-all duration-500 ${
@@ -93,7 +91,6 @@ export default function Header() {
                       : 'rotate-90 scale-0 opacity-0'
                   }`}
                 />
-                {/* Moon icon */}
                 <Moon
                   size={20}
                   className={`absolute inset-0 transition-all duration-500 ${
@@ -138,8 +135,9 @@ export default function Header() {
           >
             Become a Planner
           </Link>
+          {/* Become a Vendor Button - UPDATED */}
           <Link
-            href="/become-vendor"
+            href="/signup?type=vendor"
             className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
           >
             Become a Vendor

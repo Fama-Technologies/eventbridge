@@ -12,7 +12,10 @@ export const users = pgTable('users', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   password: text('password').notNull(),
-  accountType: text('account_type').notNull(), // 'client', 'vendor', 'admin'
+  accountType: text('account_type').notNull(), 
+  isActive: boolean('is_active').default(true),         
+  emailVerified: boolean('email_verified').default(false), 
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Sessions table - FOR AUTHENTICATION
