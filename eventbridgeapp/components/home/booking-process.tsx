@@ -70,8 +70,8 @@ export default function BookingProcess() {
                     <Image
                       src={step.icon}
                       alt={step.title}
-                      width={32}
-                      height={32}
+                      width={52}
+                      height={52}
                       className="w-8 h-8"
                     />
                   </div>
