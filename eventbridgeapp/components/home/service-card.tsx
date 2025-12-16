@@ -17,7 +17,6 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({
-  id,
   businessName,
   category,
   location,
@@ -30,9 +29,9 @@ export default function ServiceCard({
   const [favorite, setFavorite] = useState(isFavorite);
 
   return (
-    <div className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all bg-neutrals-02">
+    <div className="group block">
       {/* Image */}
-      <div className="relative h-48 w-full bg-neutrals-04">
+      <div className="relative h-44 w-full bg-neutrals-03 rounded-xl overflow-hidden mb-3">
         {image ? (
           <Image
             src={image}
@@ -40,33 +39,30 @@ export default function ServiceCard({
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutrals-06">
-            No image
-          </div>
-        )}
+        ) : null}
 
         {/* Favorite Button */}
         <button
           onClick={() => setFavorite(!favorite)}
-          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-md transition-colors"
+          className="absolute top-3 right-3 z-10"
           aria-label="Add to favorites"
         >
           <Heart
-            size={20}
+            size={22}
             className={`transition-colors ${
-              favorite ? 'fill-red-500 text-red-500' : 'text-neutrals-07'
+              favorite ? 'fill-red-500 text-red-500' : 'text-neutrals-05 hover:text-neutrals-07'
             }`}
+            strokeWidth={1.5}
           />
         </button>
 
         {/* Carousel Indicators */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        <div className="absolute bottom-3 left-3 flex gap-1">
           {[1, 2, 3, 4, 5].map((dot) => (
             <div
               key={dot}
               className={`w-1.5 h-1.5 rounded-full ${
-                dot === 1 ? 'bg-white' : 'bg-white/50'
+                dot === 1 ? 'bg-shades-black' : 'bg-neutrals-04'
               }`}
             />
           ))}
@@ -74,21 +70,21 @@ export default function ServiceCard({
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="text-lg font-semibold text-shades-black">{businessName}</h3>
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold text-shades-black">{businessName}</h3>
           <div className="flex items-center gap-1">
-            <Star size={16} className="fill-primary-01 text-primary-01" />
-            <span className="text-sm font-medium text-shades-black">{rating.toFixed(1)}</span>
+            <Star size={14} className="fill-shades-black text-shades-black" />
+            <span className="text-sm text-shades-black">{rating.toFixed(2)}</span>
           </div>
         </div>
 
-        <p className="text-sm text-neutrals-07 mb-1">
-          {category} • {location}
+        <p className="text-sm text-neutrals-06 mb-0.5">
+          {category} - {location}
         </p>
-        <p className="text-sm text-neutrals-06 mb-2">{availableDates}</p>
-        <p className="text-lg font-bold text-shades-black">
-          {pricePerDay} <span className="text-sm font-normal text-neutrals-07">/day</span>
+        <p className="text-sm text-neutrals-06 mb-0.5">{availableDates}</p>
+        <p className="text-sm text-shades-black">
+          {pricePerDay} <span className="text-neutrals-06">/day</span>
         </p>
       </div>
     </div>

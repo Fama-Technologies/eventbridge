@@ -18,7 +18,7 @@ export default function ExploreCategories() {
     },
     {
       title: 'Parties',
-      subtitle: 'DJs, Decor, Entertainments',
+      subtitle: 'Djs, Decor, Entertainments',
       image: '/categories/parties.jpg',
       href: '/category/parties',
     },
@@ -31,15 +31,15 @@ export default function ExploreCategories() {
   ];
 
   return (
-    <section className="py-16 px-6 bg-background">
+    <section className="py-12 px-6 bg-background">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-4xl font-bold text-shades-black">Explore by Category</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-shades-black">Explore by Category</h2>
           <Link
             href="/categories"
-            className="flex items-center gap-2 text-primary-01 hover:text-primary-02 font-semibold transition-colors"
+            className="flex items-center gap-2 text-shades-black hover:text-primary-01 font-medium transition-colors text-sm"
           >
-            View all <ArrowRight size={20} />
+            View all <ArrowRight size={18} />
           </Link>
         </div>
 

@@ -10,11 +10,8 @@ interface CategoryCardProps {
 
 export default function CategoryCard({ title, subtitle, image, href }: CategoryCardProps) {
   return (
-    <Link
-      href={href}
-      className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-    >
-      <div className="relative h-48 w-full">
+    <Link href={href} className="group block">
+      <div className="relative h-40 w-full rounded-xl overflow-hidden mb-3">
         <Image
           src={image}
           alt={title}
@@ -22,11 +19,8 @@ export default function CategoryCard({ title, subtitle, image, href }: CategoryC
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-        <h3 className="text-xl font-bold mb-1">{title}</h3>
-        <p className="text-sm text-white/80">{subtitle}</p>
-      </div>
+      <h3 className="text-base font-semibold text-shades-black mb-1">{title}</h3>
+      <p className="text-sm text-neutrals-06">{subtitle}</p>
     </Link>
   );
 }
