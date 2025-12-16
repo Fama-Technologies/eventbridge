@@ -1,22 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Globe } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, Globe, Sun, Moon } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useTheme } from '@/app/providers/theme-provider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
 
   return (
-    <header className="bg-neutrals-01 px-6 py-4 shadow-lg">
+    <header className="bg-shades-white px-6 py-4 shadow-lg">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
           <span className="w-8 h-8 rounded-full flex items-center justify-center">
             <Image src="/logo.svg" alt="Logo" width={32} height={32} />
           </span>
-          <span className="text-shades-black">Event Bridge</span>
+          <span className="text-primary-01">Event Bridge</span>
         </Link>
 
         {/* Navigation - Desktop */}
@@ -51,12 +62,42 @@ export default function Header() {
             Become a Vendor
           </Link>
 
-          {/* Icons */}
+          {/* Language Icon */}
           <button
             className="p-2 rounded text-shades-black transition-colors duration-200 hover:text-primary-01"
             aria-label="Language"
           >
             <Globe size={20} />
+          </button>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="relative p-2 rounded-full text-shades-black transition-all duration-300 hover:text-primary-01 hover:bg-neutrals-02"
+            aria-label="Toggle theme"
+          >
+            {mounted && (
+              <div className="relative w-5 h-5">
+                {/* Sun icon */}
+                <Sun
+                  size={20}
+                  className={`absolute inset-0 transition-all duration-500 ${
+                    resolvedTheme === 'dark'
+                      ? 'rotate-0 scale-100 opacity-100'
+                      : 'rotate-90 scale-0 opacity-0'
+                  }`}
+                />
+                {/* Moon icon */}
+                <Moon
+                  size={20}
+                  className={`absolute inset-0 transition-all duration-500 ${
+                    resolvedTheme === 'light'
+                      ? 'rotate-0 scale-100 opacity-100'
+                      : '-rotate-90 scale-0 opacity-0'
+                  }`}
+                />
+              </div>
+            )}
           </button>
 
           {/* Mobile Menu Button */}
