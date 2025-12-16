@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./providers/theme-provider";
-import Header from "@/components/header";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,12 +23,25 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Script to prevent theme flash - runs before React hydrates
+  const themeScript = `
+    (function() {
+      try {
+        var theme = localStorage.getItem('theme');
+        var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : (systemDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', resolved);
+      } catch (e) {}
+    })();
+  `;
+
   return (
     <html lang="en" suppressHydrationWarning>
-
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <ThemeProvider>
-          <Header />
           {children}
         </ThemeProvider>
       </body>

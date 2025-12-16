@@ -25,6 +25,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (savedTheme) {
       setThemeState(savedTheme);
     }
+    
+    // Apply theme immediately to prevent flash
+    const root = document.documentElement;
+    const applyTheme = (mode: 'light' | 'dark') => {
+      root.setAttribute('data-theme', mode);
+      setResolvedTheme(mode);
+    };
+    
+    const currentTheme = savedTheme || 'system';
+    if (currentTheme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(mediaQuery.matches ? 'dark' : 'light');
+    } else {
+      applyTheme(currentTheme as 'light' | 'dark');
+    }
   }, []);
 
   useEffect(() => {
