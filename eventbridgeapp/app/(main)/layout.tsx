@@ -1,4 +1,3 @@
-import { ThemeProvider } from "@/providers/theme-provider";
 import Header from "@/components/header";
 
 export default function MainLayout({
@@ -7,9 +6,9 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider>
+    <>
       <Header />
       {children}
-    </ThemeProvider>
+    </>
   );
 }
