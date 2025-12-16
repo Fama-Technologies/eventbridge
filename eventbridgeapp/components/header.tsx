@@ -49,8 +49,9 @@ export default function Header() {
           >
             Inspiration
           </Link>
+          {/* UPDATED: Become a Planner now goes to signup */}
           <Link
-            href="/become-planner"
+            href="/signup?type=customer"
             className="text-shades-black transition-colors duration-200 hover:text-primary-01"
           >
             Become a Planner
@@ -59,7 +60,7 @@ export default function Header() {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* Become a Vendor Button - UPDATED */}
+          {/* Become a Vendor Button */}
           <Link
             href="/signup?type=vendor"
             className="hidden sm:block px-4 py-2 rounded font-semibold text-primary-01 transition-opacity duration-200 hover:opacity-90"
@@ -129,13 +130,14 @@ export default function Header() {
           >
             Inspiration
           </Link>
+          {/* UPDATED: Become a Planner now goes to signup */}
           <Link
-            href="/become-planner"
+            href="/signup?type=customer"
             className="block py-2 text-shades-black transition-colors hover:text-primary-01"
           >
             Become a Planner
           </Link>
-          {/* Become a Vendor Button - UPDATED */}
+          {/* Become a Vendor Button */}
           <Link
             href="/signup?type=vendor"
             className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"

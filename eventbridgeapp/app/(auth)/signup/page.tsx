@@ -11,11 +11,14 @@ export default function SignupPage() {
   const [step, setStep] = useState<'accountType' | 'details'>('accountType');
   const [accountType, setAccountType] = useState<'VENDOR' | 'CUSTOMER' | null>(null);
 
-  // Auto-select VENDOR if coming from "Become a Vendor" button
+  // Auto-select account type based on URL parameter
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'vendor') {
       setAccountType('VENDOR');
+      setStep('details'); // Skip to signup form
+    } else if (type === 'customer') {
+      setAccountType('CUSTOMER');
       setStep('details'); // Skip to signup form
     }
   }, [searchParams]);
