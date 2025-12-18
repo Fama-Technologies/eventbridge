@@ -2,12 +2,26 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Store, User } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<'accountType' | 'details'>('accountType');
   const [accountType, setAccountType] = useState<'VENDOR' | 'CUSTOMER' | null>(null);
+
+  // Auto-select account type based on URL parameter
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'vendor') {
+      setAccountType('VENDOR');
+      setStep('details'); // Skip to signup form
+    } else if (type === 'customer') {
+      setAccountType('CUSTOMER');
+      setStep('details'); // Skip to signup form
+    }
+  }, [searchParams]);
 
   const handleAccountTypeSelect = (type: 'VENDOR' | 'CUSTOMER') => {
     setAccountType(type);

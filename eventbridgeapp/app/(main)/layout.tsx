@@ -7,9 +7,9 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider>
+    <>
       <Header />
       {children}
-    </ThemeProvider>
+    </>
   );
 }

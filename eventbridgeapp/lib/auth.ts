@@ -15,15 +15,23 @@ export interface AuthUser {
 
 export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
   try {
+    // Try multiple cookie names and Authorization header
     const token = req.cookies.get('auth-token')?.value || 
+                  req.cookies.get('session_token')?.value ||
                   req.headers.get('Authorization')?.replace('Bearer ', '');
 
-    if (!token) return null;
+    if (!token) {
+      console.log('No token found in request');
+      return null;
+    }
 
     const payload = await verifyToken(token);
-    if (!payload) return null;
+    if (!payload) {
+      console.log('Token verification failed');
+      return null;
+    }
 
-    // Use direct select instead of query API to avoid column issues
+    // Use direct select with proper column mapping
     const [user] = await db
       .select({
         id: users.id,
@@ -36,15 +44,53 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
       .where(eq(users.id, payload.userId))
       .limit(1);
 
-    if (!user) return null;
+    if (!user) {
+      console.log('User not found in database');
+      return null;
+    }
 
-    return user as AuthUser;
+    // Convert database accountType to uppercase enum
+    const accountType = user.accountType.toUpperCase() as 'VENDOR' | 'CUSTOMER';
+    
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      accountType,
+    };
   } catch (error) {
     console.error('Auth verification error:', error);
     return null;
   }
 }
 
+// Helper to create auth response with cookie
+export async function createAuthResponse(user: AuthUser) {
+  const { createToken } = await import('@/lib/jwt');
+  
+  const token = await createToken({
+    userId: user.id,
+    email: user.email,
+    accountType: user.accountType,
+  });
+
+  const response = new Response(JSON.stringify({ 
+    success: true, 
+    user,
+    token 
+  }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Set-Cookie': `auth-token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`
+    }
+  });
+
+  return response;
+}
+
+// Authentication middleware helpers
 export function requireAuth(
   handler: (req: NextRequest, user: AuthUser) => Promise<Response>
 ) {
@@ -52,8 +98,14 @@ export function requireAuth(
     const user = await getAuthUser(req);
     if (!user) {
       return new Response(
-        JSON.stringify({ message: 'Unauthorized. Please login.' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          message: 'Unauthorized. Please login.' 
+        }),
+        { 
+          status: 401, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
     return handler(req, user);
@@ -67,14 +119,26 @@ export function requireVendor(
     const user = await getAuthUser(req);
     if (!user) {
       return new Response(
-        JSON.stringify({ message: 'Unauthorized. Please login.' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          message: 'Unauthorized. Please login.' 
+        }),
+        { 
+          status: 401, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
     if (user.accountType !== 'VENDOR') {
       return new Response(
-        JSON.stringify({ message: 'This action is only available to vendors.' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          message: 'This action is only available to vendors.' 
+        }),
+        { 
+          status: 403, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
     return handler(req, user);

@@ -4,19 +4,24 @@ import Link from 'next/link';
 import { Menu, Globe, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useTheme } from '@/app/providers/theme-provider';
+import { useTheme } from '@/providers/theme-provider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const theme = mounted ? useTheme() : null;
+  const resolvedTheme = theme?.resolvedTheme || 'light';
+  const setTheme = theme?.setTheme || (() => {});
+
   const toggleTheme = () => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+    if (theme) {
+      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+    }
   };
 
   return (
@@ -44,8 +49,9 @@ export default function Header() {
           >
             Inspiration
           </Link>
+          {/* UPDATED: Become a Planner now goes to signup */}
           <Link
-            href="/become-planner"
+            href="/signup?type=customer"
             className="text-shades-black transition-colors duration-200 hover:text-primary-01"
           >
             Become a Planner
@@ -56,7 +62,7 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {/* Become a Vendor Button */}
           <Link
-            href="/become-vendor"
+            href="/signup?type=vendor"
             className="hidden sm:block px-4 py-2 rounded font-semibold text-primary-01 transition-opacity duration-200 hover:opacity-90"
           >
             Become a Vendor
@@ -78,7 +84,6 @@ export default function Header() {
           >
             {mounted && (
               <div className="relative w-5 h-5">
-                {/* Sun icon */}
                 <Sun
                   size={20}
                   className={`absolute inset-0 transition-all duration-500 ${
@@ -87,7 +92,6 @@ export default function Header() {
                       : 'rotate-90 scale-0 opacity-0'
                   }`}
                 />
-                {/* Moon icon */}
                 <Moon
                   size={20}
                   className={`absolute inset-0 transition-all duration-500 ${
@@ -126,14 +130,16 @@ export default function Header() {
           >
             Inspiration
           </Link>
+          {/* UPDATED: Become a Planner now goes to signup */}
           <Link
-            href="/become-planner"
+            href="/signup?type=customer"
             className="block py-2 text-shades-black transition-colors hover:text-primary-01"
           >
             Become a Planner
           </Link>
+          {/* Become a Vendor Button */}
           <Link
-            href="/become-vendor"
+            href="/signup?type=vendor"
             className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
           >
             Become a Vendor
