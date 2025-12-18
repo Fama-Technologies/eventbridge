@@ -9,19 +9,14 @@ import { useTheme } from '@/providers/theme-provider';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { theme, setTheme: updateTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const theme = mounted ? useTheme() : null;
-  const resolvedTheme = theme?.resolvedTheme || 'light';
-  const setTheme = theme?.setTheme || (() => {});
-
   const toggleTheme = () => {
-    if (theme) {
-      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
-    }
+    updateTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
   return (

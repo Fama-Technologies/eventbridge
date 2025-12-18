@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -11,15 +15,15 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "verbatimModuleSyntax": true,
-
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]  // Changed from ["app/*"] to ["./*"]
+      "@/*": [
+        "./*"
+      ] // Changed from ["app/*"] to ["./*"]
     },
-
     "plugins": [
       {
         "name": "next"
@@ -35,5 +39,7 @@
     ".next/dev/types/**/*.ts",
     "next.config.js"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

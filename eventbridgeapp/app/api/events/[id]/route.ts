@@ -9,10 +9,8 @@ interface RouteParams {
   params: { id: string };
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, context: any) {
+  const { params } = context;
   try {
     // Use middleware to authenticate
     const authResult = await authMiddleware(request);
@@ -90,10 +88,8 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function PUT(request: NextRequest, context: any) {
+  const { params } = context;
   try {
     // Use middleware to authenticate
     const authResult = await authMiddleware(request);
@@ -202,10 +198,8 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function DELETE(request: NextRequest, context: any) {
+  const { params } = context;
   try {
     // Use middleware to authenticate
     const authResult = await authMiddleware(request);

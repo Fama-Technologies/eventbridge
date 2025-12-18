@@ -221,3 +221,34 @@ body {
 .animate-bounce-in {
   animation: bounceIn 0.5s ease-out;
 }
+
+/* Footer Gradient Animations */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+    background-size: 200% 200%;
+  }
+  50% {
+    background-position: 100% 50%;
+    background-size: 200% 200%;
+  }
+}
+
+@keyframes gradient-x-reverse {
+  0%, 100% {
+    background-position: 100% 50%;
+    background-size: 200% 200%;
+  }
+  50% {
+    background-position: 0% 50%;
+    background-size: 200% 200%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 4s ease infinite;
+}
+
+.animate-gradient-x-reverse {
+  animation: gradient-x-reverse 4s ease infinite;
+}

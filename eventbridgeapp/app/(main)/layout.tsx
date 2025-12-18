@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/providers/theme-provider";
 import Header from "@/components/header";
+import Footer from "@/components/footer";
 
 export default function MainLayout({
   children,
@@ -10,6 +11,7 @@ export default function MainLayout({
     <>
       <Header />
       {children}
+      <Footer/>
     </>
   );
 }
