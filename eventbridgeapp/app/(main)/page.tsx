@@ -1,3 +1,5 @@
+'use client'; 
+
 import HeroSection from '@/components/home/hero-section';
 import BookingProcess from '@/components/home/booking-process';
 import ExploreCategories from '@/components/home/explore-categories';
