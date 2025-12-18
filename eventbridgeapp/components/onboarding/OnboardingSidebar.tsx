@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react';
 import type { OnboardingStep } from './types';
+import Image from 'next/image';
 
 interface OnboardingSidebarProps {
   currentStep: OnboardingStep;
@@ -27,19 +28,7 @@ export default function OnboardingSidebar({ currentStep, completedSteps }: Onboa
       {/* Logo */}
       <div className="flex items-center gap-2 mb-12">
         <div className="w-8 h-8 relative">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-            <circle cx="16" cy="16" r="6" fill="#FF7043" />
-            <g stroke="#FF7043" strokeWidth="2" strokeLinecap="round">
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="16" y1="26" x2="16" y2="30" />
-              <line x1="2" y1="16" x2="6" y2="16" />
-              <line x1="26" y1="16" x2="30" y2="16" />
-              <line x1="5.86" y1="5.86" x2="8.69" y2="8.69" />
-              <line x1="23.31" y1="23.31" x2="26.14" y2="26.14" />
-              <line x1="5.86" y1="26.14" x2="8.69" y2="23.31" />
-              <line x1="23.31" y1="8.69" x2="26.14" y2="5.86" />
-            </g>
-          </svg>
+          <Image src="/logo.svg" alt="Event Bridge" fill />
         </div>
         <div>
           <span className="text-lg font-semibold text-shades-black">Event Bridge</span>
@@ -57,17 +46,17 @@ export default function OnboardingSidebar({ currentStep, completedSteps }: Onboa
               <li key={step.id}>
                 <div
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${status === 'in-progress'
-                      ? 'bg-neutrals-03 dark:bg-neutrals-02'
-                      : ''
+                    ? 'bg-neutrals-03 dark:bg-neutrals-02'
+                    : ''
                     }`}
                 >
                   {/* Step indicator */}
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${status === 'complete'
+                      ? 'bg-primary-01 text-white'
+                      : status === 'in-progress'
                         ? 'bg-primary-01 text-white'
-                        : status === 'in-progress'
-                          ? 'bg-primary-01 text-white'
-                          : 'bg-neutrals-04 dark:bg-neutrals-03 text-neutrals-07'
+                        : 'bg-neutrals-04 dark:bg-neutrals-03 text-neutrals-07'
                       }`}
                   >
                     {status === 'complete' ? (
@@ -81,10 +70,10 @@ export default function OnboardingSidebar({ currentStep, completedSteps }: Onboa
                   <div>
                     <p
                       className={`text-sm font-medium ${status === 'in-progress'
+                        ? 'text-shades-black'
+                        : status === 'complete'
                           ? 'text-shades-black'
-                          : status === 'complete'
-                            ? 'text-shades-black'
-                            : 'text-neutrals-07'
+                          : 'text-neutrals-07'
                         }`}
                     >
                       {step.label}
