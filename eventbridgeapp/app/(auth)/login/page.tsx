@@ -4,8 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+  
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
@@ -20,6 +24,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: 'same-origin',
       });
 
       // Check if response is JSON
@@ -37,7 +42,8 @@ export default function LoginPage() {
       }
 
       alert("Login successful!");
-      window.location.href = "/dashboard";
+      // Redirect to the specified URL or default dashboard
+      window.location.href = redirectUrl || "/dashboard";
     } catch (error) {
       console.error("Login error:", error);
       alert("Something went wrong. Please try again.");

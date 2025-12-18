@@ -202,7 +202,8 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/signup", {
+      // Step 1: Create the account
+      const signupRes = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -214,16 +215,41 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
         }),
       });
 
-      const data = await res.json();
+      const signupData = await signupRes.json();
 
-      if (!res.ok) {
-        setError(data.message || "Signup failed");
+      if (!signupRes.ok) {
+        setError(signupData.message || "Signup failed");
         setIsLoading(false);
         return;
       }
 
-      // Success - redirect to login
-      window.location.href = "/login";
+      // Step 2: Auto-login the user (include credentials so Set-Cookie is applied)
+      const loginRes = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: 'same-origin',
+      });
+
+      const loginData = await loginRes.json();
+
+      if (!loginRes.ok) {
+        // Account created but login failed - redirect to login
+        setError("Account created! Please log in.");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+        return;
+      }
+
+      // Success - redirect based on account type
+      if (accountType === 'VENDOR') {
+        // Redirect vendors directly to onboarding
+        window.location.href = "/vendor/onboarding";
+      } else {
+        // Redirect customers to dashboard/home
+        window.location.href = "/";
+      }
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");
