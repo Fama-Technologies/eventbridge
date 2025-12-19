@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, passwordResetTokens } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { sendPasswordResetEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { email } = body;
 
-    console.log(' Password reset requested for:', email);
+    console.log('🔐 Password reset requested for:', email);
 
     if (!email) {
       return NextResponse.json(
@@ -18,16 +19,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find user by email
-    const user = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
-    });
+    // Find user by email - use direct select to avoid schema issues
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase()))
+      .limit(1);
 
     console.log('👤 User found:', user ? 'Yes' : 'No');
 
     // Always return success to prevent email enumeration
     if (!user) {
-      console.log(' User not found, returning generic success');
+      console.log('⚠️ User not found, returning generic success');
       return NextResponse.json(
         { 
           message: 'If an account with that email exists, you will receive a password reset link.',
@@ -44,13 +47,13 @@ export async function POST(req: NextRequest) {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    console.log('Generated token:', resetToken.substring(0, 10) + '...');
+    console.log('🔑 Generated token:', resetToken.substring(0, 10) + '...');
 
     // Token expires in 1 hour
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
-    console.log('Token expires at:', expiresAt.toISOString());
+    console.log('⏰ Token expires at:', expiresAt.toISOString());
 
     // Save token to database
     const [savedToken] = await db.insert(passwordResetTokens).values({
@@ -60,14 +63,27 @@ export async function POST(req: NextRequest) {
       used: false,
     }).returning();
 
-    console.log('Token saved to database, ID:', savedToken.id);
+    console.log('💾 Token saved to database, ID:', savedToken.id);
 
     // Create reset URL
     const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    console.log('Password reset link:', resetUrl);
-    console.log('For user:', user.email);
+    console.log('🔗 Password reset link:', resetUrl);
+
+    // Send email
+    try {
+      await sendPasswordResetEmail({
+        to: user.email,
+        resetUrl: resetUrl,
+        userName: `${user.firstName} ${user.lastName}`,
+      });
+      console.log('✅ Password reset email sent to:', user.email);
+    } catch (emailError) {
+      console.error('❌ Failed to send email:', emailError);
+      // Don't fail the request if email fails - just log it
+      // In production, you might want to queue this for retry
+    }
 
     return NextResponse.json(
       { 
@@ -79,7 +95,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error('❌ Forgot password error:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
