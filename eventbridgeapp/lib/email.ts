@@ -12,7 +12,8 @@ interface PasswordResetEmailParams {
 export async function sendPasswordResetEmail({ to, resetUrl, userName }: PasswordResetEmailParams) {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'EventBridge <support@eventbridge.africa>',
+      from: 'EventBridge <onboarding@resend.dev>'
+,
       to: [to],
       subject: 'Reset Your Password - EventBridge',
       html: `
