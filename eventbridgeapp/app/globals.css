@@ -6,7 +6,7 @@
   --shades-black: #222222;
   --shades-black-5: #22222205;
   --shades-black-30: #2222224c;
-  
+
   /* Neutrals */
   --neutrals-01: #f7f7f7;
   --neutrals-02: #ebebeb;
@@ -16,21 +16,21 @@
   --neutrals-06: #b0b0b0;
   --neutrals-07: #717171;
   --neutrals-08: #5e5e5e;
-  
+
   /* Primary Colors */
   --primary-01: #ff7043;
   --primary-02: #cb5e21;
-  
+
   /* Errors */
   --errors-bg: #fef8f6;
   --errors-main: #c13515;
-  
+
   /* Accents */
   --accents-peach: #f9d9c8;
   --accents-orange: #d45b30;
   --accents-discount: #008a05;
   --accents-link: #004cc4;
-  
+
   /* Semantic Colors */
   --background: var(--shades-white);
   --foreground: var(--shades-black);
@@ -69,7 +69,7 @@
   --shades-black: #ffffff;
   --shades-black-5: #ffffff05;
   --shades-black-30: #ffffff4c;
-  
+
   /* Neutrals */
   --neutrals-01: #1a1a1a;
   --neutrals-02: #2d2d2d;
@@ -79,15 +79,15 @@
   --neutrals-06: #8c8c8c;
   --neutrals-07: #b0b0b0;
   --neutrals-08: #e0e0e0;
-  
+
   /* Primary Colors */
   --primary-01: #ff7043;
   --primary-02: #cb5e21;
-  
+
   /* Errors */
   --errors-bg: #3d1812;
   --errors-main: #ff6b4f;
-  
+
   /* Accents */
   --accents-peach: #f9a98b;
   --accents-orange: #ff7043;
@@ -102,7 +102,7 @@
     --shades-black: #ffffff;
     --shades-black-5: #ffffff05;
     --shades-black-30: #ffffff4c;
-    
+
     /* Neutrals */
     --neutrals-01: #1a1a1a;
     --neutrals-02: #2d2d2d;
@@ -112,15 +112,15 @@
     --neutrals-06: #8c8c8c;
     --neutrals-07: #b0b0b0;
     --neutrals-08: #e0e0e0;
-    
+
     /* Primary Colors */
     --primary-01: #ff7043;
     --primary-02: #cb5e21;
-    
+
     /* Errors */
     --errors-bg: #3d1812;
     --errors-main: #ff6b4f;
-    
+
     /* Accents */
     --accents-peach: #f9a98b;
     --accents-orange: #ff7043;
@@ -141,6 +141,7 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -152,6 +153,7 @@ body {
     transform: translateY(-100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -163,6 +165,7 @@ body {
     transform: translateX(0);
     opacity: 1;
   }
+
   to {
     transform: translateX(100%);
     opacity: 0;
@@ -173,6 +176,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -183,6 +187,7 @@ body {
     transform: scale(0.95);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -194,12 +199,15 @@ body {
     transform: scale(0.3);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.05);
   }
+
   70% {
     transform: scale(0.9);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -224,10 +232,13 @@ body {
 
 /* Footer Gradient Animations */
 @keyframes gradient-x {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
     background-size: 200% 200%;
   }
+
   50% {
     background-position: 100% 50%;
     background-size: 200% 200%;
@@ -235,10 +246,13 @@ body {
 }
 
 @keyframes gradient-x-reverse {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 100% 50%;
     background-size: 200% 200%;
   }
+
   50% {
     background-position: 0% 50%;
     background-size: 200% 200%;
