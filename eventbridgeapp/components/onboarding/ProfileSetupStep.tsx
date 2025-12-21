@@ -68,7 +68,7 @@ export default function ProfileSetupStep({
     <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-4xl font-bold text-shades-black mb-3">
+        <h1 className="text-4xl font-bold text-[#222222] mb-3">
           Welcome! Set up your service
           <br />
           provider profile
@@ -149,8 +149,8 @@ export default function ProfileSetupStep({
                 type="button"
                 onClick={() => toggleCategory(category)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${isSelected
-                    ? 'bg-primary-01 text-white'
-                    : 'bg-neutrals-03 dark:bg-neutrals-02 text-shades-black hover:bg-neutrals-04'
+                  ? 'bg-primary-01 text-white'
+                  : 'bg-neutrals-03 dark:bg-neutrals-02 text-shades-black hover:bg-neutrals-04'
                   }`}
               >
                 {isSelected && <Check className="w-4 h-4" />}

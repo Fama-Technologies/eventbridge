@@ -13,19 +13,19 @@ export default function ExploreCategories() {
     {
       title: 'Corporate',
       subtitle: 'Seminars, Catering, Team Building',
-      image: '/categories/corporate.jpg',
+      image: '/categories/Corporate.jpg',
       href: '/category/corporate',
     },
     {
       title: 'Parties',
       subtitle: 'Djs, Decor, Entertainments',
-      image: '/categories/parties.jpg',
+      image: '/categories/Parties.jpg',
       href: '/category/parties',
     },
     {
       title: 'Birthdays',
       subtitle: 'Bakers, Caterers, Entertainment',
-      image: '/categories/birthdays.jpg',
+      image: '/categories/Birthdays.jpg',
       href: '/category/birthdays',
     },
   ];
