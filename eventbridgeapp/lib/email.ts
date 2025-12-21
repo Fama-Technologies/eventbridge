@@ -1,7 +1,18 @@
 // lib/email.ts
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Defer Resend client initialization to runtime to allow builds without RESEND_API_KEY
+let resendInstance: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not set in environment variables');
+    }
+    resendInstance = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendInstance;
+}
 
 interface PasswordResetEmailParams {
   to: string;
@@ -11,9 +22,9 @@ interface PasswordResetEmailParams {
 
 export async function sendPasswordResetEmail({ to, resetUrl, userName }: PasswordResetEmailParams) {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: 'EventBridge <onboarding@resend.dev>'
-,
+      ,
       to: [to],
       subject: 'Reset Your Password - EventBridge',
       html: `
