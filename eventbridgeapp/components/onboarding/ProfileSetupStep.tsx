@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, MapPin, Plus, X, Check } from 'lucide-react';
+import { Camera, MapPin, Plus, X, Check, ArrowRight } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
 import { SERVICE_CATEGORIES } from './types';
 
@@ -68,7 +68,7 @@ export default function ProfileSetupStep({
     <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-4xl font-bold text-[#222222] mb-3">
+        <h1 className="text-4xl font-bold text-shades-black mb-3">
           Welcome! Set up your service
           <br />
           provider profile
@@ -105,7 +105,7 @@ export default function ProfileSetupStep({
           className="hidden"
         />
         <div>
-          <h3 className="font-semibold text-[#222222] mb-1">Profile Photo</h3>
+          <h3 className="font-semibold text-shades-black mb-1">Profile Photo</h3>
           <p className="text-sm text-neutrals-07 max-w-ls">
             Upload your business logo or a professional photo of yourself. <br />
             This will be the first
@@ -117,7 +117,7 @@ export default function ProfileSetupStep({
 
       {/* Business Name */}
       <div className="mb-8">
-        <label className="block text-sm font-semibold text-[#222222] mb-2">
+        <label className="block text-sm font-semibold text-shades-black mb-2">
           Business Name
         </label>
         <input
@@ -132,7 +132,7 @@ export default function ProfileSetupStep({
       {/* Service Categories */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-[#222222]">Service Categories</label>
+          <label className="text-sm font-semibold text-shades-black">Service Categories</label>
           <button
             type="button"
             onClick={() => setShowAllCategories(!showAllCategories)}
@@ -263,9 +263,7 @@ export default function ProfileSetupStep({
             className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

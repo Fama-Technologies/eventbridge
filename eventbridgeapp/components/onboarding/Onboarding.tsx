@@ -43,6 +43,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
           customPricingStructure: parsed.customPricingStructure || [],
           priceRange: parsed.priceRange || '',
           generalAvailability: parsed.generalAvailability || '',
+          experience: parsed.experience || '',
           agreedToTerms: parsed.agreedToTerms || false,
         }));
         if (parsed.currentStep) {
@@ -72,6 +73,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       customPricingStructure: data.customPricingStructure,
       priceRange: data.priceRange,
       generalAvailability: data.generalAvailability,
+      experience: data.experience,
       agreedToTerms: data.agreedToTerms,
       currentStep,
       completedSteps,
@@ -190,7 +192,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       <OnboardingSidebar currentStep={currentStep} completedSteps={completedSteps} />
 
       {/* Main Content */}
-      <main className="ml-64 min-h-screen p-8 lg:p-12">
+      <main className="ml-64 min-h-screen p-8 lg:p-12 bg-shades-white dark:bg-neutrals-02">
         <div className="max-w-3xl mx-auto py-8">
           {renderStep()}
         </div>

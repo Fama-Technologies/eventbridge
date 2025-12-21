@@ -14,6 +14,7 @@ export interface OnboardingData {
   customPricingStructure: string[];
   priceRange: string;
   generalAvailability: string;
+  experience: string;
   serviceGallery: File[];
   serviceGalleryPreviews: string[];
 
@@ -48,6 +49,7 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   customPricingStructure: [],
   priceRange: '',
   generalAvailability: '',
+  experience: '',
   serviceGallery: [],
   serviceGalleryPreviews: [],
   verificationDocuments: [],

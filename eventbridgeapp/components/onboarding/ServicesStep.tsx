@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Calendar, CloudUpload, Plus, X, Check, Trash2 } from 'lucide-react';
+import { Calendar, Upload, CloudUpload, Plus, X, Check, Trash2, ArrowRight } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
 import { PRICING_STRUCTURES } from './types';
 
@@ -135,8 +135,8 @@ export default function ServicesStep({
                   type="button"
                   onClick={() => togglePricingStructure(structure)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isSelected
-                      ? 'bg-primary-01 text-white'
-                      : 'bg-neutrals-03 dark:bg-neutrals-02 text-shades-black hover:bg-neutrals-04 border border-neutrals-04'
+                    ? 'bg-primary-01 text-white'
+                    : 'bg-neutrals-03 dark:bg-neutrals-02 text-shades-black hover:bg-neutrals-04 border border-neutrals-04'
                     }`}
                 >
                   {structure}
@@ -225,20 +225,39 @@ export default function ServicesStep({
       </div>
 
       {/* General Availability */}
-      <div className="mb-8">
-        <label className="block text-sm font-semibold text-shades-black mb-2">
-          General Availability
-        </label>
-        <div className="relative">
-          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutrals-06" />
-          <input
-            type="text"
-            value={data.generalAvailability}
-            onChange={(e) => updateData({ generalAvailability: e.target.value })}
-            placeholder="e.g. Weekends, Mon-Fri after 5pm, or Specific Dates"
-            className="w-full pl-12 pr-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
-          />
+      <div className='grid grid-cols-3 gap-6 mb-8'>
+        <div className="col-span-2">
+          <label className="block text-sm font-semibold text-shades-black mb-2">
+            General Availability
+          </label>
+          <div className="relative">
+            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutrals-06" />
+            <input
+              type="text"
+              value={data.generalAvailability}
+              onChange={(e) => updateData({ generalAvailability: e.target.value })}
+              placeholder="e.g. Weekends, Mon-Fri after 5pm, or Specific Dates"
+              className="w-full pl-12 pr-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
+            />
+
+          </div>
         </div>
+        <div className="col-span-1">
+          <label className="block text-sm font-semibold text-shades-black mb-2">
+            Experience
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={data.experience}
+              onChange={(e) => updateData({ experience: e.target.value })}
+              placeholder="e.g. 5 years"
+              className="w-full px-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
+            />
+
+          </div>
+        </div>
+
       </div>
 
       {/* Service Gallery */}
@@ -314,9 +333,7 @@ export default function ServicesStep({
             className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
