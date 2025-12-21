@@ -105,7 +105,7 @@ export default function ProfileSetupStep({
           className="hidden"
         />
         <div>
-          <h3 className="font-semibold text-shades-black mb-1">Profile Photo</h3>
+          <h3 className="font-semibold text-[#222222] mb-1">Profile Photo</h3>
           <p className="text-sm text-neutrals-07 max-w-xs">
             Upload your business logo or a professional photo of yourself. This will be the first
             thing organizers see.

@@ -45,7 +45,7 @@ export default function OnboardingSidebar({ currentStep, completedSteps }: Onboa
             return (
               <li key={step.id}>
                 <div
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${status === 'in-progress'
+                  className={`flex items-center gap-3 px-4 py-3 rounded-[50px] transition-all ${status === 'in-progress'
                     ? 'bg-neutrals-03 dark:bg-neutrals-02'
                     : ''
                     }`}
