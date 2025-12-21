@@ -2,11 +2,13 @@
 import { SignJWT, jwtVerify } from 'jose';
 import type { JWTPayload as JoseJWTPayload } from 'jose';
 
-if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error('NEXTAUTH_SECRET is not set');
+// Defer JWT secret initialization to runtime to allow builds without NEXTAUTH_SECRET
+function getJWTSecret(): Uint8Array {
+  if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('NEXTAUTH_SECRET is not set in environment variables');
+  }
+  return new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
 }
-
-const JWT_SECRET = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
 
 export interface JWTPayload extends JoseJWTPayload {
   userId: number;
@@ -19,12 +21,12 @@ export async function createToken(payload: JWTPayload): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(JWT_SECRET);
+    .sign(getJWTSecret());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJWTSecret());
     return payload as JWTPayload;
   } catch {
     return null;
