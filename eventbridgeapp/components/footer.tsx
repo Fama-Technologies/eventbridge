@@ -10,7 +10,7 @@ export default function Footer() {
       {/* background: linear-gradient(90deg, #222222 36.07%, #CB5E21 71.72%); */}
 
       <div className="max-w-7xl mx-auto px-6 pt-12">
-        <div className="relative overflow-hidden rounded-2xl mb-16 flex bg-gradient-to-r from-[#222222] via-[#3d2f1f] to-[#CB5E21] ">
+        <div className="relative overflow-hidden rounded-2xl mb-16 flex flex-col md:flex-row bg-gradient-to-r from-[#222222] via-[#3d2f1f] to-[#CB5E21]">
           {/* Left side - Gradient background with text */}
           <div className="flex-1 p-8 md:p-10">
             <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
@@ -23,7 +23,7 @@ export default function Footer() {
           </div>
 
           {/* Right side - Animated gradient button area */}
-          <div className="bg-[#CB5E21] shadow-[0px_4px_40px_0px_rgba(0,0,0,0.4)]  rounded-l-[40px] flex justify-center items-center">
+          <div className="bg-[#CB5E21] shadow-[0px_4px_40px_0px_rgba(0,0,0,0.4)] md:rounded-l-[40px] flex justify-center items-center w-full md:w-auto py-6 md:py-0">
             <Link
               href="/get-started"
               className="group relative flex items-center justify-center px-12 md:px-20 min-w-[200px] md:min-w-[280px] overflow-hidden"
