@@ -31,12 +31,31 @@ export default function Footer() {
               {/* Animated gradient background */}
 
               <span className="relative flex items-center gap-6 text-white font-semibold text-lg whitespace-nowrap">
-                Get Started <span className="text-2xl transition-transform group-hover:translate-x-1 animate-bounce">→</span>
+                Get Started
+                <span
+                  className="text-2xl transition-transform group-hover:translate-x-1"
+                  style={{
+                    animation: 'pointRight 1.5s ease-in-out infinite',
+                  }}
+                >
+                  →
+                </span>
               </span>
             </Link>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes pointRight {
+          0%, 100% {
+            transform: scale(1) translateX(0);
+          }
+          50% {
+            transform: scale(1.3) translateX(8px);
+          }
+        }
+      `}</style>
 
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-6">
