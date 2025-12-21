@@ -68,7 +68,7 @@ export default function ProfileSetupStep({
     <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-4xl font-bold text-[##222222] mb-3">
+        <h1 className="text-4xl font-bold text-[#222222] mb-3">
           Welcome! Set up your service
           <br />
           provider profile
