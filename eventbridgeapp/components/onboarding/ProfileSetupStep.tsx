@@ -106,8 +106,9 @@ export default function ProfileSetupStep({
         />
         <div>
           <h3 className="font-semibold text-[#222222] mb-1">Profile Photo</h3>
-          <p className="text-sm text-neutrals-07 max-w-xs">
-            Upload your business logo or a professional photo of yourself. This will be the first
+          <p className="text-sm text-neutrals-07 max-w-ls">
+            Upload your business logo or a professional photo of yourself. <br />
+            This will be the first
             thing organizers see.
           </p>
           <p className="text-xs text-neutrals-06 mt-1">Supported: JPG, PNG. Max 5MB.</p>
@@ -116,7 +117,7 @@ export default function ProfileSetupStep({
 
       {/* Business Name */}
       <div className="mb-8">
-        <label className="block text-sm font-semibold text-shades-black mb-2">
+        <label className="block text-sm font-semibold text-[#222222] mb-2">
           Business Name
         </label>
         <input
@@ -131,7 +132,7 @@ export default function ProfileSetupStep({
       {/* Service Categories */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-shades-black">Service Categories</label>
+          <label className="text-sm font-semibold text-[#222222]">Service Categories</label>
           <button
             type="button"
             onClick={() => setShowAllCategories(!showAllCategories)}
