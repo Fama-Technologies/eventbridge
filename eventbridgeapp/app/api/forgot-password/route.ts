@@ -1,9 +1,9 @@
-// app/api/forgot-password/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, passwordResetTokens } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, gt, sql } from 'drizzle-orm';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { generateSecureToken, hashToken, isValidEmail } from '@/lib/auth-utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,98 +12,147 @@ export async function POST(req: NextRequest) {
 
     console.log('🔐 Password reset requested for:', email);
 
-    if (!email) {
+    // Generic message to prevent account enumeration
+    const genericMessage = 'If an account with that email exists, you will receive a password reset link.';
+
+    // Validate email format
+    if (!email || !isValidEmail(email)) {
+      console.log('Invalid email format');
       return NextResponse.json(
-        { message: 'Email is required' },
-        { status: 400 }
+        { message: genericMessage, success: true },
+        { status: 200 }
       );
     }
 
-    // Find user by email - use direct select to avoid schema issues
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find user by email
     const [user] = await db
-      .select()
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
       .from(users)
-      .where(eq(users.email, email.toLowerCase()))
+      .where(eq(users.email, normalizedEmail))
       .limit(1);
 
     console.log('👤 User found:', user ? 'Yes' : 'No');
 
     // Always return success to prevent email enumeration
     if (!user) {
-      console.log('⚠️ User not found, returning generic success');
+      console.log('User not found, returning generic success');
       return NextResponse.json(
-        { 
-          message: 'If an account with that email exists, you will receive a password reset link.',
-          success: true 
-        },
+        { message: genericMessage, success: true },
         { status: 200 }
       );
     }
 
-    // Generate secure random token using Web Crypto API
-    const tokenBytes = new Uint8Array(32);
-    crypto.getRandomValues(tokenBytes);
-    const resetToken = Array.from(tokenBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    // Rate limiting: Check recent requests (max 3 per hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     
-    console.log('🔑 Generated token:', resetToken.substring(0, 10) + '...');
+    const recentRequests = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.userId, user.id),
+          gt(passwordResetTokens.createdAt, oneHourAgo)
+        )
+      );
+
+    const requestCount = recentRequests[0]?.count || 0;
+    console.log('Recent reset requests:', requestCount);
+
+    if (requestCount >= 3) {
+      console.log('Rate limit exceeded');
+      // Still return success to prevent enumeration
+      return NextResponse.json(
+        { message: genericMessage, success: true },
+        { status: 200 }
+      );
+    }
+
+    // Generate secure token (NOT HASHED - this is sent to user)
+    const resetToken = generateSecureToken();
+    
+    // Hash the token for storage (ONLY HASH GOES IN DB)
+    const tokenHash = hashToken(resetToken);
+    
+    console.log('Generated token (first 10 chars):', resetToken.substring(0, 10) + '...');
+    console.log('Token hash (first 10 chars):', tokenHash.substring(0, 10) + '...');
 
     // Token expires in 1 hour
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
-
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     console.log('⏰ Token expires at:', expiresAt.toISOString());
 
-    // Save token to database
-    const [savedToken] = await db.insert(passwordResetTokens).values({
-      userId: user.id,
-      token: resetToken,
-      expiresAt: expiresAt,
-      used: false,
-    }).returning();
+    // Invalidate any existing unused tokens for this user
+    await db
+      .update(passwordResetTokens)
+      .set({ used: true })
+      .where(
+        and(
+          eq(passwordResetTokens.userId, user.id),
+          eq(passwordResetTokens.used, false)
+        )
+      );
+
+    console.log('🗑️ Invalidated previous tokens');
+
+    // Save HASHED token to database
+    const [savedToken] = await db
+      .insert(passwordResetTokens)
+      .values({
+        userId: user.id,
+        tokenHash: tokenHash, // Store HASH, not plain token
+        expiresAt: expiresAt,
+        used: false,
+      })
+      .returning({ id: passwordResetTokens.id });
 
     console.log('💾 Token saved to database, ID:', savedToken.id);
 
-    // Create reset URL
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Create reset URL with PLAIN token (not hashed)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    console.log('🔗 Password reset link:', resetUrl);
+    console.log('🔗 Password reset link generated');
 
     // Send email
     try {
       await sendPasswordResetEmail({
         to: user.email,
         resetUrl: resetUrl,
-        userName: `${user.firstName} ${user.lastName}`,
+        userName: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User',
+        expiresAt: expiresAt,
       });
-      console.log('✅ Password reset email sent to:', user.email);
+      console.log('Password reset email sent to:', user.email);
     } catch (emailError) {
-      console.error('❌ Failed to send email:', emailError);
-      // Don't fail the request if email fails - just log it
-      // In production, you might want to queue this for retry
+      console.error('Failed to send email:', emailError);
+      // Log but don't expose to user
     }
 
+    // Return response
     return NextResponse.json(
-      { 
-        message: 'If an account with that email exists, you will receive a password reset link.',
+      {
+        message: genericMessage,
         success: true,
-        // Show reset URL in development mode only
-        resetUrl: process.env.NODE_ENV === 'development' ? resetUrl : undefined
+        // Only show reset URL in development
+        ...(process.env.NODE_ENV === 'development' && { resetUrl }),
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error('❌ Forgot password error:', error);
+    console.error('Forgot password error:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     return NextResponse.json(
-      { message: 'Internal server error. Please try again later.' },
+      { message: 'Internal server error. Please try again later.', success: false },
       { status: 500 }
     );
   }
