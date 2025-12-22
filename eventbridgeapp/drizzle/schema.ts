@@ -157,6 +157,21 @@ export const vendorServices = pgTable('vendor_services', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+/* ===================== SERVICE GALLERY (ADDED) ===================== */
+export const serviceGallery = pgTable('service_gallery', {
+  id: serial('id').primaryKey(),
+
+  serviceId: integer('service_id')
+    .notNull()
+    .references(() => vendorServices.id, { onDelete: 'cascade' }),
+
+  mediaUrl: text('media_url').notNull(),
+  mediaType: text('media_type').notNull(), // 'image' | 'video'
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== VENDOR PORTFOLIO ===================== */
 export const vendorPortfolio = pgTable('vendor_portfolio', {
   id: serial('id').primaryKey(),
 
@@ -188,7 +203,8 @@ export const bookings = pgTable('bookings', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
 
-  serviceId: integer('service_id').references(() => vendorServices.id),
+  serviceId: integer('service_id')
+    .references(() => vendorServices.id),
 
   bookingDate: timestamp('booking_date').notNull(),
   startTime: timestamp('start_time').notNull(),
