@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { FileText } from 'lucide-react';
+import LoadingDots from '../ui/LoadingDots';
 
 interface PDFPreviewProps {
     file: File;
@@ -66,10 +67,18 @@ export default function PDFPreview({ file, className = '' }: PDFPreviewProps) {
         };
     }, [file]);
 
-    if (loading || error) {
+    if (loading) {
         return (
             <div className={`flex items-center justify-center bg-neutrals-03 ${className}`}>
-                <FileText className={`w-6 h-6 text-neutrals-07 ${loading ? 'animate-pulse' : ''}`} />
+                <LoadingDots size="sm" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className={`flex items-center justify-center bg-neutrals-03 ${className}`}>
+                <FileText className="w-6 h-6 text-neutrals-07" />
             </div>
         );
     }

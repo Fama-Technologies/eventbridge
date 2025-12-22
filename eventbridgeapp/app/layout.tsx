@@ -4,7 +4,9 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/providers/theme-provider";
-import { ToastProvider } from "@/components/ui/toast"; 
+import { ToastProvider } from "@/components/ui/toast";
+import { LoadingProvider } from "@/components/providers/LoadingProvider";
+import { SonnerProvider } from "@/components/providers/SonnerProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,9 +54,12 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
         <ThemeProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <LoadingProvider>
+            <ToastProvider>
+              <SonnerProvider />
+              {children}
+            </ToastProvider>
+          </LoadingProvider>
         </ThemeProvider>
       </body>
     </html>
