@@ -1,8 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Upload, FileText, Check, Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Shield, Clock, FileText, Building2, MapPin, ArrowRight, X, Upload } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
+import Image from 'next/image';
+import PDFPreview from './PDFPreview';
 
 export default function VerifyStep({
   data,
@@ -12,219 +14,403 @@ export default function VerifyStep({
   onSaveDraft,
   isLoading,
 }: OnboardingStepProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedDocs, setUploadedDocs] = useState<
-    { name: string; size: string; status: 'uploaded' | 'pending' | 'verified' }[]
-  >([]);
+  const businessLicenseRef = useRef<HTMLInputElement>(null);
+  const tinDocumentRef = useRef<HTMLInputElement>(null);
+  const locationProofRef = useRef<HTMLInputElement>(null);
 
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const [businessLicenseFiles, setBusinessLicenseFiles] = useState<File[]>([]);
+  const [tinDocumentFiles, setTinDocumentFiles] = useState<File[]>([]);
+  const [locationProofFiles, setLocationProofFiles] = useState<File[]>([]);
+
+  const [businessLicensePreviews, setBusinessLicensePreviews] = useState<string[]>([]);
+  const [tinDocumentPreviews, setTinDocumentPreviews] = useState<string[]>([]);
+  const [locationProofPreviews, setLocationProofPreviews] = useState<string[]>([]);
+
+  const [dragActive, setDragActive] = useState<{
+    businessLicense: boolean;
+    tinDocument: boolean;
+    locationProof: boolean;
+  }>({
+    businessLicense: false,
+    tinDocument: false,
+    locationProof: false,
+  });
+
+  const createPreviewUrl = (file: File): string | null => {
+    if (file.type.startsWith('image/')) {
+      return URL.createObjectURL(file);
+    }
+    return null;
+  };
+
+  const handleFileUpload = (
+    files: FileList | null,
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
+  ) => {
     if (files && files.length > 0) {
-      const newDocs = Array.from(files).map((file) => ({
-        name: file.name,
-        size: `${(file.size / 1024).toFixed(1)} KB`,
-        status: 'uploaded' as const,
-      }));
-      setUploadedDocs([...uploadedDocs, ...newDocs]);
+      const newFiles = Array.from(files);
+      const newPreviews = newFiles.map(file => createPreviewUrl(file) || '');
+
+      if (fileType === 'businessLicense') {
+        setBusinessLicenseFiles(prev => [...prev, ...newFiles]);
+        setBusinessLicensePreviews(prev => [...prev, ...newPreviews]);
+      } else if (fileType === 'tinDocument') {
+        setTinDocumentFiles(prev => [...prev, ...newFiles]);
+        setTinDocumentPreviews(prev => [...prev, ...newPreviews]);
+      } else if (fileType === 'locationProof') {
+        setLocationProofFiles(prev => [...prev, ...newFiles]);
+        setLocationProofPreviews(prev => [...prev, ...newPreviews]);
+      }
+
       updateData({
-        verificationDocuments: [...data.verificationDocuments, ...Array.from(files)],
+        verificationDocuments: [...data.verificationDocuments, ...newFiles],
       });
     }
   };
 
-  const removeDocument = (index: number) => {
-    setUploadedDocs(uploadedDocs.filter((_, i) => i !== index));
-    updateData({
-      verificationDocuments: data.verificationDocuments.filter((_, i) => i !== index),
-    });
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      businessLicensePreviews.forEach(url => url && URL.revokeObjectURL(url));
+      tinDocumentPreviews.forEach(url => url && URL.revokeObjectURL(url));
+      locationProofPreviews.forEach(url => url && URL.revokeObjectURL(url));
+    };
+  }, [businessLicensePreviews, tinDocumentPreviews, locationProofPreviews]);
+
+  const handleDrag = (
+    e: React.DragEvent<HTMLDivElement>,
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(prev => ({ ...prev, [fileType]: true }));
+    } else if (e.type === 'dragleave') {
+      setDragActive(prev => ({ ...prev, [fileType]: false }));
+    }
   };
 
-  const isValid = data.agreedToTerms;
+  const handleDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(prev => ({ ...prev, [fileType]: false }));
+
+    handleFileUpload(e.dataTransfer.files, fileType);
+  };
+
+  const handleBoxClick = (
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
+  ) => {
+    if (fileType === 'businessLicense') {
+      businessLicenseRef.current?.click();
+    } else if (fileType === 'tinDocument') {
+      tinDocumentRef.current?.click();
+    } else if (fileType === 'locationProof') {
+      locationProofRef.current?.click();
+    }
+  };
+
+  const removeFile = (
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof',
+    index: number
+  ) => {
+    if (fileType === 'businessLicense') {
+      const previewUrl = businessLicensePreviews[index];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+      const updatedFiles = businessLicenseFiles.filter((_, i) => i !== index);
+      const updatedPreviews = businessLicensePreviews.filter((_, i) => i !== index);
+      setBusinessLicenseFiles(updatedFiles);
+      setBusinessLicensePreviews(updatedPreviews);
+    } else if (fileType === 'tinDocument') {
+      const previewUrl = tinDocumentPreviews[index];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+      const updatedFiles = tinDocumentFiles.filter((_, i) => i !== index);
+      const updatedPreviews = tinDocumentPreviews.filter((_, i) => i !== index);
+      setTinDocumentFiles(updatedFiles);
+      setTinDocumentPreviews(updatedPreviews);
+    } else if (fileType === 'locationProof') {
+      const previewUrl = locationProofPreviews[index];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+      const updatedFiles = locationProofFiles.filter((_, i) => i !== index);
+      const updatedPreviews = locationProofPreviews.filter((_, i) => i !== index);
+      setLocationProofFiles(updatedFiles);
+      setLocationProofPreviews(updatedPreviews);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-4xl font-bold text-shades-black mb-3">
-          Verify your business
-        </h1>
-        <p className="text-neutrals-07">
-          Complete verification to build trust with organizers and get priority in search results.
-        </p>
-      </div>
-
-      {/* Verification Benefits */}
-      <div className="bg-gradient-to-r from-primary-01/10 to-accents-peach/30 dark:from-primary-01/20 dark:to-accents-peach/10 rounded-lg p-6 mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-primary-01 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-shades-black">Why get verified?</h3>
-            <p className="text-xs text-neutrals-07">Stand out from the competition</p>
+      <div className="mb-10 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-shades-black mb-3">
+            Boost trust with verification{' '}
+            <span className="text-neutrals-06">(optional)</span>
+          </h1>
+          <div className="flex items-start gap-2 text-neutrals-07">
+            <Shield className="w-5 h-5 text-primary-01 flex-shrink-0 mt-0.5" />
+            <p>
+              Verified vendors get{' '}
+              <span className="text-primary-01 font-semibold">2x more leads</span> and a
+              'Trusted' badge on their profile. You can do this later, but we recommend
+              starting now to rank higher in search results.
+            </p>
           </div>
         </div>
-        <ul className="grid grid-cols-2 gap-3 text-sm">
-          <li className="flex items-center gap-2 text-shades-black">
-            <Check className="w-4 h-4 text-accents-discount" />
-            Verified badge on profile
-          </li>
-          <li className="flex items-center gap-2 text-shades-black">
-            <Check className="w-4 h-4 text-accents-discount" />
-            Higher search ranking
-          </li>
-          <li className="flex items-center gap-2 text-shades-black">
-            <Check className="w-4 h-4 text-accents-discount" />
-            Priority support
-          </li>
-          <li className="flex items-center gap-2 text-shades-black">
-            <Check className="w-4 h-4 text-accents-discount" />
-            Increased trust
-          </li>
-        </ul>
-      </div>
-
-      {/* Document Upload */}
-      <div className="mb-8">
-        <label className="block text-sm font-semibold text-shades-black mb-2">
-          Upload Verification Documents
-        </label>
-        <p className="text-xs text-neutrals-07 mb-4">
-          Please upload any of the following: Business registration, Tax ID, Professional license,
-          or Government-issued ID.
-        </p>
-
-        {/* Upload Zone */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-neutrals-05 rounded-lg p-8 text-center cursor-pointer hover:border-primary-01 transition-colors bg-neutrals-02/50 dark:bg-neutrals-03/50 mb-4"
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={isLoading}
+          className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-primary-01 transition-colors disabled:opacity-50"
         >
-          <Upload className="w-10 h-10 text-neutrals-06 mx-auto mb-3" />
-          <p className="text-sm text-shades-black font-medium">Click to upload documents</p>
-          <p className="text-xs text-neutrals-06 mt-1">PDF, JPG, PNG up to 10MB each</p>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          multiple
-          onChange={handleDocumentUpload}
-          className="hidden"
-        />
+          Skip
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
 
-        {/* Uploaded Documents List */}
-        {uploadedDocs.length > 0 && (
-          <div className="space-y-2">
-            {uploadedDocs.map((doc, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-neutrals-02 dark:bg-neutrals-03 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-neutrals-03 dark:bg-neutrals-04 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-neutrals-07" />
+      {/* Review Process Info */}
+      <div className="flex items-start gap-3 p-4 bg-accents-peach/30 dark:bg-accents-peach/10 rounded-lg mb-8 border border-primary-01/20">
+        <Image src="/icons/vector.svg" alt="Clock" width={20} height={20} className="flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-shades-black">
+            Review Process: 24-48 Hours
+          </p>
+          <p className="text-xs text-neutrals-07 mt-1">
+            Once submitted, our team will review your documents manually to ensure compliance
+            with local regulations.
+          </p>
+        </div>
+      </div>
+
+      {/* Upload Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {/* Business License */}
+        <div className="space-y-3">
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.businessLicense
+              ? 'border-primary-01 bg-primary-01/5'
+              : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
+              }`}
+            onClick={() => handleBoxClick('businessLicense')}
+            onDragEnter={(e) => handleDrag(e, 'businessLicense')}
+            onDragLeave={(e) => handleDrag(e, 'businessLicense')}
+            onDragOver={(e) => handleDrag(e, 'businessLicense')}
+            onDrop={(e) => handleDrop(e, 'businessLicense')}
+          >
+            <div className="w-16 h-16 rounded-full bg-neutrals-03 dark:bg-neutrals-02 flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-8 h-8 text-neutrals-07" />
+            </div>
+            <h3 className="text-base font-semibold text-shades-black mb-2">Business License</h3>
+            <p className="text-xs text-neutrals-07 mb-4">
+              {dragActive.businessLicense
+                ? 'Drop files here...'
+                : 'Click to upload or drag and drop'}
+            </p>
+            <p className="text-xs text-neutrals-06">PDF or JPG (max. 10MB each)</p>
+            <input
+              ref={businessLicenseRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg"
+              multiple
+              onChange={(e) => handleFileUpload(e.target.files, 'businessLicense')}
+              className="hidden"
+            />
+          </div>
+          {businessLicenseFiles.length > 0 && (
+            <div className="space-y-2">
+              {businessLicenseFiles.map((file, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 bg-neutrals-02 rounded-lg group">
+                  {/* Preview thumbnail */}
+                  <div className="w-16 h-16 rounded-lg bg-neutrals-03 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {file.type === 'application/pdf' ? (
+                      <PDFPreview file={file} className="w-full h-full" />
+                    ) : businessLicensePreviews[index] ? (
+                      <img
+                        src={businessLicensePreviews[index]}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <FileText className="w-6 h-6 text-neutrals-07" />
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-shades-black">{doc.name}</p>
-                    <p className="text-xs text-neutrals-06">{doc.size}</p>
+
+                  {/* File info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-shades-black truncate">{file.name}</p>
+                    <p className="text-xs text-neutrals-06 mt-0.5">{formatFileSize(file.size)}</p>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${doc.status === 'verified'
-                        ? 'bg-accents-discount/10 text-accents-discount'
-                        : doc.status === 'pending'
-                          ? 'bg-yellow-500/10 text-yellow-600'
-                          : 'bg-neutrals-04 text-neutrals-07'
-                      }`}
-                  >
-                    {doc.status === 'verified'
-                      ? 'Verified'
-                      : doc.status === 'pending'
-                        ? 'Pending Review'
-                        : 'Uploaded'}
-                  </span>
+
+                  {/* Remove button */}
                   <button
                     type="button"
-                    onClick={() => removeDocument(index)}
-                    className="text-neutrals-06 hover:text-errors-main transition-colors"
+                    onClick={() => removeFile('businessLicense', index)}
+                    className="p-1.5 hover:bg-neutrals-04 rounded-lg transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
                   >
-                    ×
+                    <X className="w-4 h-4 text-neutrals-07" />
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Profile Summary */}
-      <div className="mb-8">
-        <h3 className="text-sm font-semibold text-shades-black mb-4">Profile Summary</h3>
-        <div className="bg-neutrals-02 dark:bg-neutrals-03 rounded-lg p-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-neutrals-07">Business Name</p>
-              <p className="font-medium text-shades-black">
-                {data.businessName || 'Not provided'}
-              </p>
+              ))}
             </div>
-            <div>
-              <p className="text-neutrals-07">Location</p>
-              <p className="font-medium text-shades-black">
-                {data.primaryLocation || 'Not provided'}
-              </p>
-            </div>
-            <div>
-              <p className="text-neutrals-07">Categories</p>
-              <p className="font-medium text-shades-black">
-                {data.serviceCategories.slice(0, 2).join(', ')}
-                {data.serviceCategories.length > 2 &&
-                  ` +${data.serviceCategories.length - 2} more`}
-              </p>
-            </div>
-            <div>
-              <p className="text-neutrals-07">Price Range</p>
-              <p className="font-medium text-shades-black">
-                UGX {data.priceRange || 'Not set'}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
 
-      {/* Terms Agreement */}
-      <div className="mb-10">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={data.agreedToTerms}
-            onChange={(e) => updateData({ agreedToTerms: e.target.checked })}
-            className="mt-1 h-5 w-5 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01"
-          />
-          <span className="text-sm text-shades-black">
-            I confirm that all information provided is accurate and I agree to the{' '}
-            <a href="/terms" className="text-accents-link hover:underline">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="/privacy" className="text-accents-link hover:underline">
-              Privacy Policy
-            </a>
-            . I understand that providing false information may result in account suspension.
-          </span>
-        </label>
-      </div>
+        {/* TIN Document */}
+        <div className="space-y-3">
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.tinDocument
+              ? 'border-primary-01 bg-primary-01/5'
+              : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
+              }`}
+            onClick={() => handleBoxClick('tinDocument')}
+            onDragEnter={(e) => handleDrag(e, 'tinDocument')}
+            onDragLeave={(e) => handleDrag(e, 'tinDocument')}
+            onDragOver={(e) => handleDrag(e, 'tinDocument')}
+            onDrop={(e) => handleDrop(e, 'tinDocument')}
+          >
+            <div className="w-16 h-16 rounded-full bg-neutrals-03 dark:bg-neutrals-02 flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-8 h-8 text-neutrals-07" />
+            </div>
+            <h3 className="text-base font-semibold text-shades-black mb-2">TIN Document</h3>
+            <p className="text-xs text-neutrals-07 mb-4">
+              {dragActive.tinDocument
+                ? 'Drop files here...'
+                : 'Click to upload or drag and drop'}
+            </p>
+            <p className="text-xs text-neutrals-06">PDF or JPG (max. 10MB each)</p>
+            <input
+              ref={tinDocumentRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg"
+              multiple
+              onChange={(e) => handleFileUpload(e.target.files, 'tinDocument')}
+              className="hidden"
+            />
+          </div>
+          {tinDocumentFiles.length > 0 && (
+            <div className="space-y-2">
+              {tinDocumentFiles.map((file, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 bg-neutrals-02 rounded-lg group">
+                  {/* Preview thumbnail */}
+                  <div className="w-16 h-16 rounded-lg bg-neutrals-03 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {file.type === 'application/pdf' ? (
+                      <PDFPreview file={file} className="w-full h-full" />
+                    ) : tinDocumentPreviews[index] ? (
+                      <img
+                        src={tinDocumentPreviews[index]}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <FileText className="w-6 h-6 text-neutrals-07" />
+                    )}
+                  </div>
 
-      {/* Info Alert */}
-      <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-10 border border-blue-200 dark:border-blue-800">
-        <AlertCircle className="w-5 h-5 text-accents-link flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm text-shades-black font-medium">What happens next?</p>
-          <p className="text-xs text-neutrals-07 mt-1">
-            After submitting, our team will review your profile and documents within 24-48 hours.
-            You'll receive an email notification once your profile is approved.
-          </p>
+                  {/* File info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-shades-black truncate">{file.name}</p>
+                    <p className="text-xs text-neutrals-06 mt-0.5">{formatFileSize(file.size)}</p>
+                  </div>
+
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removeFile('tinDocument', index)}
+                    className="p-1.5 hover:bg-neutrals-04 rounded-lg transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-4 h-4 text-neutrals-07" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Location Proof */}
+        <div className="space-y-3">
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.locationProof
+              ? 'border-primary-01 bg-primary-01/5'
+              : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
+              }`}
+            onClick={() => handleBoxClick('locationProof')}
+            onDragEnter={(e) => handleDrag(e, 'locationProof')}
+            onDragLeave={(e) => handleDrag(e, 'locationProof')}
+            onDragOver={(e) => handleDrag(e, 'locationProof')}
+            onDrop={(e) => handleDrop(e, 'locationProof')}
+          >
+            <div className="w-16 h-16 rounded-full bg-neutrals-03 dark:bg-neutrals-02 flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-8 h-8 text-neutrals-07" />
+            </div>
+            <h3 className="text-base font-semibold text-shades-black mb-2">Location Proof</h3>
+            <p className="text-xs text-neutrals-07 mb-4">
+              {dragActive.locationProof
+                ? 'Drop files here...'
+                : 'Click to upload or drag and drop'}
+            </p>
+            <p className="text-xs text-neutrals-06">PDF or JPG (max. 10MB each)</p>
+            <input
+              ref={locationProofRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg"
+              multiple
+              onChange={(e) => handleFileUpload(e.target.files, 'locationProof')}
+              className="hidden"
+            />
+          </div>
+          {locationProofFiles.length > 0 && (
+            <div className="space-y-2">
+              {locationProofFiles.map((file, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 bg-neutrals-02 rounded-lg group">
+                  {/* Preview thumbnail */}
+                  <div className="w-16 h-16 rounded-lg bg-neutrals-03 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {file.type === 'application/pdf' ? (
+                      <PDFPreview file={file} className="w-full h-full" />
+                    ) : locationProofPreviews[index] ? (
+                      <img
+                        src={locationProofPreviews[index]}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <FileText className="w-6 h-6 text-neutrals-07" />
+                    )}
+                  </div>
+
+                  {/* File info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-shades-black truncate">{file.name}</p>
+                    <p className="text-xs text-neutrals-06 mt-0.5">{formatFileSize(file.size)}</p>
+                  </div>
+
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removeFile('locationProof', index)}
+                    className="p-1.5 hover:bg-neutrals-04 rounded-lg transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-4 h-4 text-neutrals-07" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -233,40 +419,27 @@ export default function VerifyStep({
 
       {/* Actions */}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isLoading}
-          className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
-        >
-          Back
-        </button>
+        <div className="flex items-center gap-2 text-sm text-neutrals-07">
+          <Clock className="w-4 h-4 text-accents-discount" />
+          <span>Approval in 24-48 hours – start getting leads today</span>
+        </div>
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={onSaveDraft}
+            onClick={onNext}
             disabled={isLoading}
             className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
           >
-            Save Draft
+            Skip & Finish
           </button>
           <button
             type="button"
             onClick={onNext}
-            disabled={!isValid || isLoading}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                Complete Setup
-                <Check className="w-4 h-4" />
-              </>
-            )}
+            Submit for Review
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

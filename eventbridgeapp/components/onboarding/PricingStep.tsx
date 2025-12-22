@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DollarSign, Clock, Users, Percent, Plus, X, Check, Info } from 'lucide-react';
+import { DollarSign, Clock, Users, Percent, Plus, X, Check, Info, ArrowRight } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
 
 interface PricingTier {
@@ -81,11 +81,22 @@ export default function PricingStep({
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-4xl font-bold text-shades-black mb-3">Set your pricing</h1>
-        <p className="text-neutrals-07">
-          Define your service packages and pricing options. You can always update these later.
-        </p>
+      <div className="mb-10 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-shades-black mb-3">Set your pricing</h1>
+          <p className="text-neutrals-07">
+            Define your service packages and pricing options. You can always update these later.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={isLoading}
+          className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-primary-01 transition-colors disabled:opacity-50"
+        >
+          Skip
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Summary from previous steps */}
@@ -301,13 +312,19 @@ export default function PricingStep({
           <button
             type="button"
             onClick={onNext}
+            disabled={isLoading}
+            className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
+          >
+            Skip for Now
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
             disabled={!isValid || isLoading}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

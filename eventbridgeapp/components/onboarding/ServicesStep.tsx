@@ -81,12 +81,23 @@ export default function ServicesStep({
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-4xl font-bold text-shades-black mb-3">Tell us about your services</h1>
-        <p className="text-neutrals-07">
-          Provide details that help organizers understand what you offer and match with the right
-          events.
-        </p>
+      <div className="mb-10 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-shades-black mb-3">Tell us about your services</h1>
+          <p className="text-neutrals-07">
+            Provide details that help organizers understand what you offer and match with the right
+            events.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={isLoading}
+          className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-primary-01 transition-colors disabled:opacity-50"
+        >
+          Skip
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Service Description */}
@@ -330,7 +341,7 @@ export default function ServicesStep({
             type="button"
             onClick={onNext}
             disabled={!isValid || isLoading}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step
             <ArrowRight className="w-4 h-4" />

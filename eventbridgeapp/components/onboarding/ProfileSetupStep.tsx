@@ -260,7 +260,7 @@ export default function ProfileSetupStep({
             type="button"
             onClick={onNext}
             disabled={!isValid || isLoading}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step
             <ArrowRight className="w-4 h-4" />
