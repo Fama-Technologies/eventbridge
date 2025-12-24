@@ -141,7 +141,7 @@ export default function HeroSection() {
   const vendorMedia: MediaItem[] = [
     { type: 'image', src: '/Categories/Birthdays.jpg', alt: 'Vendor 1' },
     { type: 'video', src: 'https://www.youtube.com/watch?v=Cln__XJ0TGE', alt: 'Cinematic Wedding' },
-    { type: 'video', src: 'https://www.youtube.com/watch?v=9j-XkG5Q6D0', alt: 'Event Highlight video' },
+    { type: 'video', src: 'https://youtu.be/3wbaX4DXnrA?si=30kgAxRom_VHAJUF', alt: 'Event Highlight video' },
   ];
 
   return (
