@@ -246,7 +246,6 @@ export default function Footer() {
             <p className="text-xs text-neutrals-07">
               © 2025 Event Bridge. All rights reserved.
             </p>
-
             {/* Dark Mode Toggle */}
             <div className="flex items-center gap-3">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-primary-01">

@@ -1,7 +1,9 @@
 'use client';
 
 import { Search, MapPin, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { MediaItem } from './HeroCarousel';
 import { useState, useRef, useEffect } from 'react';
+import HeroCarousel from './HeroCarousel';
 import { useRouter } from 'next/navigation';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
 
@@ -136,14 +138,16 @@ export default function HeroSection() {
   };
 
   const popularCategories = ['Photographers', 'Catering', 'Venues'];
+  const vendorMedia: MediaItem[] = [
+    { type: 'image', src: '/Categories/Birthdays.jpg', alt: 'Vendor 1' },
+    { type: 'video', src: 'vids/event.mp4', alt: 'Vendor 2' },
+    { type: 'video', src: 'vids/event1.mp4', alt: 'Vendor 3' },
+  ];
 
   return (
-    <section
-      className="relative min-h-[500px] flex items-center justify-center bg-cover bg-center"
-      style={{
-        backgroundImage: 'url(/hero.jpg)',
-      }}
-    >
+    <section className="relative min-h-[500px] flex items-center justify-center overflow-hidden">
+      <HeroCarousel mediaItems={vendorMedia} />
+
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/50" />
 
