@@ -12,6 +12,15 @@ interface HeroCarouselProps {
     autoplayDelay?: number; // ms
 }
 
+// Helper to detect YouTube URL
+const getYouTubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const isYouTube = (url: string) => url.includes('youtube.com') || url.includes('youtu.be');
+
 const HeroCarousel: React.FC<HeroCarouselProps> = ({ mediaItems, autoplayDelay = 10000 }) => {
     const [current, setCurrent] = useState(0);
 
@@ -40,6 +49,15 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ mediaItems, autoplayDelay =
                 >
                     {item.type === 'image' ? (
                         <img src={item.src} alt={item.alt ?? ''} className="w-full h-full object-cover" />
+                    ) : isYouTube(item.src) ? (
+                        <div className="absolute inset-0 w-full h-full pointer-events-none">
+                            <iframe
+                                src={`https://www.youtube.com/embed/${getYouTubeId(item.src)}?autoplay=1&mute=1&controls=0&loop=1&playlist=${getYouTubeId(item.src)}&playsinline=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1`}
+                                className="w-full h-[300%] -mt-[100%] lg:h-full lg:mt-0 object-cover scale-150"
+                                allow="autoplay; encrypted-media"
+                                title={item.alt ?? 'Video'}
+                            />
+                        </div>
                     ) : (
                         <video
                             src={item.src}

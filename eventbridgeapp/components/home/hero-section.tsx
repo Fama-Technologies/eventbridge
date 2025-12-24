@@ -140,8 +140,8 @@ export default function HeroSection() {
   const popularCategories = ['Photographers', 'Catering', 'Venues'];
   const vendorMedia: MediaItem[] = [
     { type: 'image', src: '/Categories/Birthdays.jpg', alt: 'Vendor 1' },
-    { type: 'video', src: 'vids/event.mp4', alt: 'Vendor 2' },
-    { type: 'video', src: 'vids/event1.mp4', alt: 'Vendor 3' },
+    { type: 'video', src: 'https://www.youtube.com/watch?v=Cln__XJ0TGE', alt: 'Cinematic Wedding' },
+    { type: 'video', src: 'https://www.youtube.com/watch?v=9j-XkG5Q6D0', alt: 'Event Highlight video' },
   ];
 
   return (
