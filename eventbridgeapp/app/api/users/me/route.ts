@@ -26,13 +26,21 @@ export async function GET() {
               lastName: users.lastName,
               accountType: users.accountType,
               image: users.image,
+              isActive: users.isActive,
+              emailVerified: users.emailVerified,
+              createdAt: users.createdAt,
+              updatedAt: users.updatedAt,
             })
             .from(users)
-            .where(eq(users.id, payload.userId as number))
+            .where(eq(users.id, payload.userId))
             .limit(1);
 
-          if (user) {
+          if (user && user.isActive) {
             return NextResponse.json(user);
+          }
+          
+          if (user && !user.isActive) {
+            return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
           }
         }
       } catch (error) {
@@ -58,13 +66,21 @@ export async function GET() {
             lastName: users.lastName,
             accountType: users.accountType,
             image: users.image,
+            isActive: users.isActive,
+            emailVerified: users.emailVerified,
+            createdAt: users.createdAt,
+            updatedAt: users.updatedAt,
           })
           .from(users)
           .where(eq(users.id, session.userId))
           .limit(1);
 
-        if (user) {
+        if (user && user.isActive) {
           return NextResponse.json(user);
+        }
+        
+        if (user && !user.isActive) {
+          return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
         }
       }
     }

@@ -11,19 +11,61 @@ export async function GET() {
 
 // POST — create user
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  // Hash password if provided
-  const hashedPassword = body.password ? await hash(body.password, 12) : '';
+    // Validate required fields
+    if (!body.email || !body.password) {
+      return NextResponse.json(
+        { success: false, message: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
 
-  await db.insert(users).values({
-    firstName: body.firstName || '',
-    lastName: body.lastName || '',
-    email: body.email,
-    password: hashedPassword,
-    accountType: body.accountType || 'CUSTOMER',
-    provider: 'local',
-  });
+    // Validate account type
+    if (body.accountType && !['VENDOR', 'CUSTOMER', 'PLANNER'].includes(body.accountType)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid account type. Must be VENDOR, CUSTOMER, or PLANNER' },
+        { status: 400 }
+      );
+    }
 
-  return NextResponse.json({ success: true });
+    // Hash password
+    const hashedPassword = await hash(body.password, 12);
+
+    // Insert user with all required fields
+    await db.insert(users).values({
+      firstName: body.firstName || '',
+      lastName: body.lastName || '',
+      email: body.email.toLowerCase().trim(),
+      password: hashedPassword,
+      accountType: body.accountType || 'CUSTOMER',
+      provider: 'local',
+      image: body.image || null,
+      isActive: body.isActive !== undefined ? body.isActive : true,
+      emailVerified: body.emailVerified !== undefined ? body.emailVerified : false,
+      // createdAt and updatedAt have default values in schema
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'User created successfully' 
+    }, { status: 201 });
+    
+  } catch (error) {
+    console.error('Error creating user:', error);
+    
+    // Handle duplicate email error
+    if (error instanceof Error && error.message.includes('unique constraint')) {
+      return NextResponse.json(
+        { success: false, message: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+    
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
