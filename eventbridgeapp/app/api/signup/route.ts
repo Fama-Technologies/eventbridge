@@ -10,8 +10,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { firstName, lastName, email, password, accountType } = body;
 
-    console.log('Signup request:', { firstName, lastName, email, accountType });
-
     // Validate required fields
     if (!firstName || !lastName || !email || !password || !accountType) {
       return NextResponse.json(
@@ -21,9 +19,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate account type
-    if (accountType !== 'VENDOR' && accountType !== 'CUSTOMER') {
+    if (!['VENDOR', 'CUSTOMER', 'PLANNER'].includes(accountType)) {
       return NextResponse.json(
-        { message: 'Invalid account type. Must be VENDOR or CUSTOMER' },
+        { message: 'Invalid account type. Must be VENDOR, CUSTOMER, or PLANNER' },
         { status: 400 }
       );
     }
@@ -45,8 +43,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('Validation passed');
-
     // Check if user already exists
     const existingUser = await db
       .select()
@@ -55,21 +51,16 @@ export async function POST(req: NextRequest) {
       .limit(1);
 
     if (existingUser.length > 0) {
-      console.log('User already exists');
       return NextResponse.json(
-        { 
-          message: 'An account with this email already exists. Please log in or use a different email.' 
-        },
+        { message: 'An account with this email already exists' },
         { status: 409 }
       );
     }
 
-    console.log('User does not exist, creating...');
     // Hash password
     const hashedPassword = await hash(password, 12);
-    console.log('Password hashed');
 
-    // Create user - remove the id field since it's auto-generated
+    // Create user
     const [newUser] = await db
       .insert(users)
       .values({
@@ -77,17 +68,13 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        image: null,
-        provider: 'local',
         accountType: accountType,
+        provider: 'local',
+        image: null,
         isActive: true,
         emailVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       })
       .returning();
-
-    console.log('User created successfully:', newUser.id);
 
     return NextResponse.json(
       {
@@ -102,14 +89,37 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Signup error:', error);
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+  } catch (error: any) {
+    console.error('Signup error details:', {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      stack: error?.stack,
     });
-    
+
+    // Handle specific database errors
+    if (error?.message?.includes('unique constraint') || error?.message?.includes('duplicate key')) {
+      return NextResponse.json(
+        { message: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    if (error?.message?.includes('relation "users" does not exist')) {
+      return NextResponse.json(
+        { message: 'Database configuration error. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    if (error?.message?.includes('password')) {
+      return NextResponse.json(
+        { message: 'Password validation error. Please use a different password.' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { message: 'Internal server error. Please try again later.' },
       { status: 500 }
