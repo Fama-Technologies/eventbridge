@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, passwordResetTokens } from '@/drizzle/schema';
-import { eq, and, gt, sql } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { generateSecureToken, hashToken, isValidEmail } from '@/lib/auth-utils';
 
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email } = body;
 
-    console.log('🔐 Password reset requested for:', email);
+    console.log('Password reset requested for:', email);
 
     // Generic message to prevent account enumeration
     const genericMessage = 'If an account with that email exists, you will receive a password reset link.';
@@ -33,12 +33,13 @@ export async function POST(req: NextRequest) {
         email: users.email,
         firstName: users.firstName,
         lastName: users.lastName,
+        isActive: users.isActive,
       })
       .from(users)
       .where(eq(users.email, normalizedEmail))
       .limit(1);
 
-    console.log('👤 User found:', user ? 'Yes' : 'No');
+    console.log('User found:', user ? 'Yes' : 'No');
 
     // Always return success to prevent email enumeration
     if (!user) {
@@ -49,11 +50,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if account is active
+    if (!user.isActive) {
+      console.log('Account is deactivated');
+      // Still return success to prevent enumeration
+      return NextResponse.json(
+        { message: genericMessage, success: true },
+        { status: 200 }
+      );
+    }
+
     // Rate limiting: Check recent requests (max 3 per hour)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     
     const recentRequests = await db
-      .select({ count: sql<number>`count(*)::int` })
+      .select()
       .from(passwordResetTokens)
       .where(
         and(
@@ -62,10 +73,9 @@ export async function POST(req: NextRequest) {
         )
       );
 
-    const requestCount = recentRequests[0]?.count || 0;
-    console.log('Recent reset requests:', requestCount);
+    console.log('Recent reset requests:', recentRequests.length);
 
-    if (requestCount >= 3) {
+    if (recentRequests.length >= 3) {
       console.log('Rate limit exceeded');
       // Still return success to prevent enumeration
       return NextResponse.json(
@@ -85,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     // Token expires in 1 hour
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    console.log('⏰ Token expires at:', expiresAt.toISOString());
+    console.log('Token expires at:', expiresAt.toISOString());
 
     // Invalidate any existing unused tokens for this user
     await db
@@ -98,26 +108,26 @@ export async function POST(req: NextRequest) {
         )
       );
 
-    console.log('🗑️ Invalidated previous tokens');
+    console.log('Invalidated previous tokens');
 
     // Save HASHED token to database
     const [savedToken] = await db
       .insert(passwordResetTokens)
       .values({
         userId: user.id,
-        tokenHash: tokenHash, // Store HASH, not plain token
+        tokenHash: tokenHash,
         expiresAt: expiresAt,
         used: false,
       })
       .returning({ id: passwordResetTokens.id });
 
-    console.log('💾 Token saved to database, ID:', savedToken.id);
+    console.log('Token saved to database, ID:', savedToken.id);
 
     // Create reset URL with PLAIN token (not hashed)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    console.log('🔗 Password reset link generated');
+    console.log('Password reset link generated');
 
     // Send email
     try {
