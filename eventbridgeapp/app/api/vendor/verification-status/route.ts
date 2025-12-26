@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { vendorProfiles } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-// Import your getCurrentUser function
+import { getAuthUser } from '@/lib/auth';
 
-export async function GET() {
-  const user = await getCurrentUser();
-  
+export async function GET(req: NextRequest) {
+  const user = await getAuthUser(req);
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
