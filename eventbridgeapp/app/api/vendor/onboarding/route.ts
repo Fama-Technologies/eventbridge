@@ -14,7 +14,7 @@ import {
   vendorDiscounts,
   verificationDocuments,
 } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
 // ============================================
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { step, data, action } = body;
 
-    console.log(`📝 Onboarding action: ${action}, Step: ${step}`);
+    console.log(`Onboarding action: ${action}, Step: ${step}`);
 
     // Get or create progress
     let [progress] = await db
@@ -250,18 +250,49 @@ export async function POST(request: NextRequest) {
     }
 
     // ============================================
-    // ACTION: Complete Onboarding
+    // ACTION: Complete Onboarding / Submit for Review
     // ============================================
-    if (action === 'complete') {
+    if (action === 'complete' || action === 'submit-for-review' || action === 'finish') {
       return await completeOnboarding(user, progress);
     }
 
+    // ============================================
+    // ACTION: Skip Step (Optional)
+    // ============================================
+    if (action === 'skip') {
+      const updatedFormData = {
+        ...progress.formData,
+        [`step${step}`]: data || {}, // Save even if empty
+      };
+
+      const completedSteps = [...(progress.completedSteps || [])];
+      if (!completedSteps.includes(step)) {
+        completedSteps.push(step);
+      }
+
+      await db
+        .update(onboardingProgress)
+        .set({
+          currentStep: step + 1,
+          completedSteps,
+          formData: updatedFormData,
+          updatedAt: new Date(),
+        })
+        .where(eq(onboardingProgress.id, progress.id));
+
+      return NextResponse.json({
+        success: true,
+        message: 'Step skipped',
+        nextStep: step + 1,
+      });
+    }
+
     return NextResponse.json(
-      { error: 'Invalid action' },
+      { error: `Invalid action: ${action}. Valid actions: save-and-continue, save-and-back, save-draft, skip, complete, submit-for-review, finish` },
       { status: 400 }
     );
   } catch (error) {
-    console.error('❌ Onboarding error:', error);
+    console.error('Onboarding error:', error);
     return NextResponse.json(
       { error: 'Failed to save progress' },
       { status: 500 }
@@ -276,7 +307,7 @@ async function completeOnboarding(user: any, progress: any) {
   try {
     const formData = progress.formData;
 
-    console.log('🎯 Completing vendor onboarding for user:', user.id);
+    console.log('Completing vendor onboarding for user:', user.id);
 
     // Extract data from all steps
     const businessInfo = formData.step1 || {};
@@ -286,9 +317,7 @@ async function completeOnboarding(user: any, progress: any) {
     const discounts = formData.step5?.discounts || [];
     const verificationDocs = formData.step6?.documents || [];
 
-    // ============================================
-    // VALIDATION
-    // ============================================
+    // Validate required fields
     if (!businessInfo.businessName) {
       return NextResponse.json(
         { error: 'Business name is required' },
@@ -310,7 +339,7 @@ async function completeOnboarding(user: any, progress: any) {
       );
     }
 
-    // Validate media limits
+    // Validate media limits (max 10 images, 10 videos)
     const imageCount = media.images?.length || 0;
     const videoCount = media.videos?.length || 0;
 
@@ -354,12 +383,7 @@ async function completeOnboarding(user: any, progress: any) {
           state,
           phone: businessInfo.phone,
           website: businessInfo.website,
-          address: businessInfo.address || null,
-          zipCode: businessInfo.zipCode || null,
-          serviceRadius: businessInfo.serviceRadius || null,
-          yearsExperience: businessInfo.yearsExperience || null,
-          profileImage: businessInfo.profilePhoto || null,
-          coverImage: businessInfo.coverPhoto || null,
+          profileImage: businessInfo.profilePhoto,
           verificationStatus: 'under_review',
           verificationSubmittedAt: new Date(),
           canAccessDashboard: false,
@@ -368,7 +392,6 @@ async function completeOnboarding(user: any, progress: any) {
         .where(eq(vendorProfiles.id, existingProfile.id));
 
       vendorProfileId = existingProfile.id;
-      console.log('✅ Updated existing vendor profile:', vendorProfileId);
     } else {
       const [newProfile] = await db
         .insert(vendorProfiles)
@@ -378,14 +401,9 @@ async function completeOnboarding(user: any, progress: any) {
           description: businessInfo.serviceDescription,
           city,
           state,
-          phone: businessInfo.phone || null,
-          website: businessInfo.website || null,
-          address: businessInfo.address || null,
-          zipCode: businessInfo.zipCode || null,
-          serviceRadius: businessInfo.serviceRadius || null,
-          yearsExperience: businessInfo.yearsExperience || null,
-          profileImage: businessInfo.profilePhoto || null,
-          coverImage: businessInfo.coverPhoto || null,
+          phone: businessInfo.phone,
+          website: businessInfo.website,
+          profileImage: businessInfo.profilePhoto,
           verificationStatus: 'under_review',
           verificationSubmittedAt: new Date(),
           canAccessDashboard: false,
@@ -394,52 +412,43 @@ async function completeOnboarding(user: any, progress: any) {
         .returning();
 
       vendorProfileId = newProfile.id;
-      console.log('✅ Created new vendor profile:', vendorProfileId);
     }
 
     // ============================================
     // Save Packages
     // ============================================
     if (packages.length > 0) {
-      // Delete existing packages
       await db
         .delete(vendorPackages)
         .where(eq(vendorPackages.vendorId, vendorProfileId));
 
-      // Insert new packages
       await db.insert(vendorPackages).values(
         packages.map((pkg: any, index: number) => ({
           vendorId: vendorProfileId,
           name: pkg.name,
-          description: pkg.description || null,
-          price: Math.round(parseFloat(pkg.price) * 100), // Convert to cents
-          duration: pkg.duration || null,
-          features: pkg.features || [],
+          description: pkg.description,
+          price: Math.round(pkg.price * 100), // Convert to cents
+          duration: pkg.duration,
+          features: pkg.features,
           isPopular: pkg.isPopular || false,
-          isActive: true,
           displayOrder: index,
         }))
       );
-      console.log(`✅ Saved ${packages.length} packages`);
     }
 
     // ============================================
     // Save Portfolio Images
     // ============================================
     if (media.images && media.images.length > 0) {
-      // Delete existing portfolio
       await db
         .delete(vendorPortfolio)
         .where(eq(vendorPortfolio.vendorId, vendorProfileId));
 
-      // Insert new portfolio
       await db.insert(vendorPortfolio).values(
         media.images.map((image: any, index: number) => ({
           vendorId: vendorProfileId,
           imageUrl: image.url,
-          title: image.title || null,
-          description: image.description || null,
-          category: image.category || null,
+          title: image.title || `Portfolio Image ${index + 1}`,
           width: image.width || null,
           height: image.height || null,
           fileSize: image.fileSize || null,
@@ -447,72 +456,53 @@ async function completeOnboarding(user: any, progress: any) {
           displayOrder: index,
         }))
       );
-      console.log(`✅ Saved ${media.images.length} portfolio images`);
     }
 
     // ============================================
     // Save Videos
     // ============================================
     if (media.videos && media.videos.length > 0) {
-      // Delete existing videos
       await db
         .delete(vendorVideos)
         .where(eq(vendorVideos.vendorId, vendorProfileId));
 
-      // Insert new videos
       await db.insert(vendorVideos).values(
         media.videos.map((video: any, index: number) => ({
           vendorId: vendorProfileId,
           videoUrl: video.url,
-          thumbnailUrl: video.thumbnail || null,
-          title: video.title || null,
-          description: video.description || null,
-          duration: video.duration || null,
-          fileSize: video.fileSize || null,
+          thumbnailUrl: video.thumbnail,
+          title: video.title,
+          description: video.description,
+          duration: video.duration,
+          fileSize: video.fileSize,
           width: video.width || null,
           height: video.height || null,
           quality: video.quality || 'medium',
           displayOrder: index,
         }))
       );
-      console.log(`✅ Saved ${media.videos.length} videos`);
     }
 
     // ============================================
     // Save Cancellation Policy
     // ============================================
-    const [existingPolicy] = await db
-      .select()
-      .from(cancellationPolicies)
-      .where(eq(cancellationPolicies.vendorId, vendorProfileId))
-      .limit(1);
+    await db
+      .delete(cancellationPolicies)
+      .where(eq(cancellationPolicies.vendorId, vendorProfileId));
 
-    if (existingPolicy) {
-      await db
-        .update(cancellationPolicies)
-        .set({
-          policyText: cancellationPolicy.policyText,
-          updatedAt: new Date(),
-        })
-        .where(eq(cancellationPolicies.vendorId, vendorProfileId));
-    } else {
-      await db.insert(cancellationPolicies).values({
-        vendorId: vendorProfileId,
-        policyText: cancellationPolicy.policyText,
-      });
-    }
-    console.log('✅ Saved cancellation policy');
+    await db.insert(cancellationPolicies).values({
+      vendorId: vendorProfileId,
+      policyText: cancellationPolicy.policyText,
+    });
 
     // ============================================
     // Save Discounts
     // ============================================
     if (discounts.length > 0) {
-      // Delete existing discounts
       await db
         .delete(vendorDiscounts)
         .where(eq(vendorDiscounts.vendorId, vendorProfileId));
 
-      // Insert new discounts
       await db.insert(vendorDiscounts).values(
         discounts.map((discount: any) => ({
           vendorId: vendorProfileId,
@@ -523,46 +513,38 @@ async function completeOnboarding(user: any, progress: any) {
           validFrom: new Date(discount.validFrom),
           validUntil: new Date(discount.validUntil),
           maxUses: discount.maxUses || null,
-          currentUses: 0,
           minimumBookingAmount: discount.minimumBookingAmount || null,
-          isActive: true,
         }))
       );
-      console.log(`✅ Saved ${discounts.length} discounts`);
     }
 
     // ============================================
     // Save Verification Documents
     // ============================================
     if (verificationDocs.length > 0) {
-      // Delete existing documents
       await db
         .delete(verificationDocuments)
         .where(eq(verificationDocuments.vendorId, vendorProfileId));
 
-      // Insert new documents
       await db.insert(verificationDocuments).values(
         verificationDocs.map((doc: any) => ({
           vendorId: vendorProfileId,
           documentType: doc.type,
           documentUrl: doc.url,
           documentName: doc.name,
-          fileSize: doc.fileSize || null,
-          status: 'pending',
+          fileSize: doc.fileSize,
         }))
       );
-      console.log(`✅ Saved ${verificationDocs.length} verification documents`);
     }
 
     // ============================================
-    // Update User Account Type (if needed)
+    // Update User Account Type
     // ============================================
     if (user.accountType === 'CUSTOMER') {
       await db
         .update(users)
         .set({ accountType: 'VENDOR' })
         .where(eq(users.id, user.id));
-      console.log('✅ Updated user account type to VENDOR');
     }
 
     // ============================================
@@ -576,7 +558,7 @@ async function completeOnboarding(user: any, progress: any) {
       })
       .where(eq(onboardingProgress.id, progress.id));
 
-    console.log('🎉 Vendor onboarding completed successfully!');
+    console.log(' Vendor onboarding completed successfully');
 
     // TODO: Send email notification about verification pending
 
@@ -587,10 +569,7 @@ async function completeOnboarding(user: any, progress: any) {
       vendorProfileId,
     });
   } catch (error) {
-    console.error('❌ Complete onboarding error:', error);
-    return NextResponse.json(
-      { error: 'Failed to complete onboarding', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error(' Complete onboarding error:', error);
+    throw error;
   }
 }
