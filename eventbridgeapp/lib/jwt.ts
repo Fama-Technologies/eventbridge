@@ -13,7 +13,7 @@ function getJWTSecret(): Uint8Array {
 export interface JWTPayload extends JoseJWTPayload {
   userId: number;
   email: string;
-  accountType: 'VENDOR' | 'CUSTOMER';
+  accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
 }
 
 export async function createToken(payload: JWTPayload): Promise<string> {
@@ -31,4 +31,9 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   } catch {
     return null;
   }
+}
+
+// Helper function to check if account type is valid
+export function isValidAccountType(accountType: string): accountType is JWTPayload['accountType'] {
+  return ['VENDOR', 'CUSTOMER', 'PLANNER'].includes(accountType as any);
 }
