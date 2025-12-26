@@ -4,7 +4,6 @@ import { hash } from 'bcryptjs';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,16 +48,18 @@ export async function POST(req: NextRequest) {
     console.log('Validation passed');
 
     // Check if user already exists
-   const existingUser = await db
+    const existingUser = await db
       .select()
       .from(users)
       .where(eq(users.email, email.toLowerCase()))
       .limit(1);
 
     if (existingUser.length > 0) {
-      console.log('⚠️ User already exists');
+      console.log('User already exists');
       return NextResponse.json(
-        { message: 'An account with this email already exists' },
+        { 
+          message: 'An account with this email already exists. Please log in or use a different email.' 
+        },
         { status: 409 }
       );
     }
@@ -68,18 +69,22 @@ export async function POST(req: NextRequest) {
     const hashedPassword = await hash(password, 12);
     console.log('Password hashed');
 
-    // Create user - cast to any to bypass type checking temporarily
+    // Create user - remove the id field since it's auto-generated
     const [newUser] = await db
       .insert(users)
       .values({
-        id: randomUUID(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        accountType: accountType,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        image: null,
         provider: 'local',
-      } as any)
+        accountType: accountType,
+        isActive: true,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning();
 
     console.log('User created successfully:', newUser.id);
@@ -93,7 +98,6 @@ export async function POST(req: NextRequest) {
           lastName: newUser.lastName,
           email: newUser.email,
           accountType: newUser.accountType,
-          createdAt: newUser.createdAt,
         },
       },
       { status: 201 }
