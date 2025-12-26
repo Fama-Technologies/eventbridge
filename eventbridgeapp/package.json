@@ -25,7 +25,6 @@
     "cloudinary": "^2.8.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "jose": "^5.9.6",
     "lucide-react": "^0.560.0",
