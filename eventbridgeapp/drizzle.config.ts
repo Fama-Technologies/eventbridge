@@ -1,16 +1,16 @@
 // drizzle.config.ts
 import type { Config } from 'drizzle-kit';
-import * as dotenv from 'dotenv';
+import { loadEnvConfig } from '@next/env';
 
-dotenv.config({ path: '.env.local' });
+// Load environment variables
+const projectDir = process.cwd();
+loadEnvConfig(projectDir);
 
 export default {
-  schema: './drizzle/schema.ts',  // Changed from "./src/db/schema.ts"
-  out: './drizzle/migrations',    // Changed from "./drizzle" (better organization)
+  schema: './drizzle/schema.ts',
+  out: './drizzle/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },
-  verbose: true,
-  strict: true,
 } satisfies Config;
