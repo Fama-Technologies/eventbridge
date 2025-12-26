@@ -130,7 +130,7 @@ export const vendorProfiles = pgTable('vendor_profiles', {
   yearsExperience: integer('years_experience'),
   hourlyRate: integer('hourly_rate'), // Keep for backward compatibility
 
-  // VERIFICATION FIELDS
+  // ✅ NEW: VERIFICATION FIELDS
   verificationStatus: text('verification_status').default('pending').notNull(),
   // 'pending', 'under_review', 'approved', 'rejected', 'resubmission_required'
   verificationSubmittedAt: timestamp('verification_submitted_at'),
@@ -167,7 +167,7 @@ export const vendorServices = pgTable('vendor_services', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== VENDOR PACKAGES ===================== */
+/* ===================== ✅ NEW: VENDOR PACKAGES ===================== */
 export const vendorPackages = pgTable('vendor_packages', {
   id: serial('id').primaryKey(),
 
@@ -216,7 +216,7 @@ export const vendorPortfolio = pgTable('vendor_portfolio', {
   description: text('description'),
   category: text('category'),
 
-  // QUALITY TRACKING
+  // ✅ NEW: QUALITY TRACKING
   width: integer('width'),
   height: integer('height'),
   fileSize: integer('file_size'),
@@ -226,7 +226,7 @@ export const vendorPortfolio = pgTable('vendor_portfolio', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== VENDOR VIDEOS ===================== */
+/* ===================== ✅ NEW: VENDOR VIDEOS ===================== */
 export const vendorVideos = pgTable('vendor_videos', {
   id: serial('id').primaryKey(),
 
@@ -249,7 +249,7 @@ export const vendorVideos = pgTable('vendor_videos', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== CANCELLATION POLICIES ===================== */
+/* ===================== ✅ NEW: CANCELLATION POLICIES ===================== */
 export const cancellationPolicies = pgTable('cancellation_policies', {
   id: serial('id').primaryKey(),
 
@@ -263,7 +263,7 @@ export const cancellationPolicies = pgTable('cancellation_policies', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-/* ===================== VENDOR DISCOUNTS ===================== */
+/* ===================== ✅ NEW: VENDOR DISCOUNTS ===================== */
 export const vendorDiscounts = pgTable('vendor_discounts', {
   id: serial('id').primaryKey(),
 
@@ -288,7 +288,7 @@ export const vendorDiscounts = pgTable('vendor_discounts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== VERIFICATION DOCUMENTS ===================== */
+/* ===================== ✅ NEW: VERIFICATION DOCUMENTS ===================== */
 export const verificationDocuments = pgTable('verification_documents', {
   id: serial('id').primaryKey(),
 
@@ -307,7 +307,7 @@ export const verificationDocuments = pgTable('verification_documents', {
   uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
 });
 
-/* ===================== NEW: ONBOARDING PROGRESS ===================== */
+/* ===================== ✅ NEW: ONBOARDING PROGRESS ===================== */
 export const onboardingProgress = pgTable('onboarding_progress', {
   id: serial('id').primaryKey(),
 
@@ -345,7 +345,7 @@ export const bookings = pgTable('bookings', {
   serviceId: integer('service_id')
     .references(() => vendorServices.id),
 
-  // Can also reference package instead of service
+  // ✅ NEW: Can also reference package instead of service
   packageId: integer('package_id')
     .references(() => vendorPackages.id),
 
@@ -359,7 +359,7 @@ export const bookings = pgTable('bookings', {
   totalAmount: integer('total_amount'),
   notes: text('notes'),
 
-  // Discount tracking
+  // ✅ NEW: Discount tracking
   discountCode: text('discount_code'),
   discountAmount: integer('discount_amount').default(0),
 
