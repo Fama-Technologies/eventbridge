@@ -1,4 +1,3 @@
-// app/api/signup/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import { db } from '@/lib/db';
@@ -10,7 +9,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { firstName, lastName, email, password, accountType } = body;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !password || !accountType) {
       return NextResponse.json(
         { message: 'All fields are required' },
@@ -18,7 +16,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate account type
     if (!['VENDOR', 'CUSTOMER', 'PLANNER'].includes(accountType)) {
       return NextResponse.json(
         { message: 'Invalid account type. Must be VENDOR, CUSTOMER, or PLANNER' },
@@ -26,7 +23,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -35,7 +31,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate password length
     if (password.length < 8) {
       return NextResponse.json(
         { message: 'Password must be at least 8 characters long' },
@@ -43,7 +38,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user already exists
     const existingUser = await db
       .select()
       .from(users)
@@ -57,10 +51,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash password
     const hashedPassword = await hash(password, 12);
 
-    // Create user
     const [newUser] = await db
       .insert(users)
       .values({
@@ -90,33 +82,19 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Signup error details:', {
-      name: error?.name,
-      message: error?.message,
-      code: error?.code,
-      detail: error?.detail,
-      stack: error?.stack,
-    });
+    console.error('Signup error:', error.message);
 
-    // Handle specific database errors
-    if (error?.message?.includes('unique constraint') || error?.message?.includes('duplicate key')) {
+    if (error.message?.includes('unique constraint') || error.message?.includes('duplicate key')) {
       return NextResponse.json(
         { message: 'An account with this email already exists' },
         { status: 409 }
       );
     }
 
-    if (error?.message?.includes('relation "users" does not exist')) {
+    if (error.message?.includes('relation "users" does not exist')) {
       return NextResponse.json(
-        { message: 'Database configuration error. Please contact support.' },
+        { message: 'Database configuration error. Users table not found.' },
         { status: 500 }
-      );
-    }
-
-    if (error?.message?.includes('password')) {
-      return NextResponse.json(
-        { message: 'Password validation error. Please use a different password.' },
-        { status: 400 }
       );
     }
 
