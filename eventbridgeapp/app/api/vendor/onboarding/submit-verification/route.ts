@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 👤 Vendor-only
+  // Vendor-only
   if (user.accountType !== 'VENDOR') {
     return NextResponse.json(
       { success: false, message: 'Only vendors can submit verification.' },
