@@ -1,55 +1,70 @@
-// app/api/signup-fixed/route.ts
+// app/api/signup/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { hash } from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
-  console.log('=== SIGNUP FIXED ENDPOINT CALLED ===');
-  
   try {
-    const body = await req.json();
-    console.log('Request body received');
-    
+    // Parse the request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      return NextResponse.json(
+        { message: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
     const { firstName, lastName, email, password, accountType } = body;
-    
-    console.log('Parsed fields:', { email, accountType, hasFirstName: !!firstName, hasLastName: !!lastName });
 
-    // Validate
+    // Validate required fields
     if (!firstName || !lastName || !email || !password || !accountType) {
-      console.log('Validation failed - missing fields');
       return NextResponse.json(
-        { 
-          message: 'All fields are required',
-          received: { firstName: !!firstName, lastName: !!lastName, email: !!email, password: !!password, accountType: !!accountType }
-        },
+        { message: 'All fields are required' },
         { status: 400 }
       );
     }
 
+    // Validate account type
     if (!['VENDOR', 'CUSTOMER', 'PLANNER'].includes(accountType)) {
-      console.log('Invalid account type:', accountType);
       return NextResponse.json(
-        { message: 'Invalid account type' },
+        { message: 'Invalid account type. Must be VENDOR, CUSTOMER, or PLANNER' },
         { status: 400 }
       );
     }
 
-    // Check database URL
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { message: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return NextResponse.json(
+        { message: 'Password must be at least 8 characters long' },
+        { status: 400 }
+      );
+    }
+
+    // Check DATABASE_URL
     if (!process.env.DATABASE_URL) {
-      console.error('DATABASE_URL is missing');
+      console.error('DATABASE_URL environment variable is not set');
       return NextResponse.json(
         { message: 'Server configuration error' },
         { status: 500 }
       );
     }
 
-    console.log('Database URL exists, connecting...');
+    // Connect to database
+    const sql = neon(process.env.DATABASE_URL);
 
+    // Check if users table exists, create if not
     try {
-      const sql = neon(process.env.DATABASE_URL);
-      
-      // First, ensure users table exists
-      console.log('Ensuring users table exists...');
       await sql`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
@@ -66,81 +81,98 @@ export async function POST(req: NextRequest) {
           updated_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `;
-      console.log('Users table ensured');
-
-      // Check for existing user
-      console.log('Checking for existing email:', email.toLowerCase());
-      const existing = await sql`
-        SELECT id FROM users WHERE email = ${email.toLowerCase()}
-      `;
-      
-      if (existing.length > 0) {
-        console.log('User already exists');
-        return NextResponse.json(
-          { message: 'An account with this email already exists' },
-          { status: 409 }
-        );
-      }
-
-      // Hash password
-      console.log('Hashing password...');
-      const hashedPassword = await hash(password, 12);
-      console.log('Password hashed');
-
-      // Insert user
-      console.log('Inserting user...');
-      const result = await sql`
-        INSERT INTO users (
-          email, password, first_name, last_name, 
-          account_type, provider, is_active, email_verified
-        ) VALUES (
-          ${email.toLowerCase()}, 
-          ${hashedPassword}, 
-          ${firstName.trim()}, 
-          ${lastName.trim()},
-          ${accountType}, 
-          'local', 
-          true, 
-          false
-        ) RETURNING id, email, first_name, last_name, account_type
-      `;
-
-      const newUser = result[0];
-      console.log('User created successfully:', newUser.id);
-
-      return NextResponse.json({
-        message: 'Account created successfully',
-        user: {
-          id: newUser.id,
-          firstName: newUser.first_name,
-          lastName: newUser.last_name,
-          email: newUser.email,
-          accountType: newUser.account_type,
-        },
-      }, { status: 201 });
-
-    } catch (dbError: any) {
-      console.error('Database error:', dbError);
-      console.error('Error details:', {
-        message: dbError.message,
-        code: dbError.code,
-        detail: dbError.detail
-      });
-      
-      return NextResponse.json({
-        message: 'Database error',
-        error: dbError.message,
-        code: dbError.code
-      }, { status: 500 });
+    } catch (tableError: any) {
+      console.error('Error creating table:', tableError);
+      // Continue anyway, table might already exist
     }
 
+    // Check if user already exists
+    const existingUsers = await sql`
+      SELECT id FROM users WHERE email = ${email.toLowerCase()}
+    `;
+
+    if (existingUsers.length > 0) {
+      return NextResponse.json(
+        { message: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await hash(password, 12);
+
+    // Insert new user
+    const newUser = await sql`
+      INSERT INTO users (
+        email,
+        password,
+        first_name,
+        last_name,
+        account_type,
+        provider,
+        is_active,
+        email_verified
+      ) VALUES (
+        ${email.toLowerCase()},
+        ${hashedPassword},
+        ${firstName.trim()},
+        ${lastName.trim()},
+        ${accountType},
+        'local',
+        true,
+        false
+      ) RETURNING id, email, first_name, last_name, account_type
+    `;
+
+    const user = newUser[0];
+
+    return NextResponse.json(
+      {
+        message: 'Account created successfully',
+        user: {
+          id: user.id,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          email: user.email,
+          accountType: user.account_type,
+        },
+      },
+      { status: 201 }
+    );
+
   } catch (error: any) {
-    console.error('Signup fatal error:', error);
-    console.error('Error stack:', error.stack);
-    
-    return NextResponse.json({
-      message: 'Internal server error',
-      error: error.message
-    }, { status: 500 });
+    console.error('Signup error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      stack: error.stack,
+    });
+
+    // Handle specific errors
+    if (error.message?.includes('unique constraint') || error.code === '23505') {
+      return NextResponse.json(
+        { message: 'An account with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    if (error.message?.includes('relation "users" does not exist')) {
+      return NextResponse.json(
+        { message: 'Database setup incomplete. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    if (error.message?.includes('connection') || error.message?.includes('timeout')) {
+      return NextResponse.json(
+        { message: 'Database connection failed. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Internal server error. Please try again later.' },
+      { status: 500 }
+    );
   }
 }
