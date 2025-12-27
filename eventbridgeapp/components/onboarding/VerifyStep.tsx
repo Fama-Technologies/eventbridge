@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { Shield, Clock, FileText, Building2, MapPin, ArrowRight, X, Upload } from 'lucide-react';
+import { Shield, Clock, FileText, ArrowRight, X, Upload } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
 import Image from 'next/image';
 import PDFPreview from './PDFPreview';
@@ -43,6 +43,17 @@ export default function VerifyStep({
     return null;
   };
 
+  const updateAllDocuments = (
+    business: File[],
+    tin: File[],
+    location: File[]
+  ) => {
+    const allFiles = [...business, ...tin, ...location];
+    updateData({
+      verificationDocuments: allFiles,
+    });
+  };
+
   const handleFileUpload = (
     files: FileList | null,
     fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
@@ -52,23 +63,24 @@ export default function VerifyStep({
       const newPreviews = newFiles.map(file => createPreviewUrl(file) || '');
 
       if (fileType === 'businessLicense') {
-        setBusinessLicenseFiles(prev => [...prev, ...newFiles]);
-        setBusinessLicensePreviews(prev => [...prev, ...newPreviews]);
+        const updatedFiles = [...businessLicenseFiles, ...newFiles];
+        setBusinessLicenseFiles(updatedFiles);
+        setBusinessLicensePreviews([...businessLicensePreviews, ...newPreviews]);
+        updateAllDocuments(updatedFiles, tinDocumentFiles, locationProofFiles);
       } else if (fileType === 'tinDocument') {
-        setTinDocumentFiles(prev => [...prev, ...newFiles]);
-        setTinDocumentPreviews(prev => [...prev, ...newPreviews]);
+        const updatedFiles = [...tinDocumentFiles, ...newFiles];
+        setTinDocumentFiles(updatedFiles);
+        setTinDocumentPreviews([...tinDocumentPreviews, ...newPreviews]);
+        updateAllDocuments(businessLicenseFiles, updatedFiles, locationProofFiles);
       } else if (fileType === 'locationProof') {
-        setLocationProofFiles(prev => [...prev, ...newFiles]);
-        setLocationProofPreviews(prev => [...prev, ...newPreviews]);
+        const updatedFiles = [...locationProofFiles, ...newFiles];
+        setLocationProofFiles(updatedFiles);
+        setLocationProofPreviews([...locationProofPreviews, ...newPreviews]);
+        updateAllDocuments(businessLicenseFiles, tinDocumentFiles, updatedFiles);
       }
-
-      updateData({
-        verificationDocuments: [...data.verificationDocuments, ...newFiles],
-      });
     }
   };
 
-  // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
       businessLicensePreviews.forEach(url => url && URL.revokeObjectURL(url));
@@ -126,6 +138,7 @@ export default function VerifyStep({
       const updatedPreviews = businessLicensePreviews.filter((_, i) => i !== index);
       setBusinessLicenseFiles(updatedFiles);
       setBusinessLicensePreviews(updatedPreviews);
+      updateAllDocuments(updatedFiles, tinDocumentFiles, locationProofFiles);
     } else if (fileType === 'tinDocument') {
       const previewUrl = tinDocumentPreviews[index];
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -134,6 +147,7 @@ export default function VerifyStep({
       const updatedPreviews = tinDocumentPreviews.filter((_, i) => i !== index);
       setTinDocumentFiles(updatedFiles);
       setTinDocumentPreviews(updatedPreviews);
+      updateAllDocuments(businessLicenseFiles, updatedFiles, locationProofFiles);
     } else if (fileType === 'locationProof') {
       const previewUrl = locationProofPreviews[index];
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -142,6 +156,7 @@ export default function VerifyStep({
       const updatedPreviews = locationProofPreviews.filter((_, i) => i !== index);
       setLocationProofFiles(updatedFiles);
       setLocationProofPreviews(updatedPreviews);
+      updateAllDocuments(businessLicenseFiles, tinDocumentFiles, updatedFiles);
     }
   };
 
@@ -153,10 +168,8 @@ export default function VerifyStep({
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
       <div className="mb-10 flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-bold text-shades-black mb-3">
@@ -184,7 +197,6 @@ export default function VerifyStep({
         </button>
       </div>
 
-      {/* Review Process Info */}
       <div className="flex items-start gap-3 p-4 bg-accents-peach/30 dark:bg-accents-peach/10 rounded-lg mb-8 border border-primary-01/20">
         <Image src="/icons/vector.svg" alt="Clock" width={20} height={20} className="flex-shrink-0 mt-0.5" />
         <div>
@@ -198,9 +210,7 @@ export default function VerifyStep({
         </div>
       </div>
 
-      {/* Upload Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {/* Business License */}
         <div className="space-y-3">
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.businessLicense
@@ -236,7 +246,6 @@ export default function VerifyStep({
             <div className="space-y-2">
               {businessLicenseFiles.map((file, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 bg-neutrals-02 rounded-lg group">
-                  {/* Preview thumbnail */}
                   <div className="w-16 h-16 rounded-lg bg-neutrals-03 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {file.type === 'application/pdf' ? (
                       <PDFPreview file={file} className="w-full h-full" />
@@ -250,14 +259,10 @@ export default function VerifyStep({
                       <FileText className="w-6 h-6 text-neutrals-07" />
                     )}
                   </div>
-
-                  {/* File info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-shades-black truncate">{file.name}</p>
                     <p className="text-xs text-neutrals-06 mt-0.5">{formatFileSize(file.size)}</p>
                   </div>
-
-                  {/* Remove button */}
                   <button
                     type="button"
                     onClick={() => removeFile('businessLicense', index)}
@@ -271,7 +276,6 @@ export default function VerifyStep({
           )}
         </div>
 
-        {/* TIN Document */}
         <div className="space-y-3">
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.tinDocument
@@ -307,7 +311,6 @@ export default function VerifyStep({
             <div className="space-y-2">
               {tinDocumentFiles.map((file, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 bg-neutrals-02 rounded-lg group">
-                  {/* Preview thumbnail */}
                   <div className="w-16 h-16 rounded-lg bg-neutrals-03 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {file.type === 'application/pdf' ? (
                       <PDFPreview file={file} className="w-full h-full" />
@@ -321,14 +324,10 @@ export default function VerifyStep({
                       <FileText className="w-6 h-6 text-neutrals-07" />
                     )}
                   </div>
-
-                  {/* File info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-shades-black truncate">{file.name}</p>
                     <p className="text-xs text-neutrals-06 mt-0.5">{formatFileSize(file.size)}</p>
                   </div>
-
-                  {/* Remove button */}
                   <button
                     type="button"
                     onClick={() => removeFile('tinDocument', index)}
@@ -342,7 +341,6 @@ export default function VerifyStep({
           )}
         </div>
 
-        {/* Location Proof */}
         <div className="space-y-3">
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.locationProof
@@ -378,7 +376,6 @@ export default function VerifyStep({
             <div className="space-y-2">
               {locationProofFiles.map((file, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 bg-neutrals-02 rounded-lg group">
-                  {/* Preview thumbnail */}
                   <div className="w-16 h-16 rounded-lg bg-neutrals-03 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {file.type === 'application/pdf' ? (
                       <PDFPreview file={file} className="w-full h-full" />
@@ -392,14 +389,10 @@ export default function VerifyStep({
                       <FileText className="w-6 h-6 text-neutrals-07" />
                     )}
                   </div>
-
-                  {/* File info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-shades-black truncate">{file.name}</p>
                     <p className="text-xs text-neutrals-06 mt-0.5">{formatFileSize(file.size)}</p>
                   </div>
-
-                  {/* Remove button */}
                   <button
                     type="button"
                     onClick={() => removeFile('locationProof', index)}
@@ -414,14 +407,12 @@ export default function VerifyStep({
         </div>
       </div>
 
-      {/* Divider */}
       <div className="border-t border-neutrals-04 mb-6" />
 
-      {/* Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-neutrals-07">
           <Clock className="w-4 h-4 text-accents-discount" />
-          <span>Approval in 24-48 hours – start getting leads today</span>
+          <span>Approval in 24-48 hours</span>
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -438,7 +429,7 @@ export default function VerifyStep({
             disabled={isLoading}
             className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Submit for Review
+            {isLoading ? 'Submitting...' : 'Submit for Review'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
