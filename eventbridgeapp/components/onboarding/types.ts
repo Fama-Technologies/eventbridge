@@ -1,5 +1,7 @@
 // Types for Vendor Onboarding
 export interface OnboardingData {
+  website: string;
+  phone: string;
   // Step 1: Profile Setup
   profilePhoto: File | null;
   profilePhotoPreview: string;
@@ -54,6 +56,8 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   serviceGalleryPreviews: [],
   verificationDocuments: [],
   agreedToTerms: false,
+  website: "",
+  phone: ""
 };
 
 export const SERVICE_CATEGORIES = [

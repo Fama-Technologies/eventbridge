@@ -25,13 +25,11 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<OnboardingData>(INITIAL_ONBOARDING_DATA);
 
-  // Load draft from localStorage on mount
   useEffect(() => {
     const savedDraft = localStorage.getItem('vendorOnboardingDraft');
     if (savedDraft) {
       try {
         const parsed = JSON.parse(savedDraft);
-        // Restore text data (not files)
         setData((prev) => ({
           ...prev,
           businessName: parsed.businessName || '',
@@ -79,7 +77,6 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       completedSteps,
     };
     localStorage.setItem('vendorOnboardingDraft', JSON.stringify(draftData));
-    // Show toast or notification
     alert('Draft saved!');
   };
 
@@ -87,7 +84,6 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
     const stepOrder: OnboardingStep[] = ['profile', 'services', 'pricing', 'verify'];
     const currentIndex = stepOrder.indexOf(currentStep);
 
-    // Mark current step as completed
     if (!completedSteps.includes(currentStep)) {
       setCompletedSteps((prev) => [...prev, currentStep]);
     }
@@ -95,7 +91,6 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
     if (currentIndex < stepOrder.length - 1) {
       setCurrentStep(stepOrder[currentIndex + 1]);
     } else {
-      // Final step - submit onboarding
       handleSubmit();
     }
   };
@@ -113,10 +108,8 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
     setIsLoading(true);
 
     try {
-      // Create FormData for file uploads
       const formData = new FormData();
 
-      // Add text data
       formData.append('businessName', data.businessName);
       formData.append('serviceCategories', JSON.stringify(data.serviceCategories));
       formData.append('primaryLocation', data.primaryLocation);
@@ -124,18 +117,17 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       formData.append('pricingStructure', JSON.stringify(data.pricingStructure));
       formData.append('priceRange', data.priceRange);
       formData.append('generalAvailability', data.generalAvailability);
+      formData.append('phone', data.phone || '');
+      formData.append('website', data.website || '');
 
-      // Add profile photo
       if (data.profilePhoto) {
         formData.append('profilePhoto', data.profilePhoto);
       }
 
-      // Add gallery images
       data.serviceGallery.forEach((file, index) => {
         formData.append(`galleryImage_${index}`, file);
       });
 
-      // Add verification documents
       data.verificationDocuments.forEach((file, index) => {
         formData.append(`document_${index}`, file);
       });
@@ -145,15 +137,17 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
         body: formData,
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to submit onboarding');
+        throw new Error(result.error || 'Failed to submit onboarding');
       }
 
-      // Clear draft
       localStorage.removeItem('vendorOnboardingDraft');
 
-      // Redirect to vendor dashboard with success state
-      window.location.href = '/vendor/dashboard?onboarding=complete';
+      alert('Application submitted successfully! You will be notified once reviewed.');
+
+      window.location.href = '/';
     } catch (error) {
       console.error('Onboarding submission error:', error);
       alert('Failed to complete onboarding. Please try again.');
@@ -188,10 +182,8 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
 
   return (
     <div className="min-h-screen bg-neutrals-01 dark:bg-shades-black">
-      {/* Sidebar */}
       <OnboardingSidebar currentStep={currentStep} completedSteps={completedSteps} />
 
-      {/* Main Content */}
       <main className="ml-64 min-h-screen p-8 lg:p-12 bg-shades-white dark:bg-neutrals-02">
         <div className="max-w-3xl mx-auto py-8">
           {renderStep()}
