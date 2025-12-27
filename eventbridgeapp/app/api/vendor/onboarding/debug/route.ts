@@ -7,6 +7,9 @@ import { users, sessions, onboardingProgress } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
+// Mark this route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+
 async function getCurrentUser() {
   const cookieStore = await cookies();
   const authToken = cookieStore.get('auth-token')?.value;

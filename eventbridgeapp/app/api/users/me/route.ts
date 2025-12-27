@@ -5,6 +5,11 @@ import { users, sessions } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
+// Mark this route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+// Alternatively, you can use:
+// export const revalidate = 0;
+
 export async function GET() {
   try {
     const cookieStore = await cookies();

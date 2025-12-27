@@ -15,6 +15,9 @@ import {
 import { eq } from 'drizzle-orm';
 import { getAuthUser } from '@/lib/auth';
 
+// Mark this route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const user = await getAuthUser(req);
 

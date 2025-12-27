@@ -19,6 +19,9 @@ import { verifyToken } from '@/lib/jwt';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
+// Mark this route as dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+
 async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
