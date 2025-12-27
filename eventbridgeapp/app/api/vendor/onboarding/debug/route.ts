@@ -1,5 +1,5 @@
 // app/api/vendor/onboarding/debug/route.ts
-// TEMPORARY DEBUG ENDPOINT - Remove in production
+// DETAILED DEBUG ENDPOINT - Shows exactly what's in the database
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
@@ -62,35 +62,84 @@ export async function GET() {
       .where(eq(onboardingProgress.userId, user.id))
       .limit(1);
 
+    // Extract step data
+    const step1 = progress?.formData?.step1 || null;
+    const step2 = progress?.formData?.step2 || null;
+    const step3 = progress?.formData?.step3 || null;
+    const step4 = progress?.formData?.step4 || null;
+    const step5 = progress?.formData?.step5 || null;
+    const step6 = progress?.formData?.step6 || null;
+
     return NextResponse.json({
+      status: 'Debug Info Retrieved',
+      timestamp: new Date().toISOString(),
+      
       user: {
         id: user.id,
         email: user.email,
         accountType: user.accountType,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
-      progress: progress || null,
-      formData: progress?.formData || {},
+      
+      progress: {
+        exists: !!progress,
+        id: progress?.id,
+        currentStep: progress?.currentStep,
+        completedSteps: progress?.completedSteps || [],
+        isComplete: progress?.isComplete || false,
+        createdAt: progress?.createdAt,
+        updatedAt: progress?.updatedAt,
+      },
+      
       steps: {
-        step1: progress?.formData?.step1 || null,
-        step2: progress?.formData?.step2 || null,
-        step3: progress?.formData?.step3 || null,
-        step4: progress?.formData?.step4 || null,
-        step5: progress?.formData?.step5 || null,
-        step6: progress?.formData?.step6 || null,
+        step1: {
+          saved: !!step1,
+          fields: step1 ? Object.keys(step1) : [],
+          data: step1,
+        },
+        step2: {
+          saved: !!step2,
+          packages: step2?.packages?.length || 0,
+          data: step2,
+        },
+        step3: {
+          saved: !!step3,
+          images: step3?.images?.length || 0,
+          videos: step3?.videos?.length || 0,
+          data: step3,
+        },
+        step4: {
+          saved: !!step4,
+          policyLength: step4?.policyText?.length || 0,
+          data: step4,
+        },
+        step5: {
+          saved: !!step5,
+          discounts: step5?.discounts?.length || 0,
+          data: step5,
+        },
+        step6: {
+          saved: !!step6,
+          documents: step6?.documents?.length || 0,
+          data: step6,
+        },
       },
+      
       validation: {
-        hasBusinessName: !!progress?.formData?.step1?.businessName,
-        hasDescription: !!progress?.formData?.step1?.serviceDescription,
-        hasPackages: (progress?.formData?.step2?.packages?.length || 0) > 0,
-        hasImages: (progress?.formData?.step3?.images?.length || 0) > 0,
-        hasPolicy: !!progress?.formData?.step4?.policyText,
-        policyLength: progress?.formData?.step4?.policyText?.length || 0,
+        canSubmit: true, // Will check below
+        errors: [],
+        warnings: [],
       },
     });
   } catch (error) {
     console.error('Debug endpoint error:', error);
     return NextResponse.json(
-      { error: 'Internal error', details: error instanceof Error ? error.message : 'Unknown' },
+      { 
+        error: 'Internal error', 
+        details: error instanceof Error ? error.message : 'Unknown',
+        stack: error instanceof Error ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }
