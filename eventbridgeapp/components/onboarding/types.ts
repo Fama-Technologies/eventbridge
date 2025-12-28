@@ -1,7 +1,14 @@
 // Types for Vendor Onboarding
+
 export interface OnboardingData {
+  // Uploaded file URLs (set after UploadThing uploads)
+  profilePhotoUrl: string | null;
+  galleryImageUrls: string[];
+  verificationDocumentUrls: string[];
+
   website: string;
   phone: string;
+
   // Step 1: Profile Setup
   profilePhoto: File | null;
   profilePhotoPreview: string;
@@ -20,9 +27,6 @@ export interface OnboardingData {
   serviceGallery: File[];
   serviceGalleryPreviews: string[];
 
-  // Step 3: Pricing (Additional pricing details)
-  // Uses same data as Step 2 for now
-
   // Step 4: Verification
   verificationDocuments: File[];
   agreedToTerms: boolean;
@@ -40,12 +44,23 @@ export interface OnboardingStepProps {
 export type OnboardingStep = 'profile' | 'services' | 'pricing' | 'verify';
 
 export const INITIAL_ONBOARDING_DATA: OnboardingData = {
+  // Uploaded URLs (must exist to satisfy type)
+  profilePhotoUrl: null,
+  galleryImageUrls: [],
+  verificationDocumentUrls: [],
+
+  website: '',
+  phone: '',
+
+  // Step 1
   profilePhoto: null,
   profilePhotoPreview: '',
   businessName: '',
   serviceCategories: [],
   customCategories: [],
   primaryLocation: '',
+
+  // Step 2
   serviceDescription: '',
   pricingStructure: [],
   customPricingStructure: [],
@@ -54,10 +69,10 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   experience: '',
   serviceGallery: [],
   serviceGalleryPreviews: [],
+
+  // Step 4
   verificationDocuments: [],
   agreedToTerms: false,
-  website: "",
-  phone: ""
 };
 
 export const SERVICE_CATEGORIES = [
