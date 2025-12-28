@@ -1,6 +1,7 @@
 // lib/auth.ts
 import { NextRequest } from 'next/server';
-import { verifyToken, type JWTPayload } from '@/lib/jwt'; 
+import { cookies } from "next/headers";
+import { verifyToken, type JWTPayload } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -16,9 +17,9 @@ export interface AuthUser {
 export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
   try {
     // Try multiple cookie names and Authorization header
-    const token = req.cookies.get('auth-token')?.value || 
-                  req.cookies.get('session_token')?.value ||
-                  req.headers.get('Authorization')?.replace('Bearer ', '');
+    const token = req.cookies.get('auth-token')?.value ||
+      req.cookies.get('session_token')?.value ||
+      req.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       console.log('No token found in request');
@@ -51,7 +52,48 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
 
     // Convert database accountType to uppercase enum
     const accountType = user.accountType.toUpperCase() as 'VENDOR' | 'CUSTOMER';
-    
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      accountType,
+    };
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return null;
+  }
+}
+
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get('auth-token')?.value ||
+      cookieStore.get('session_token')?.value;
+
+    if (!token) return null;
+
+    const payload = await verifyToken(token);
+    if (!payload) return null;
+
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        accountType: users.accountType,
+      })
+      .from(users)
+      .where(eq(users.id, payload.userId))
+      .limit(1);
+
+    if (!user) return null;
+
+    // Convert database accountType to uppercase enum
+    const accountType = user.accountType.toUpperCase() as 'VENDOR' | 'CUSTOMER';
+
     return {
       id: user.id,
       email: user.email,
@@ -68,17 +110,17 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
 // Helper to create auth response with cookie
 export async function createAuthResponse(user: AuthUser) {
   const { createToken } = await import('@/lib/jwt');
-  
+
   const token = await createToken({
     userId: user.id,
     email: user.email,
     accountType: user.accountType,
   });
 
-  const response = new Response(JSON.stringify({ 
-    success: true, 
+  const response = new Response(JSON.stringify({
+    success: true,
     user,
-    token 
+    token
   }), {
     status: 200,
     headers: {
@@ -98,13 +140,13 @@ export function requireAuth(
     const user = await getAuthUser(req);
     if (!user) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Unauthorized. Please login.' 
+        JSON.stringify({
+          success: false,
+          message: 'Unauthorized. Please login.'
         }),
-        { 
-          status: 401, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
@@ -119,25 +161,25 @@ export function requireVendor(
     const user = await getAuthUser(req);
     if (!user) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Unauthorized. Please login.' 
+        JSON.stringify({
+          success: false,
+          message: 'Unauthorized. Please login.'
         }),
-        { 
-          status: 401, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
     if (user.accountType !== 'VENDOR') {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'This action is only available to vendors.' 
+        JSON.stringify({
+          success: false,
+          message: 'This action is only available to vendors.'
         }),
-        { 
-          status: 403, 
-          headers: { 'Content-Type': 'application/json' } 
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
         }
       );
     }
