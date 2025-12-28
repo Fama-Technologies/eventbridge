@@ -7,7 +7,12 @@ module.exports = {
         // add other directories if needed
     ],
     theme: {
-        extend: {},
+        extend: {
+            fontFamily: {
+                'font1': ['"Font 1"', 'sans-serif'], // replace with your font
+            },
+
+        },
     },
     plugins: [
         require('@tailwindcss/theme'), // enables @theme inline support

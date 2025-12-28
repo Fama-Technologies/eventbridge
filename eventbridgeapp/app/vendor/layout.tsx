@@ -13,9 +13,9 @@ export default function VendorLayout({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
-        <div className="min-h-screen flex">
-            {/* Desktop Sidebar (hidden on mobile, visible on medium screens and up) */}
-            <aside className="hidden md:flex w-[288px] flex-col fixed inset-y-0 z-50">
+        <div className="flex h-screen overflow-hidden">
+            {/* Desktop Sidebar */}
+            <aside className="hidden md:flex w-[288px] flex-col flex-shrink-0">
                 <Sidebar />
             </aside>
 
@@ -44,9 +44,11 @@ export default function VendorLayout({
             )}
 
             {/* Main Content */}
-            <div className="flex flex-col flex-1 min-w-0 md:pl-[288px]">
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <VendorHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
-                <main className="p-6">{children}</main>
+                <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-[#1A1A1A]">
+                    {children}
+                </main>
             </div>
         </div>
     );
