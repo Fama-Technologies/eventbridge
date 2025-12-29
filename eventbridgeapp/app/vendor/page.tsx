@@ -1,7 +1,8 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import ProfileStrengthCard from "@/components/vendor/dashboard/ProfileStrengthCard";
-import CardSection from "@/components/vendor/cardsection";
+import CardSection from "@/components/vendor/dashboard/cardsection";
+import EventSection from "@/components/vendor/dashboard/eventsection";
 
 
 export default async function VendorPage() {
@@ -25,6 +26,9 @@ export default async function VendorPage() {
         </div>
         <div >
             <CardSection />
+        </div>
+        <div>
+            <EventSection />
         </div>
     </div>;
 }

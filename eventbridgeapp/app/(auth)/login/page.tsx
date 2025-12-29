@@ -3,21 +3,23 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ UPDATED PART — ONLY THIS FUNCTION WAS MODIFIED
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       const res = await fetch("/api/login", {
@@ -30,26 +32,35 @@ export default function LoginPage() {
       // Check if response is JSON
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        alert("Server error. Please try again.");
+        toast.error("Server error. Please try again.");
+        setIsLoading(false);
         return;
       }
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message);
+        toast.error(data.message || "Login failed");
+        setIsLoading(false);
         return;
       }
 
-      alert("Login successful!");
-      // Redirect to the specified URL or default dashboard
-      window.location.href = redirectUrl || "/dashboard";
+      toast.success("Login successful!");
+
+      // Determine redirect URL
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      } else if (data.user?.accountType === "VENDOR") {
+        window.location.href = "/vendor";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (error) {
       console.error("Login error:", error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
+      setIsLoading(false);
     }
   };
-  // ✅ END OF UPDATED PART
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
@@ -70,8 +81,9 @@ export default function LoginPage() {
                 placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
+                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -81,13 +93,15 @@ export default function LoginPage() {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
+                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
+                disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black disabled:opacity-50"
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -99,20 +113,23 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01"
+                  className="h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50"
+                  disabled={isLoading}
                 />
                 Remember me
               </label>
-              <Link href="/forgot-password" className="text-sm text-primary-01 hover:text-primary-02">
+              <Link href="/forgot-password" className={`text-sm text-primary-01 hover:text-primary-02 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
                 Forget Password
               </Link>
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors"
+              disabled={isLoading}
+              className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign in
+              {isLoading && <Loader2 className="animate-spin" size={20} />}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
 
             <div className="flex items-center gap-4">
@@ -124,14 +141,16 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors"
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Image src="/google.svg" alt="Google" width={20} height={20} />
                 Sign in with Google
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors"
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Image src="/apple.svg" alt="Apple" width={20} height={20} />
                 Sign in with Apple
@@ -140,7 +159,7 @@ export default function LoginPage() {
 
             <p className="text-center text-sm text-neutrals-07">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-primary-01 hover:text-primary-02">
+              <Link href="/signup" className={`text-primary-01 hover:text-primary-02 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
                 Sign up
               </Link>
             </p>

@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Store, User } from 'lucide-react';
+import { Store, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
@@ -41,7 +42,7 @@ export default function SignupPage() {
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           {step === 'accountType' ? (
-            <AccountTypeSelection 
+            <AccountTypeSelection
               onSelect={handleAccountTypeSelect}
               selectedType={accountType}
             />
@@ -83,10 +84,10 @@ export default function SignupPage() {
   );
 }
 
-function AccountTypeSelection({ 
-  onSelect, 
-  selectedType 
-}: { 
+function AccountTypeSelection({
+  onSelect,
+  selectedType
+}: {
   onSelect: (type: 'VENDOR' | 'CUSTOMER') => void;
   selectedType: 'VENDOR' | 'CUSTOMER' | null;
 }) {
@@ -116,22 +117,19 @@ function AccountTypeSelection({
           <button
             type="button"
             onClick={() => setTempSelection('VENDOR')}
-            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${
-              tempSelection === 'VENDOR'
-                ? 'border-primary-01 bg-neutrals-03'
-                : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
-            }`}
+            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${tempSelection === 'VENDOR'
+              ? 'border-primary-01 bg-neutrals-03'
+              : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
+              }`}
           >
-            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${
-              tempSelection === 'VENDOR'
-                ? 'bg-accents-peach'
-                : 'bg-neutrals-03 group-hover:bg-accents-peach'
-            }`}>
-              <Store size={32} className={`transition-all ${
-                tempSelection === 'VENDOR'
-                  ? 'text-primary-01'
-                  : 'text-shades-black group-hover:text-primary-01'
-              }`} />
+            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${tempSelection === 'VENDOR'
+              ? 'bg-accents-peach'
+              : 'bg-neutrals-03 group-hover:bg-accents-peach'
+              }`}>
+              <Store size={32} className={`transition-all ${tempSelection === 'VENDOR'
+                ? 'text-primary-01'
+                : 'text-shades-black group-hover:text-primary-01'
+                }`} />
             </div>
             <div className="text-center">
               <p className="text-sm text-neutrals-07">Are you a</p>
@@ -142,22 +140,19 @@ function AccountTypeSelection({
           <button
             type="button"
             onClick={() => setTempSelection('CUSTOMER')}
-            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${
-              tempSelection === 'CUSTOMER'
-                ? 'border-primary-01 bg-neutrals-03'
-                : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
-            }`}
+            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${tempSelection === 'CUSTOMER'
+              ? 'border-primary-01 bg-neutrals-03'
+              : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
+              }`}
           >
-            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${
-              tempSelection === 'CUSTOMER'
-                ? 'bg-accents-peach'
-                : 'bg-neutrals-03 group-hover:bg-accents-peach'
-            }`}>
-              <User size={32} className={`transition-all ${
-                tempSelection === 'CUSTOMER'
-                  ? 'text-primary-01'
-                  : 'text-shades-black group-hover:text-primary-01'
-              }`} />
+            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${tempSelection === 'CUSTOMER'
+              ? 'bg-accents-peach'
+              : 'bg-neutrals-03 group-hover:bg-accents-peach'
+              }`}>
+              <User size={32} className={`transition-all ${tempSelection === 'CUSTOMER'
+                ? 'text-primary-01'
+                : 'text-shades-black group-hover:text-primary-01'
+                }`} />
             </div>
             <div className="text-center">
               <p className="text-sm text-neutrals-07">Are you a</p>
@@ -194,11 +189,10 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Removed custom error state as we use toasts now, but keeping it if needed for form-level error
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
@@ -218,7 +212,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
       const signupData = await signupRes.json();
 
       if (!signupRes.ok) {
-        setError(signupData.message || "Signup failed");
+        toast.error(signupData.message || "Signup failed");
         setIsLoading(false);
         return;
       }
@@ -231,16 +225,16 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
         credentials: 'same-origin',
       });
 
-      const loginData = await loginRes.json();
-
       if (!loginRes.ok) {
         // Account created but login failed - redirect to login
-        setError("Account created! Please log in.");
+        toast.success("Account created! Please log in.");
         setTimeout(() => {
           window.location.href = "/login";
         }, 1500);
         return;
       }
+
+      toast.success("Account created successfully!");
 
       // Success - redirect based on account type
       if (accountType === 'VENDOR') {
@@ -252,7 +246,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
       }
     } catch (err) {
       console.error(err);
-      setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
       setIsLoading(false);
     }
   };
@@ -273,7 +267,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             placeholder="First Name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
+            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50"
             required
             disabled={isLoading}
           />
@@ -282,7 +276,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             placeholder="Last Name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
+            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50"
             required
             disabled={isLoading}
           />
@@ -293,7 +287,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
+          className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50"
           required
           disabled={isLoading}
         />
@@ -304,7 +298,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none"
+            className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50"
             required
             minLength={8}
             disabled={isLoading}
@@ -312,10 +306,10 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black disabled:opacity-50"
             disabled={isLoading}
           >
-            {showPassword ? '👁️' : '👁️‍🗨️'}
+            {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
           </button>
         </div>
 
@@ -324,36 +318,32 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
             type="checkbox"
             checked={agreeToTerms}
             onChange={(e) => setAgreeToTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01"
+            className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50"
             required
             disabled={isLoading}
           />
           <span>
             I agree to the{' '}
-            <Link href="/terms" className="text-accents-link hover:text-primary-01">
+            <Link href="/terms" className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
               Terms of Service
             </Link>
           </span>
         </label>
 
-        {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
+          {isLoading && <Loader2 className="animate-spin" size={20} />}
           {isLoading ? 'Creating Account...' : 'Sign Up'}
         </button>
 
         <button
           type="button"
           onClick={onBack}
-          className="w-full text-sm text-neutrals-07 hover:text-shades-black"
+          disabled={isLoading}
+          className="w-full text-sm text-neutrals-07 hover:text-shades-black disabled:opacity-50"
         >
           ← Back to account type
         </button>
@@ -367,7 +357,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50"
             disabled={isLoading}
           >
             <Image src="/google.svg" alt="Google" width={20} height={20} />
@@ -375,7 +365,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50"
             disabled={isLoading}
           >
             <Image src="/apple.svg" alt="Apple" width={20} height={20} />
@@ -385,7 +375,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
 
         <p className="text-center text-sm text-neutrals-07">
           Already have an account?{' '}
-          <Link href="/login" className="text-accents-link hover:text-primary-01">
+          <Link href="/login" className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
             Login
           </Link>
         </p>

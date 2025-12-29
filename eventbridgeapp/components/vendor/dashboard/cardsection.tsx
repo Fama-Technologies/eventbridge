@@ -1,17 +1,17 @@
 "use client"
 import { useState } from "react";
 import { UserPlus, Eye, DollarSign, MessageSquareText } from "lucide-react";
-import Card from "./dashboard/card";
+import Card from "./card";
 
 export default function CardSection() {
-    const [profileviews, setprofileviews] = useState(1248);
-    const [profilestat, setprofilestat] = useState("12");
-    const [newleads, setnewleads] = useState(8);
-    const [newleadsstat, setnewleadsstat] = useState("2");
-    const [earnings, setearnings] = useState(8);
-    const [earningsstat, setearningsstat] = useState("2");
-    const [response, setresponse] = useState(98);
-    const [responsestat, setresponsestat] = useState("0");
+    const [profileviews] = useState(1248);
+    const [profilestat] = useState("+12%");
+    const [newleads] = useState(8);
+    const [newleadsstat] = useState("+2");
+    const [earnings] = useState(400250);
+    const [earningsstat] = useState("+$500");
+    const [response] = useState(98);
+    const [responsestat] = useState("0%");
 
     const cards = [
         {
@@ -41,7 +41,7 @@ export default function CardSection() {
     ]
 
     return (
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-8">
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {cards.map((card, index) => (
                 <Card
                     key={index}
