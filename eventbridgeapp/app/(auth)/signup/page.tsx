@@ -15,12 +15,21 @@ export default function SignupPage() {
   // Auto-select account type based on URL parameter
   useEffect(() => {
     const type = searchParams.get('type');
+    const accepted = searchParams.get('accepted');
+
     if (type === 'vendor') {
       setAccountType('VENDOR');
       setStep('details'); // Skip to signup form
     } else if (type === 'customer') {
       setAccountType('CUSTOMER');
       setStep('details'); // Skip to signup form
+    }
+
+    if (accepted === 'true') {
+      // Logic moved to props passing
+      // Determine if we need to switch to details view if not already there
+      // Assuming user was on details step when they clicked to view terms
+      setStep('details');
     }
   }, [searchParams]);
 
@@ -47,7 +56,11 @@ export default function SignupPage() {
               selectedType={accountType}
             />
           ) : (
-            <SignupForm accountType={accountType!} onBack={handleBack} />
+            <SignupForm
+              accountType={accountType!}
+              onBack={handleBack}
+              initialAgreeToTerms={searchParams.get('accepted') === 'true'}
+            />
           )}
         </div>
       </div>
@@ -181,12 +194,20 @@ function AccountTypeSelection({
   );
 }
 
-function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER'; onBack: () => void }) {
+function SignupForm({
+  accountType,
+  onBack,
+  initialAgreeToTerms = false,
+}: {
+  accountType: 'VENDOR' | 'CUSTOMER';
+  onBack: () => void;
+  initialAgreeToTerms?: boolean;
+}) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(initialAgreeToTerms);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // Removed custom error state as we use toasts now, but keeping it if needed for form-level error
@@ -324,7 +345,7 @@ function SignupForm({ accountType, onBack }: { accountType: 'VENDOR' | 'CUSTOMER
           />
           <span>
             I agree to the{' '}
-            <Link href="/terms" className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
+            <Link href={`/terms?type=${accountType.toLowerCase()}`} className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
               Terms of Service
             </Link>
           </span>
