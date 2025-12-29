@@ -20,6 +20,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: "/logo.svg",
+  },
   title: "EventBridge",
   description: "Event planning platform",
 };
