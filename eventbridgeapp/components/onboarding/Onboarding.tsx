@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import OnboardingSidebar from './OnboardingSidebar';
+import { uploadFiles } from '@/lib/uploadthing';
 import ProfileSetupStep from './ProfileSetupStep';
 import ServicesStep from './ServicesStep';
 import PricingStep from './PricingStep';
@@ -99,10 +101,54 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   /* ----------------------------------
      FINAL SUBMIT (NO FILE UPLOADS HERE)
   -----------------------------------*/
+  /* ----------------------------------
+     FINAL SUBMIT (WITH UPLOADTHING)
+  -----------------------------------*/
   const handleSubmit = async () => {
     setIsLoading(true);
 
     try {
+      let profilePhotoUrl = data.profilePhotoUrl;
+      let galleryImageUrls = [...data.galleryImageUrls];
+      let documentUrls = [...data.verificationDocumentUrls];
+
+      // 1. Upload Profile Photo
+      if (data.profilePhoto) {
+        toast.info("Uploading profile photo...");
+        const res = await uploadFiles("profileImage", {
+          files: [data.profilePhoto],
+        });
+        if (res && res[0]) {
+          profilePhotoUrl = res[0].url;
+        }
+      }
+
+      // 2. Upload Gallery
+      if (data.serviceGallery.length > 0) {
+        toast.info("Uploading gallery images...");
+        const res = await uploadFiles("galleryImages", {
+          files: data.serviceGallery,
+        });
+        if (res) {
+          const newUrls = res.map(f => f.url);
+          galleryImageUrls = [...galleryImageUrls, ...newUrls];
+        }
+      }
+
+      // 3. Upload Documents
+      if (data.verificationDocuments.length > 0) {
+        toast.info("Uploading documents...");
+        const res = await uploadFiles("verificationDocuments", {
+          files: data.verificationDocuments,
+        });
+        if (res) {
+          const newUrls = res.map(f => f.url);
+          documentUrls = [...documentUrls, ...newUrls];
+        }
+      }
+
+      toast.info("Submitting application...");
+
       const response = await fetch('/api/vendor/onboarding/submit-verification', {
         method: 'POST',
         headers: {
@@ -121,11 +167,9 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
           experience: data.experience,
           phone: data.phone || '',
           website: data.website || '',
-
-          // ✅ Uploaded earlier via UploadDropzone
-          profilePhotoUrl: data.profilePhotoUrl,
-          galleryImageUrls: data.galleryImageUrls,
-          documentUrls: data.verificationDocumentUrls,
+          profilePhotoUrl,
+          galleryImageUrls,
+          documentUrls,
         }),
       });
 
@@ -137,19 +181,16 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
 
       localStorage.removeItem('vendorOnboardingDraft');
 
-      alert('Application submitted successfully!');
-      router.push('/');
+      toast.success('Application submitted successfully!');
+      router.push('/vendor'); // Redirect to vendor dashboard, not home
     } catch (error) {
       console.error('Onboarding submission error:', error);
-      alert('Failed to submit onboarding. Please try again.');
+      toast.error('Failed to submit onboarding. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  /* ----------------------------------
-     Step rendering
-  -----------------------------------*/
   const stepProps = {
     data,
     updateData,

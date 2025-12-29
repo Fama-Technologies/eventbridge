@@ -262,16 +262,13 @@ export default function PricingStep({
           <label className="block text-sm font-semibold text-shades-black mb-2">
             Cancellation Policy
           </label>
-          <select
+          <textarea
             value={cancellationPolicy}
             onChange={(e) => setCancellationPolicy(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black focus:border-primary-01 focus:outline-none"
-          >
-            <option value="flexible">Flexible - Full refund up to 24h before</option>
-            <option value="moderate">Moderate - Full refund up to 7 days before</option>
-            <option value="strict">Strict - 50% refund up to 7 days before</option>
-            <option value="none">Non-refundable</option>
-          </select>
+            placeholder="Describe your cancellation and refund policy..."
+            rows={4}
+            className="w-full px-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black focus:border-primary-01 focus:outline-none resize-none"
+          />
         </div>
       </div>
 

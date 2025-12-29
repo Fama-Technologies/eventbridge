@@ -86,6 +86,7 @@ export const SERVICE_CATEGORIES = [
   'MC/Host',
   'Security',
   'Transportation',
+  'Honeymoon packages',
 ];
 
 export const PRICING_STRUCTURES = [

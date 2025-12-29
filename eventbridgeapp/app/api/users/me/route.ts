@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { users, sessions } from '@/drizzle/schema';
+import { users, sessions, vendorProfiles } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    
+
     // Check for auth-token first (set by login), then session
     const authToken = cookieStore.get('auth-token')?.value;
     const sessionToken = cookieStore.get('session')?.value;
@@ -23,29 +23,41 @@ export async function GET() {
       try {
         const payload = await verifyToken(authToken);
         if (payload && payload.userId) {
-          const [user] = await db
+          const [result] = await db
             .select({
-              id: users.id,
-              email: users.email,
-              firstName: users.firstName,
-              lastName: users.lastName,
-              accountType: users.accountType,
-              image: users.image,
-              isActive: users.isActive,
-              emailVerified: users.emailVerified,
-              createdAt: users.createdAt,
-              updatedAt: users.updatedAt,
+              user: {
+                id: users.id,
+                email: users.email,
+                firstName: users.firstName,
+                lastName: users.lastName,
+                accountType: users.accountType,
+                image: users.image,
+                isActive: users.isActive,
+                emailVerified: users.emailVerified,
+                createdAt: users.createdAt,
+                updatedAt: users.updatedAt,
+              },
+              vendorImage: vendorProfiles.profileImage,
+              vendorId: vendorProfiles.id,
             })
             .from(users)
+            .leftJoin(vendorProfiles, eq(users.id, vendorProfiles.userId))
             .where(eq(users.id, payload.userId))
             .limit(1);
 
-          if (user && user.isActive) {
-            return NextResponse.json(user);
-          }
-          
-          if (user && !user.isActive) {
-            return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
+          if (result && result.user) {
+            const user = {
+              ...result.user,
+              image: result.user.image || result.vendorImage || null,
+            };
+
+            if (user.isActive) {
+              return NextResponse.json(user);
+            }
+
+            if (!user.isActive) {
+              return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
+            }
           }
         }
       } catch (error) {
@@ -63,29 +75,41 @@ export async function GET() {
 
       if (session && new Date(session.expiresAt) >= new Date()) {
         // Get user
-        const [user] = await db
+        const [result] = await db
           .select({
-            id: users.id,
-            email: users.email,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            accountType: users.accountType,
-            image: users.image,
-            isActive: users.isActive,
-            emailVerified: users.emailVerified,
-            createdAt: users.createdAt,
-            updatedAt: users.updatedAt,
+            user: {
+              id: users.id,
+              email: users.email,
+              firstName: users.firstName,
+              lastName: users.lastName,
+              accountType: users.accountType,
+              image: users.image,
+              isActive: users.isActive,
+              emailVerified: users.emailVerified,
+              createdAt: users.createdAt,
+              updatedAt: users.updatedAt,
+            },
+            vendorImage: vendorProfiles.profileImage,
+            vendorId: vendorProfiles.id,
           })
           .from(users)
+          .leftJoin(vendorProfiles, eq(users.id, vendorProfiles.userId))
           .where(eq(users.id, session.userId))
           .limit(1);
 
-        if (user && user.isActive) {
-          return NextResponse.json(user);
-        }
-        
-        if (user && !user.isActive) {
-          return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
+        if (result && result.user) {
+          const user = {
+            ...result.user,
+            image: result.user.image || result.vendorImage || null,
+          };
+
+          if (user.isActive) {
+            return NextResponse.json(user);
+          }
+
+          if (!user.isActive) {
+            return NextResponse.json({ error: 'Account is deactivated' }, { status: 403 });
+          }
         }
       }
     }

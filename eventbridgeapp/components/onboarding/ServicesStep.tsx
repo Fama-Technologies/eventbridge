@@ -20,6 +20,14 @@ export default function ServicesStep({
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      const currentCount = data.serviceGallery.length;
+      const newFilesCount = files.length;
+
+      if (currentCount + newFilesCount > 10) {
+        alert('You can only upload a maximum of 10 images.');
+        return;
+      }
+
       const newFiles = Array.from(files);
       const newPreviews: string[] = [];
 

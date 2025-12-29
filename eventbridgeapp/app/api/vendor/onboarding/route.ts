@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    
+
     const {
       businessName,
       serviceCategories,
@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
     }
 
     const defaultPolicy = 'Standard cancellation policy: Full refund if cancelled 7 days before event. 50% refund if cancelled 3-7 days before. No refund if cancelled less than 3 days before event.';
-    
+
     const [existingPolicy] = await db
       .select()
       .from(cancellationPolicies)
@@ -296,12 +296,23 @@ export async function POST(request: NextRequest) {
       console.log('Saved verification documents:', documents.length);
     }
 
+    // Update user account type and sync profile image
+    const userUpdate: { accountType?: 'VENDOR' | 'CUSTOMER' | 'ADMIN' | 'PLANNER'; image?: string } = {};
+
     if (user.accountType === 'CUSTOMER') {
+      userUpdate.accountType = 'VENDOR';
+    }
+
+    if (profilePhotoUrl) {
+      userUpdate.image = profilePhotoUrl;
+    }
+
+    if (Object.keys(userUpdate).length > 0) {
       await db
         .update(users)
-        .set({ accountType: 'VENDOR' })
+        .set(userUpdate)
         .where(eq(users.id, user.id));
-      console.log('Updated user account type to VENDOR');
+      console.log('Updated user profile:', userUpdate);
     }
 
     const [progress] = await db
@@ -338,7 +349,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('POST Onboarding error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to save progress',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
