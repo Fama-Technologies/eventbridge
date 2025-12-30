@@ -12,6 +12,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
+    "@aws-sdk/s3-request-presigner": "^3.958.0",
     "@hookform/resolvers": "^5.2.2",
     "@iconify/react": "^6.0.2",
     "@neondatabase/serverless": "^1.0.2",

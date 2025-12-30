@@ -464,3 +464,51 @@ export type Booking = typeof bookings.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+
+/* ===================== USER UPLOADS ===================== */
+export const userUploads = pgTable('user_uploads', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  fileKey: text('file_key').notNull(), // R2 object key
+  fileUrl: text('file_url').notNull(), // Public CDN URL
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(),
+  fileSize: integer('file_size').notNull(), // in bytes
+
+  uploadType: text('upload_type').notNull(), 
+  // 'profile', 'gallery', 'document', 'video', 'cover'
+
+  // Optional: Link to specific vendor profile
+  vendorId: integer('vendor_id')
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  // Metadata
+  width: integer('width'),
+  height: integer('height'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== USER UPLOADS RELATIONS ===================== */
+export const userUploadsRelations = relations(userUploads, ({ one }) => ({
+  user: one(users, {
+    fields: [userUploads.userId],
+    references: [users.id],
+  }),
+  vendor: one(vendorProfiles, {
+    fields: [userUploads.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+/* ===================== ADD TO USERS RELATIONS ===================== */
+// Update usersRelations to include:
+// uploads: many(userUploads),
+
+/* ===================== TYPES ===================== */
+export type UserUpload = typeof userUploads.$inferSelect;
+export type NewUserUpload = typeof userUploads.$inferInsert;
