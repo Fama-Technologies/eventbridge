@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
 import { SonnerProvider } from "@/components/providers/SonnerProvider";
+import { Providers } from "./providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,7 +33,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Prevent theme flash before hydration
   const themeScript = `
     (function () {
       try {
@@ -57,14 +57,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
-        <ThemeProvider>
-          <LoadingProvider>
-            <ToastProvider>
-              <SonnerProvider />
-              {children}
-            </ToastProvider>
-          </LoadingProvider>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider>
+            <LoadingProvider>
+              <ToastProvider>
+                <SonnerProvider />
+                {children}
+              </ToastProvider>
+            </LoadingProvider>
+          </ThemeProvider>
+        </Providers>
         <SpeedInsights />
       </body>
     </html>
