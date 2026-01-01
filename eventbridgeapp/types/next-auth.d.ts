@@ -6,23 +6,23 @@ declare module 'next-auth' {
     user: {
       id: string;
       email: string;
-      name?: string;
-      image?: string;
-      accountType: 'VENDOR' | 'CUSTOMER';
+      name?: string | null;
+      image?: string | null;
+      accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
     };
   }
 
   interface User {
     id: string;
     email: string;
-    accountType: 'VENDOR' | 'CUSTOMER';
+    accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    userId: string;
-    email: string;
-    accountType: 'VENDOR' | 'CUSTOMER';
+    userId?: number;
+    email?: string;
+    accountType?: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
   }
 }
