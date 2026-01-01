@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Store, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { signIn } from 'next-auth/react';
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
@@ -19,16 +20,13 @@ export default function SignupPage() {
 
     if (type === 'vendor') {
       setAccountType('VENDOR');
-      setStep('details'); // Skip to signup form
+      setStep('details');
     } else if (type === 'customer') {
       setAccountType('CUSTOMER');
-      setStep('details'); // Skip to signup form
+      setStep('details');
     }
 
     if (accepted === 'true') {
-      // Logic moved to props passing
-      // Determine if we need to switch to details view if not already there
-      // Assuming user was on details step when they clicked to view terms
       setStep('details');
     }
   }, [searchParams]);
@@ -210,7 +208,32 @@ function SignupForm({
   const [agreeToTerms, setAgreeToTerms] = useState(initialAgreeToTerms);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // Removed custom error state as we use toasts now, but keeping it if needed for form-level error
+
+  const handleGoogleSignup = async () => {
+    if (!agreeToTerms) {
+      toast.error('Please agree to the Terms of Service');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Store account type for after OAuth callback
+      sessionStorage.setItem('pendingAccountType', accountType);
+
+      await signIn('google', {
+        callbackUrl: accountType === 'VENDOR' ? '/vendor/onboarding' : '/dashboard',
+      });
+    } catch (error) {
+      console.error('Google signup error:', error);
+      toast.error('Failed to sign up with Google');
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignup = async () => {
+    toast.error('Apple sign-in coming soon!');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,16 +261,14 @@ function SignupForm({
         return;
       }
 
-      // Step 2: Auto-login the user (include credentials so Set-Cookie is applied)
-      const loginRes = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: 'same-origin',
+      // Step 2: Auto-login using NextAuth credentials
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
       });
 
-      if (!loginRes.ok) {
-        // Account created but login failed - redirect to login
+      if (result?.error) {
         toast.success("Account created! Please log in.");
         setTimeout(() => {
           window.location.href = "/login";
@@ -257,13 +278,11 @@ function SignupForm({
 
       toast.success("Account created successfully!");
 
-      // Success - redirect based on account type
+      // Redirect based on account type
       if (accountType === 'VENDOR') {
-        // Redirect vendors directly to onboarding
         window.location.href = "/vendor/onboarding";
       } else {
-        // Redirect customers to dashboard/home
-        window.location.href = "/";
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       console.error(err);
@@ -353,7 +372,7 @@ function SignupForm({
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !agreeToTerms}
           className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading && <Loader2 className="animate-spin" size={20} />}
@@ -378,16 +397,18 @@ function SignupForm({
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50"
-            disabled={isLoading}
+            onClick={handleGoogleSignup}
+            disabled={isLoading || !agreeToTerms}
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Image src="/google.svg" alt="Google" width={20} height={20} />
             Sign up with Google
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50"
-            disabled={isLoading}
+            onClick={handleAppleSignup}
+            disabled={isLoading || !agreeToTerms}
+            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Image src="/apple.svg" alt="Apple" width={20} height={20} />
             Sign up with Apple

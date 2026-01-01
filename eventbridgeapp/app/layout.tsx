@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -9,6 +9,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { LoadingProvider } from "@/components/providers/LoadingProvider";
 import { SonnerProvider } from "@/components/providers/SonnerProvider";
 import { Providers } from "./providers";
+import { NextAuthProvider } from "@/components/providers/session-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -57,16 +58,18 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
-        <Providers>
-          <ThemeProvider>
-            <LoadingProvider>
-              <ToastProvider>
-                <SonnerProvider />
-                {children}
-              </ToastProvider>
-            </LoadingProvider>
-          </ThemeProvider>
-        </Providers>
+        <NextAuthProvider>
+          <Providers>
+            <ThemeProvider>
+              <LoadingProvider>
+                <ToastProvider>
+                  <SonnerProvider />
+                  {children}
+                </ToastProvider>
+              </LoadingProvider>
+            </ThemeProvider>
+          </Providers>
+        </NextAuthProvider>
         <SpeedInsights />
       </body>
     </html>
