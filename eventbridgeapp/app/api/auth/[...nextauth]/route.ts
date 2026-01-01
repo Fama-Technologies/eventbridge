@@ -1,12 +1,12 @@
 import NextAuth from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
+import Google from 'next-auth/providers/google';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-const handler = NextAuth({
+const authHandler = NextAuth({
   providers: [
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
@@ -31,12 +31,12 @@ const handler = NextAuth({
       if (!existingUser) {
         await db.insert(users).values({
           email,
-          password: null,               // nullable (OAuth user)
+          password: null,
           firstName: user.name?.split(' ')[0] ?? '',
           lastName: user.name?.split(' ').slice(1).join(' ') ?? '',
           image: user.image ?? null,
-          provider: account.provider,   // REQUIRED (not null)
-          accountType: 'CUSTOMER',       // REQUIRED (not null)
+          provider: account.provider,
+          accountType: 'CUSTOMER',
           isActive: true,
           emailVerified: true,
         });
@@ -47,4 +47,5 @@ const handler = NextAuth({
   },
 });
 
-export { handler as GET, handler as POST };
+export const GET = authHandler;
+export const POST = authHandler;
