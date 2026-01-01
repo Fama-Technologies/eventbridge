@@ -1,3 +1,4 @@
+// drizzle/schema.ts - COMPLETE CORRECTED VERSION
 import {
   pgTable,
   serial,
@@ -145,15 +146,292 @@ export const vendorProfiles = pgTable('vendor_profiles', {
   phone: text('phone'),
   website: text('website'),
 
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zipCode: text('zip_code'),
+
+  serviceRadius: integer('service_radius'),
+  yearsExperience: integer('years_experience'),
+  hourlyRate: integer('hourly_rate'),
+
   verificationStatus: text('verification_status').default('pending').notNull(),
+  verificationSubmittedAt: timestamp('verification_submitted_at'),
+  verificationReviewedAt: timestamp('verification_reviewed_at'),
+  verificationNotes: text('verification_notes'),
   canAccessDashboard: boolean('can_access_dashboard').default(false).notNull(),
 
   isVerified: boolean('is_verified').default(false),
+  rating: integer('rating').default(0),
+  reviewCount: integer('review_count').default(0),
 
   profileImage: text('profile_image'),
+  coverImage: text('cover_image'),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== VENDOR SERVICES ===================== */
+export const vendorServices = pgTable('vendor_services', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  name: text('name').notNull(),
+  description: text('description'),
+  price: integer('price'),
+  duration: integer('duration'),
+
+  isActive: boolean('is_active').default(true),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== VENDOR PACKAGES ===================== */
+export const vendorPackages = pgTable('vendor_packages', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  name: text('name').notNull(),
+  description: text('description'),
+  price: integer('price').notNull(),
+  duration: integer('duration'),
+  features: jsonb('features').$type<string[]>(),
+
+  isPopular: boolean('is_popular').default(false),
+  isActive: boolean('is_active').default(true),
+  displayOrder: integer('display_order').default(0),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== SERVICE GALLERY ===================== */
+export const serviceGallery = pgTable('service_gallery', {
+  id: serial('id').primaryKey(),
+
+  serviceId: integer('service_id')
+    .notNull()
+    .references(() => vendorServices.id, { onDelete: 'cascade' }),
+
+  mediaUrl: text('media_url').notNull(),
+  mediaType: text('media_type').notNull(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== VENDOR PORTFOLIO ===================== */
+export const vendorPortfolio = pgTable('vendor_portfolio', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  imageUrl: text('image_url').notNull(),
+  title: text('title'),
+  description: text('description'),
+  category: text('category'),
+
+  width: integer('width'),
+  height: integer('height'),
+  fileSize: integer('file_size'),
+  quality: text('quality'),
+  displayOrder: integer('display_order').default(0),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== VENDOR VIDEOS ===================== */
+export const vendorVideos = pgTable('vendor_videos', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  videoUrl: text('video_url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  title: text('title'),
+  description: text('description'),
+
+  duration: integer('duration'),
+  fileSize: integer('file_size'),
+  width: integer('width'),
+  height: integer('height'),
+  quality: text('quality'),
+  displayOrder: integer('display_order').default(0),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== CANCELLATION POLICIES ===================== */
+export const cancellationPolicies = pgTable('cancellation_policies', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  policyText: text('policy_text').notNull(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== VENDOR DISCOUNTS ===================== */
+export const vendorDiscounts = pgTable('vendor_discounts', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  code: text('code').unique(),
+  name: text('name').notNull(),
+  discountType: text('discount_type').notNull(),
+  discountValue: integer('discount_value').notNull(),
+
+  validFrom: timestamp('valid_from').notNull(),
+  validUntil: timestamp('valid_until').notNull(),
+
+  maxUses: integer('max_uses'),
+  currentUses: integer('current_uses').default(0),
+  minimumBookingAmount: integer('minimum_booking_amount'),
+
+  isActive: boolean('is_active').default(true),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== VERIFICATION DOCUMENTS ===================== */
+export const verificationDocuments = pgTable('verification_documents', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  documentType: text('document_type').notNull(),
+  documentUrl: text('document_url').notNull(),
+  documentName: text('document_name').notNull(),
+  fileSize: integer('file_size'),
+
+  status: text('status').default('pending').notNull(),
+
+  uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
+});
+
+/* ===================== ONBOARDING PROGRESS ===================== */
+export const onboardingProgress = pgTable('onboarding_progress', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  currentStep: integer('current_step').default(1).notNull(),
+  completedSteps: jsonb('completed_steps').$type<number[]>().default([]),
+  formData: jsonb('form_data').$type<Record<string, any>>().default({}),
+
+  isComplete: boolean('is_complete').default(false),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== USER UPLOADS ===================== */
+export const userUploads = pgTable('user_uploads', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  fileKey: text('file_key').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(),
+  fileSize: integer('file_size').notNull(),
+
+  uploadType: text('upload_type').notNull(),
+
+  vendorId: integer('vendor_id')
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  width: integer('width'),
+  height: integer('height'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/* ===================== BOOKINGS ===================== */
+export const bookings = pgTable('bookings', {
+  id: serial('id').primaryKey(),
+
+  eventId: integer('event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'cascade' }),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  clientId: integer('client_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  serviceId: integer('service_id')
+    .references(() => vendorServices.id),
+
+  packageId: integer('package_id')
+    .references(() => vendorPackages.id),
+
+  bookingDate: timestamp('booking_date').notNull(),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time').notNull(),
+
+  status: text('status').default('pending').notNull(),
+  paymentStatus: text('payment_status').default('unpaid'),
+
+  totalAmount: integer('total_amount'),
+  notes: text('notes'),
+
+  discountCode: text('discount_code'),
+  discountAmount: integer('discount_amount').default(0),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== REVIEWS ===================== */
+export const reviews = pgTable('reviews', {
+  id: serial('id').primaryKey(),
+
+  bookingId: integer('booking_id')
+    .notNull()
+    .references(() => bookings.id, { onDelete: 'cascade' }),
+
+  clientId: integer('client_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
+  isAnonymous: boolean('is_anonymous').default(false),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 /* ===================== RELATIONS ===================== */
@@ -163,6 +441,10 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   events: many(events),
   passwordResetTokens: many(passwordResetTokens),
   vendorProfile: one(vendorProfiles),
+  clientBookings: many(bookings),
+  reviewsGiven: many(reviews),
+  onboardingProgress: one(onboardingProgress),
+  uploads: many(userUploads),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -172,10 +454,98 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
   }),
 }));
 
-export const vendorProfilesRelations = relations(vendorProfiles, ({ one }) => ({
+export const userUploadsRelations = relations(userUploads, ({ one }) => ({
+  user: one(users, {
+    fields: [userUploads.userId],
+    references: [users.id],
+  }),
+  vendor: one(vendorProfiles, {
+    fields: [userUploads.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many }) => ({
   user: one(users, {
     fields: [vendorProfiles.userId],
     references: [users.id],
+  }),
+  services: many(vendorServices),
+  packages: many(vendorPackages),
+  portfolio: many(vendorPortfolio),
+  videos: many(vendorVideos),
+  cancellationPolicy: one(cancellationPolicies),
+  discounts: many(vendorDiscounts),
+  verificationDocuments: many(verificationDocuments),
+  bookings: many(bookings),
+  reviews: many(reviews),
+  uploads: many(userUploads),
+}));
+
+export const vendorServicesRelations = relations(vendorServices, ({ one, many }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorServices.vendorId],
+    references: [vendorProfiles.id],
+  }),
+  gallery: many(serviceGallery),
+}));
+
+export const vendorPackagesRelations = relations(vendorPackages, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorPackages.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+export const vendorPortfolioRelations = relations(vendorPortfolio, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorPortfolio.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+export const vendorVideosRelations = relations(vendorVideos, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorVideos.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+export const bookingsRelations = relations(bookings, ({ one }) => ({
+  event: one(events, {
+    fields: [bookings.eventId],
+    references: [events.id],
+  }),
+  vendor: one(vendorProfiles, {
+    fields: [bookings.vendorId],
+    references: [vendorProfiles.id],
+  }),
+  client: one(users, {
+    fields: [bookings.clientId],
+    references: [users.id],
+  }),
+  service: one(vendorServices, {
+    fields: [bookings.serviceId],
+    references: [vendorServices.id],
+  }),
+  package: one(vendorPackages, {
+    fields: [bookings.packageId],
+    references: [vendorPackages.id],
+  }),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  booking: one(bookings, {
+    fields: [reviews.bookingId],
+    references: [bookings.id],
+  }),
+  client: one(users, {
+    fields: [reviews.clientId],
+    references: [users.id],
+  }),
+  vendor: one(vendorProfiles, {
+    fields: [reviews.vendorId],
+    references: [vendorProfiles.id],
   }),
 }));
 
@@ -184,6 +554,25 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
 export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+
 export type Session = typeof sessions.$inferSelect;
 export type Event = typeof events.$inferSelect;
+
 export type VendorProfile = typeof vendorProfiles.$inferSelect;
+export type VendorService = typeof vendorServices.$inferSelect;
+export type VendorPackage = typeof vendorPackages.$inferSelect;
+export type VendorVideo = typeof vendorVideos.$inferSelect;
+export type VendorPortfolioItem = typeof vendorPortfolio.$inferSelect;
+export type ServiceGallery = typeof serviceGallery.$inferSelect;
+export type CancellationPolicy = typeof cancellationPolicies.$inferSelect;
+export type VendorDiscount = typeof vendorDiscounts.$inferSelect;
+export type VerificationDocument = typeof verificationDocuments.$inferSelect;
+
+export type UserUpload = typeof userUploads.$inferSelect;
+export type NewUserUpload = typeof userUploads.$inferInsert;
+
+export type Booking = typeof bookings.$inferSelect;
+export type Review = typeof reviews.$inferSelect;
+
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
