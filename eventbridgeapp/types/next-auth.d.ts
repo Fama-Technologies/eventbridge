@@ -1,5 +1,4 @@
-// types/next-auth.d.ts
-import NextAuth from 'next-auth';
+import 'next-auth';
 
 declare module 'next-auth' {
   interface Session {
@@ -8,21 +7,22 @@ declare module 'next-auth' {
       email: string;
       name?: string | null;
       image?: string | null;
-      accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
+      accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
     };
   }
 
   interface User {
     id: string;
-    email: string;
-    accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+    accountType?: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     userId?: number;
-    email?: string;
-    accountType?: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
+    accountType?: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
   }
 }

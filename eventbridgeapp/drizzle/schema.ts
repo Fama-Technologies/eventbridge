@@ -24,7 +24,7 @@ export const users = pgTable('users', {
   provider: text('provider').notNull().default('local'),
 
   accountType: text('account_type')
-    .$type<'VENDOR' | 'CUSTOMER' | 'PLANNER'>()
+    .$type<'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN'>()
     .notNull(),
 
   isActive: boolean('is_active').default(true),

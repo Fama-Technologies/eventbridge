@@ -15,7 +15,7 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
-  accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER';
+  accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
 }
 
 /* =========================
@@ -212,7 +212,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).accountType = token.accountType as
           | 'VENDOR'
           | 'CUSTOMER'
-          | 'PLANNER';
+          | 'PLANNER'
+          | 'ADMIN';
       }
 
       return session;
@@ -275,7 +276,7 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
 
     return {
       ...user,
-      accountType: user.accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER',
+      accountType: user.accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN',
     };
   } catch (error) {
     console.error('getAuthUser error:', error);
@@ -314,7 +315,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
     return {
       ...user,
-      accountType: user.accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER',
+      accountType: user.accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN',
     };
   } catch (error) {
     console.error('getCurrentUser error:', error);
@@ -394,6 +395,33 @@ export function requireVendor(
         {
           success: false,
           message: 'Vendor access only',
+        },
+        { status: 403 }
+      );
+    }
+
+    return handler(req, user);
+  };
+}
+
+export function requireAdmin(
+  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
+) {
+  return async (req: NextRequest) => {
+    const user = await getAuthUser(req);
+
+    if (!user) {
+      return Response.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (user.accountType !== 'ADMIN') {
+      return Response.json(
+        {
+          success: false,
+          message: 'Admin access only',
         },
         { status: 403 }
       );
