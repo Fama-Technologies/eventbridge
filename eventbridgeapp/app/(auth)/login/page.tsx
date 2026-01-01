@@ -64,15 +64,27 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log('Google sign-in button clicked');
+    
     try {
       setIsGoogleLoading(true);
+      console.log('Starting Google sign-in...');
       
       const callbackUrl = redirectUrl || '/dashboard';
+      console.log('Callback URL:', callbackUrl);
       
-      await signIn('google', { 
+      const result = await signIn('google', { 
         callbackUrl,
         redirect: true 
       });
+      
+      console.log('Sign-in result:', result);
+      
+      if (result?.error) {
+        console.error('Sign-in error:', result.error);
+        toast.error("Failed to sign in with Google");
+        setIsGoogleLoading(false);
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Failed to sign in with Google");
