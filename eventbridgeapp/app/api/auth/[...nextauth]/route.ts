@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-const authHandler = NextAuth({
+const handler = NextAuth({
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -31,21 +31,34 @@ const authHandler = NextAuth({
       if (!existingUser) {
         await db.insert(users).values({
           email,
-          password: null,
+          password: '',
           firstName: user.name?.split(' ')[0] ?? '',
           lastName: user.name?.split(' ').slice(1).join(' ') ?? '',
           image: user.image ?? null,
           provider: account.provider,
           accountType: 'CUSTOMER',
-          isActive: true,
-          emailVerified: true,
         });
       }
 
       return true;
     },
+
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+      }
+      return token;
+    },
+
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+      }
+      return session;
+    },
   },
 });
 
-export const GET = authHandler;
-export const POST = authHandler;
+export { handler as GET, handler as POST };
