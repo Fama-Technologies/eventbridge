@@ -1,11 +1,10 @@
-// app/api/auth/[...nextauth]/route.ts
-import NextAuth, { type NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { db } from '@/lib/db';
 import { users, accounts } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -127,7 +126,6 @@ export const authOptions: NextAuthOptions = {
     maxAge: 7 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
-};
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
