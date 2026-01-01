@@ -1,4 +1,4 @@
-// drizzle/schema.ts - COMPLETE UPDATED VERSION
+// drizzle/schema.ts - COMPLETE UPDATED VERSION WITH NEXTAUTH SUPPORT
 import {
   pgTable,
   serial,
@@ -15,7 +15,7 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
 
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
+  password: text('password'), // Made nullable for OAuth users
 
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
@@ -29,6 +29,29 @@ export const users = pgTable('users', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== ACCOUNTS (FOR OAUTH) ===================== */
+export const accounts = pgTable('accounts', {
+  id: serial('id').primaryKey(),
+  
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  
+  type: text('type').notNull(),
+  provider: text('provider').notNull(),
+  providerAccountId: text('provider_account_id').notNull(),
+  
+  refresh_token: text('refresh_token'),
+  access_token: text('access_token'),
+  expires_at: integer('expires_at'),
+  token_type: text('token_type'),
+  scope: text('scope'),
+  id_token: text('id_token'),
+  session_state: text('session_state'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 /* ===================== SESSIONS ===================== */
@@ -128,11 +151,9 @@ export const vendorProfiles = pgTable('vendor_profiles', {
 
   serviceRadius: integer('service_radius'),
   yearsExperience: integer('years_experience'),
-  hourlyRate: integer('hourly_rate'), // Keep for backward compatibility
+  hourlyRate: integer('hourly_rate'),
 
-  // ✅ NEW: VERIFICATION FIELDS
   verificationStatus: text('verification_status').default('pending').notNull(),
-  // 'pending', 'under_review', 'approved', 'rejected', 'resubmission_required'
   verificationSubmittedAt: timestamp('verification_submitted_at'),
   verificationReviewedAt: timestamp('verification_reviewed_at'),
   verificationNotes: text('verification_notes'),
@@ -149,7 +170,7 @@ export const vendorProfiles = pgTable('vendor_profiles', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-/* ===================== VENDOR SERVICES (KEPT AS IS) ===================== */
+/* ===================== VENDOR SERVICES ===================== */
 export const vendorServices = pgTable('vendor_services', {
   id: serial('id').primaryKey(),
 
@@ -167,7 +188,7 @@ export const vendorServices = pgTable('vendor_services', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== ✅ NEW: VENDOR PACKAGES ===================== */
+/* ===================== VENDOR PACKAGES ===================== */
 export const vendorPackages = pgTable('vendor_packages', {
   id: serial('id').primaryKey(),
 
@@ -177,9 +198,9 @@ export const vendorPackages = pgTable('vendor_packages', {
 
   name: text('name').notNull(),
   description: text('description'),
-  price: integer('price').notNull(), // in cents
-  duration: integer('duration'), // in minutes
-  features: jsonb('features').$type<string[]>(), // array of features
+  price: integer('price').notNull(),
+  duration: integer('duration'),
+  features: jsonb('features').$type<string[]>(),
 
   isPopular: boolean('is_popular').default(false),
   isActive: boolean('is_active').default(true),
@@ -189,7 +210,7 @@ export const vendorPackages = pgTable('vendor_packages', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-/* ===================== SERVICE GALLERY (KEPT AS IS) ===================== */
+/* ===================== SERVICE GALLERY ===================== */
 export const serviceGallery = pgTable('service_gallery', {
   id: serial('id').primaryKey(),
 
@@ -198,12 +219,12 @@ export const serviceGallery = pgTable('service_gallery', {
     .references(() => vendorServices.id, { onDelete: 'cascade' }),
 
   mediaUrl: text('media_url').notNull(),
-  mediaType: text('media_type').notNull(), // 'image' | 'video'
+  mediaType: text('media_type').notNull(),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== VENDOR PORTFOLIO (UPDATED) ===================== */
+/* ===================== VENDOR PORTFOLIO ===================== */
 export const vendorPortfolio = pgTable('vendor_portfolio', {
   id: serial('id').primaryKey(),
 
@@ -216,17 +237,16 @@ export const vendorPortfolio = pgTable('vendor_portfolio', {
   description: text('description'),
   category: text('category'),
 
-  // ✅ NEW: QUALITY TRACKING
   width: integer('width'),
   height: integer('height'),
   fileSize: integer('file_size'),
-  quality: text('quality'), // 'high', 'medium', 'low'
+  quality: text('quality'),
   displayOrder: integer('display_order').default(0),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== ✅ NEW: VENDOR VIDEOS ===================== */
+/* ===================== VENDOR VIDEOS ===================== */
 export const vendorVideos = pgTable('vendor_videos', {
   id: serial('id').primaryKey(),
 
@@ -239,17 +259,17 @@ export const vendorVideos = pgTable('vendor_videos', {
   title: text('title'),
   description: text('description'),
 
-  duration: integer('duration'), // in seconds
-  fileSize: integer('file_size'), // in bytes
+  duration: integer('duration'),
+  fileSize: integer('file_size'),
   width: integer('width'),
   height: integer('height'),
-  quality: text('quality'), // 'high', 'medium', 'low'
+  quality: text('quality'),
   displayOrder: integer('display_order').default(0),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== ✅ NEW: CANCELLATION POLICIES ===================== */
+/* ===================== CANCELLATION POLICIES ===================== */
 export const cancellationPolicies = pgTable('cancellation_policies', {
   id: serial('id').primaryKey(),
 
@@ -257,13 +277,13 @@ export const cancellationPolicies = pgTable('cancellation_policies', {
     .notNull()
     .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
 
-  policyText: text('policy_text').notNull(), // Free text input
+  policyText: text('policy_text').notNull(),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-/* ===================== ✅ NEW: VENDOR DISCOUNTS ===================== */
+/* ===================== VENDOR DISCOUNTS ===================== */
 export const vendorDiscounts = pgTable('vendor_discounts', {
   id: serial('id').primaryKey(),
 
@@ -273,7 +293,7 @@ export const vendorDiscounts = pgTable('vendor_discounts', {
 
   code: text('code').unique(),
   name: text('name').notNull(),
-  discountType: text('discount_type').notNull(), // 'percentage', 'fixed'
+  discountType: text('discount_type').notNull(),
   discountValue: integer('discount_value').notNull(),
 
   validFrom: timestamp('valid_from').notNull(),
@@ -288,7 +308,7 @@ export const vendorDiscounts = pgTable('vendor_discounts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-/* ===================== ✅ NEW: VERIFICATION DOCUMENTS ===================== */
+/* ===================== VERIFICATION DOCUMENTS ===================== */
 export const verificationDocuments = pgTable('verification_documents', {
   id: serial('id').primaryKey(),
 
@@ -297,17 +317,16 @@ export const verificationDocuments = pgTable('verification_documents', {
     .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
 
   documentType: text('document_type').notNull(),
-  // 'business_license', 'insurance', 'id_verification', 'tax_document', 'other'
   documentUrl: text('document_url').notNull(),
   documentName: text('document_name').notNull(),
   fileSize: integer('file_size'),
 
-  status: text('status').default('pending').notNull(), // 'pending', 'approved', 'rejected'
+  status: text('status').default('pending').notNull(),
 
   uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
 });
 
-/* ===================== ✅ NEW: ONBOARDING PROGRESS ===================== */
+/* ===================== ONBOARDING PROGRESS ===================== */
 export const onboardingProgress = pgTable('onboarding_progress', {
   id: serial('id').primaryKey(),
 
@@ -324,6 +343,31 @@ export const onboardingProgress = pgTable('onboarding_progress', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/* ===================== USER UPLOADS ===================== */
+export const userUploads = pgTable('user_uploads', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  fileKey: text('file_key').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(),
+  fileSize: integer('file_size').notNull(),
+
+  uploadType: text('upload_type').notNull(),
+
+  vendorId: integer('vendor_id')
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  width: integer('width'),
+  height: integer('height'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 /* ===================== BOOKINGS ===================== */
@@ -345,7 +389,6 @@ export const bookings = pgTable('bookings', {
   serviceId: integer('service_id')
     .references(() => vendorServices.id),
 
-  // ✅ NEW: Can also reference package instead of service
   packageId: integer('package_id')
     .references(() => vendorPackages.id),
 
@@ -359,7 +402,6 @@ export const bookings = pgTable('bookings', {
   totalAmount: integer('total_amount'),
   notes: text('notes'),
 
-  // ✅ NEW: Discount tracking
   discountCode: text('discount_code'),
   discountAmount: integer('discount_amount').default(0),
 
@@ -393,12 +435,32 @@ export const reviews = pgTable('reviews', {
 /* ===================== RELATIONS ===================== */
 export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
+  accounts: many(accounts),
   events: many(events),
   passwordResetTokens: many(passwordResetTokens),
   vendorProfile: one(vendorProfiles),
   clientBookings: many(bookings),
   reviewsGiven: many(reviews),
   onboardingProgress: one(onboardingProgress),
+  uploads: many(userUploads),
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userUploadsRelations = relations(userUploads, ({ one }) => ({
+  user: one(users, {
+    fields: [userUploads.userId],
+    references: [users.id],
+  }),
+  vendor: one(vendorProfiles, {
+    fields: [userUploads.vendorId],
+    references: [vendorProfiles.id],
+  }),
 }));
 
 export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many }) => ({
@@ -415,6 +477,7 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
   verificationDocuments: many(verificationDocuments),
   bookings: many(bookings),
   reviews: many(reviews),
+  uploads: many(userUploads),
 }));
 
 export const vendorPackagesRelations = relations(vendorPackages, ({ one }) => ({
@@ -449,6 +512,9 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+
 export type Session = typeof sessions.$inferSelect;
 export type Event = typeof events.$inferSelect;
 
@@ -460,55 +526,10 @@ export type CancellationPolicy = typeof cancellationPolicies.$inferSelect;
 export type VendorDiscount = typeof vendorDiscounts.$inferSelect;
 export type VerificationDocument = typeof verificationDocuments.$inferSelect;
 
+export type UserUpload = typeof userUploads.$inferSelect;
+export type NewUserUpload = typeof userUploads.$inferInsert;
+
 export type Booking = typeof bookings.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
-
-/* ===================== USER UPLOADS ===================== */
-export const userUploads = pgTable('user_uploads', {
-  id: serial('id').primaryKey(),
-
-  userId: integer('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-
-  fileKey: text('file_key').notNull(), // R2 object key
-  fileUrl: text('file_url').notNull(), // Public CDN URL
-  fileName: text('file_name').notNull(),
-  fileType: text('file_type').notNull(),
-  fileSize: integer('file_size').notNull(), // in bytes
-
-  uploadType: text('upload_type').notNull(), 
-  // 'profile', 'gallery', 'document', 'video', 'cover'
-
-  // Optional: Link to specific vendor profile
-  vendorId: integer('vendor_id')
-    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
-
-  // Metadata
-  width: integer('width'),
-  height: integer('height'),
-  
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-/* ===================== USER UPLOADS RELATIONS ===================== */
-export const userUploadsRelations = relations(userUploads, ({ one }) => ({
-  user: one(users, {
-    fields: [userUploads.userId],
-    references: [users.id],
-  }),
-  vendor: one(vendorProfiles, {
-    fields: [userUploads.vendorId],
-    references: [vendorProfiles.id],
-  }),
-}));
-
-/* ===================== ADD TO USERS RELATIONS ===================== */
-// Update usersRelations to include:
-// uploads: many(userUploads),
-
-/* ===================== TYPES ===================== */
-export type UserUpload = typeof userUploads.$inferSelect;
-export type NewUserUpload = typeof userUploads.$inferInsert;
