@@ -2,30 +2,30 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Instagram, MessageCircle, X } from 'lucide-react';
+import { Instagram, MessageCircle, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
-import { Sun } from 'lucide-react';
 
 export default function CategoryFooter() {
   const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   const toggleTheme = () => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+    setTheme(isDark ? 'light' : 'dark');
   };
 
   return (
-    <footer className="bg-[#222222] text-white">
+    <footer className="bg-shades-white text-foreground">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* For Customers */}
           <div>
-            <h4 className="text-white/50 text-xs font-medium uppercase tracking-wider mb-4">
+            <h4 className="text-neutrals-06 text-xs font-medium uppercase tracking-wider mb-4">
               For Customers
             </h4>
             <ul className="space-y-3">
               <li>
-                <Link href="/find-vendors" className="text-white/80 hover:text-primary-01 transition-colors text-sm">
+                <Link href="/find-vendors" className="text-neutrals-07 hover:text-primary-01 transition-colors text-sm">
                   Find vendors
                 </Link>
               </li>
