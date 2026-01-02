@@ -213,6 +213,11 @@ function SignupForm({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    console.log('Terms agreed:', agreeToTerms);
+    console.log('Is loading:', isLoading);
+  }, [agreeToTerms, isLoading]);
+
   const handleGoogleSignup = async () => {
     if (!agreeToTerms) {
       toast.error('Please agree to the Terms of Service');
@@ -375,7 +380,10 @@ function SignupForm({
           <input
             type="checkbox"
             checked={agreeToTerms}
-            onChange={(e) => setAgreeToTerms(e.target.checked)}
+            onChange={(e) => {
+              console.log('Checkbox changed:', e.target.checked);
+              setAgreeToTerms(e.target.checked);
+            }}
             className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50 cursor-pointer"
             disabled={isLoading}
           />
@@ -420,7 +428,11 @@ function SignupForm({
             type="button"
             onClick={handleGoogleSignup}
             disabled={isLoading || !agreeToTerms}
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black transition-colors ${
+              isLoading || !agreeToTerms 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-neutrals-02 cursor-pointer'
+            }`}
           >
             <Image src="/google.svg" alt="Google" width={20} height={20} />
             <span className="text-sm font-medium">Sign up with Google</span>
@@ -429,7 +441,11 @@ function SignupForm({
             type="button"
             onClick={handleAppleSignup}
             disabled={isLoading || !agreeToTerms}
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black transition-colors ${
+              isLoading || !agreeToTerms 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-neutrals-02 cursor-pointer'
+            }`}
           >
             <Image src="/apple.svg" alt="Apple" width={20} height={20} />
             <span className="text-sm font-medium">Sign up with Apple</span>
