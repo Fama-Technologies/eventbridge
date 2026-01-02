@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -25,7 +24,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // FIXED: Use /api/login instead of /api/auth/login
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { 
@@ -65,7 +63,7 @@ export default function LoginPage() {
         // Fallback to account type based redirect
         const accountType = data.user.accountType.toLowerCase();
         if (accountType === 'vendor') {
-          window.location.href = "/vendor/dashboard";
+          window.location.href = "/vendor"; // Changed to /vendor
         } else if (accountType === 'admin') {
           window.location.href = "/admin/dashboard";
         } else {
@@ -89,20 +87,10 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    console.log('Google sign-in button clicked');
-    
     try {
       setIsGoogleLoading(true);
-      console.log('Starting Google sign-in...');
-      
-      const callbackUrl = redirectUrl || '/dashboard';
-      console.log('Callback URL:', callbackUrl);
-      
-      await signIn('google', { 
-        callbackUrl,
-        redirect: true 
-      });
-      
+      toast.info("Google Sign-In is temporarily unavailable");
+      setIsGoogleLoading(false);
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Failed to sign in with Google");

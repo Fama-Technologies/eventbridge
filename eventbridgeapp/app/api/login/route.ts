@@ -1,4 +1,3 @@
-// app/api/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { db } from '@/lib/db';
@@ -8,15 +7,14 @@ import { createToken, isValidAccountType } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Login request received at /api/login');
+    console.log('Login request received');
     
     const body = await req.json();
     const { email, password } = body;
 
     if (!email || !password) {
-      console.log('Missing email or password');
       return NextResponse.json(
-        { message: 'Email and password required' },
+        { success: false, message: 'Email and password required' },
         { status: 400 }
       );
     }
@@ -31,16 +29,15 @@ export async function POST(req: NextRequest) {
     if (!user) {
       console.log('User not found:', email);
       return NextResponse.json(
-        { message: 'Invalid credentials' },
+        { success: false, message: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
     // Check if account is active
     if (user.isActive === false) {
-      console.log('Account inactive:', email);
       return NextResponse.json(
-        { message: 'Account is deactivated' },
+        { success: false, message: 'Account is deactivated' },
         { status: 403 }
       );
     }
@@ -49,7 +46,7 @@ export async function POST(req: NextRequest) {
     if (!user.password) {
       console.log('No password set (OAuth account):', user.email);
       return NextResponse.json(
-        { message: 'Invalid credentials' },
+        { success: false, message: 'Invalid credentials' },
         { status: 401 }
       );
     }
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (!isPasswordValid) {
       console.log('Invalid password for:', user.email);
       return NextResponse.json(
-        { message: 'Invalid credentials' },
+        { success: false, message: 'Invalid credentials' },
         { status: 401 }
       );
     }
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest) {
     if (!isValidAccountType(user.accountType)) {
       console.error('Invalid account type:', user.accountType);
       return NextResponse.json(
-        { message: 'Account configuration error' },
+        { success: false, message: 'Account configuration error' },
         { status: 500 }
       );
     }
@@ -104,6 +101,7 @@ export async function POST(req: NextRequest) {
     // Create response
     const response = NextResponse.json(
       {
+        success: true,
         message: 'Login successful',
         user: userData,
         token,
@@ -121,31 +119,23 @@ export async function POST(req: NextRequest) {
       path: '/',
     });
 
-    // Optional: Set account type cookie for client-side detection
-    response.cookies.set('user-account-type', user.accountType.toLowerCase(), {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60, // 60 seconds
-      path: '/',
-    });
-
     return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-// Helper function to determine redirect path
+// Helper function to determine redirect path based on account type
 function getRedirectPath(accountType: string): string {
   const normalizedType = accountType.toLowerCase();
   
   switch (normalizedType) {
     case 'vendor':
-      return '/vendor/dashboard';
+      return '/vendor'; // Changed to /vendor (not /vendor/dashboard)
     case 'admin':
       return '/admin/dashboard';
     case 'customer':
@@ -162,10 +152,17 @@ function getRedirectPath(accountType: string): string {
 export async function GET() {
   return NextResponse.json(
     { 
+      success: true,
       message: 'Login endpoint is active',
       endpoint: '/api/login',
       method: 'POST',
-      requiredFields: ['email', 'password']
+      requiredFields: ['email', 'password'],
+      redirectPaths: {
+        vendor: '/vendor',
+        admin: '/admin/dashboard',
+        customer: '/dashboard',
+        planner: '/planner/dashboard'
+      }
     },
     { status: 200 }
   );
