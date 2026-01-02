@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Store, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
@@ -205,6 +205,7 @@ function SignupForm({
   initialAgreeToTerms?: boolean;
 }) {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -214,9 +215,28 @@ function SignupForm({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    console.log('Terms agreed:', agreeToTerms);
-    console.log('Is loading:', isLoading);
-  }, [agreeToTerms, isLoading]);
+    if (status === 'authenticated' && session?.user) {
+      const userAccountType = (session.user as any).accountType;
+      console.log('User authenticated with account type:', userAccountType);
+      
+      const pendingType = sessionStorage.getItem('pendingAccountType');
+      if (pendingType) {
+        sessionStorage.removeItem('pendingAccountType');
+        
+        if (pendingType === 'VENDOR') {
+          router.push('/vendor/onboarding');
+        } else {
+          router.push('/dashboard');
+        }
+      } else {
+        if (userAccountType === 'VENDOR') {
+          router.push('/vendor/onboarding');
+        } else {
+          router.push('/dashboard');
+        }
+      }
+    }
+  }, [status, session, router]);
 
   const handleGoogleSignup = async () => {
     if (!agreeToTerms) {
@@ -227,23 +247,18 @@ function SignupForm({
     setIsLoading(true);
 
     try {
-      console.log('Initiating Google sign-in...');
-      console.log('Account type:', accountType);
+      console.log('Initiating Google sign-in for account type:', accountType);
 
       sessionStorage.setItem('pendingAccountType', accountType);
 
-      const result = await signIn('google', {
-        callbackUrl: accountType === 'VENDOR' ? '/vendor/onboarding' : '/dashboard',
+      const callbackUrl = accountType === 'VENDOR' ? '/vendor/onboarding' : '/dashboard';
+      
+      console.log('Callback URL:', callbackUrl);
+
+      await signIn('google', {
+        callbackUrl,
         redirect: true,
       });
-
-      console.log('Sign-in result:', result);
-
-      if (result?.error) {
-        console.error('Sign-in error:', result.error);
-        toast.error('Failed to sign up with Google. Please try again.');
-        setIsLoading(false);
-      }
     } catch (error) {
       console.error('Google signup error:', error);
       toast.error('An error occurred during Google sign-up');
@@ -286,7 +301,7 @@ function SignupForm({
         return;
       }
 
-      toast.success('Account created successfully');
+      console.log('Account created, attempting auto-login');
 
       const result = await signIn('credentials', {
         email,
@@ -302,9 +317,13 @@ function SignupForm({
         return;
       }
 
+      toast.success('Account created successfully!');
+
       if (accountType === 'VENDOR') {
+        console.log('Redirecting vendor to onboarding');
         router.push('/vendor/onboarding');
       } else {
+        console.log('Redirecting customer to dashboard');
         router.push('/dashboard');
       }
     } catch (err) {
@@ -380,10 +399,7 @@ function SignupForm({
           <input
             type="checkbox"
             checked={agreeToTerms}
-            onChange={(e) => {
-              console.log('Checkbox changed:', e.target.checked);
-              setAgreeToTerms(e.target.checked);
-            }}
+            onChange={(e) => setAgreeToTerms(e.target.checked)}
             className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50 cursor-pointer"
             disabled={isLoading}
           />
