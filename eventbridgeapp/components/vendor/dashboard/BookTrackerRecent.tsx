@@ -15,7 +15,7 @@ const events: TimelineEvent[] = [
         title: "Booking Confirmed",
         description: (
             <>
-                Summer Garden Party for <span className="text-white font-medium">Alice Smith</span> has been confirmed.
+                Summer Garden Party for <span className="text-shades-black font-medium">Alice Smith</span> has been confirmed.
             </>
         ),
         time: "2 HOURS AGO",
@@ -26,7 +26,7 @@ const events: TimelineEvent[] = [
         title: "Payout Processed",
         description: (
             <>
-                Funds of <span className="text-white font-medium">$1,200</span> have been sent to your account.
+                Funds of <span className="text-shades-black font-medium">$1,200</span> have been sent to your account.
             </>
         ),
         time: "YESTERDAY",
@@ -52,27 +52,27 @@ export default function BookTrackerRecent() {
     const getDotColor = (status: TimelineEvent["status"]) => {
         switch (status) {
             case "confirmed":
-                return "bg-[#00E64D]"; // Green
+                return "bg-accents-discount"; // Green
             case "processed":
-                return "bg-[#FF7043]"; // Orange
+                return "bg-primary-01"; // Orange
             case "updated":
             case "review":
-                return "bg-[#666666]"; // Gray
+                return "bg-neutrals-05"; // Gray
             default:
-                return "bg-[#666666]";
+                return "bg-neutrals-05";
         }
     };
 
     return (
-        <div className="w-full bg-[#262626] p-6 rounded-xl border border-[#4D4D4D]">
-            <h2 className="font-font1 font-semibold text-[18px] leading-6 text-white mb-6">Recent Activity</h2>
+        <div className="w-full bg-shades-white p-6 rounded-xl border border-neutrals-03 shadow-sm transition-colors duration-300">
+            <h2 className="font-font1 font-semibold text-[18px] leading-6 text-shades-black mb-6">Recent Activity</h2>
             <div className="relative flex flex-col gap-0">
                 {events.map((event, index) => (
                     <div key={event.id} className="relative pl-6 pb-8 last:pb-0">
                         {/* Connecting Line */}
                         {index !== events.length - 1 && (
                             <div
-                                className={`absolute left-[4px] top-2 bottom-0 w-[1px] ${event.status === "confirmed" ? "bg-[#00E64D]" : "bg-[#4D4D4D]"
+                                className={`absolute left-[4px] top-2 bottom-0 w-[1px] ${event.status === "confirmed" ? "bg-accents-discount" : "bg-neutrals-03"
                                     }`}
                             />
                         )}
@@ -86,13 +86,13 @@ export default function BookTrackerRecent() {
 
                         {/* Content */}
                         <div className="flex flex-col gap-1">
-                            <h3 className="font-font1 font-semibold text-[14px] leading-5 text-white">
+                            <h3 className="font-font1 font-semibold text-[14px] leading-5 text-shades-black">
                                 {event.title}
                             </h3>
-                            <p className="font-font1 font-normal text-[14px] leading-5 text-[#A3A3A3]">
+                            <p className="font-font1 font-normal text-[14px] leading-5 text-neutrals-06">
                                 {event.description}
                             </p>
-                            <span className="font-font1 font-normal text-[10px] leading-4 text-[#737373] uppercase mt-1">
+                            <span className="font-font1 font-normal text-[10px] leading-4 text-neutrals-05 uppercase mt-1">
                                 {event.time}
                             </span>
                         </div>
@@ -100,10 +100,10 @@ export default function BookTrackerRecent() {
                 ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#4D4D4D] flex justify-center">
+            <div className="mt-6 pt-4 border-t border-neutrals-03 flex justify-center">
                 <Link
                     href="#"
-                    className="font-font1 font-medium text-[14px] leading-5 text-[#FF7043] hover:text-[#FF5A2B] transition-colors"
+                    className="font-font1 font-medium text-[14px] leading-5 text-primary-01 hover:text-primary-02 transition-colors"
                 >
                     View full history
                 </Link>

@@ -30,6 +30,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const applyTheme = (mode: 'light' | 'dark') => {
       root.setAttribute('data-theme', mode);
+      // Toggle 'dark' class for Tailwind dark mode utilities
+      if (mode === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
       setResolvedTheme(mode);
     };
 
@@ -50,6 +56,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const applyTheme = (mode: 'light' | 'dark') => {
       root.setAttribute('data-theme', mode);
+      // Toggle 'dark' class for Tailwind dark mode utilities
+      if (mode === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
       setResolvedTheme(mode);
     };
 

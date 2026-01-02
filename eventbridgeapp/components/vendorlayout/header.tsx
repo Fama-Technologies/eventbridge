@@ -22,12 +22,12 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
     };
 
     return (
-        <header className="bg-[#222222] dark:bg-[#1E1E1E] px-6 py-4 border-b border-neutrals-04 dark:border-[#2C2C2C]">
+        <header className="bg-shades-white px-6 py-4 border-b border-neutrals-03 transition-colors duration-300 shadow-sm">
             <div className="flex items-center justify-between md:justify-end gap-4">
                 {/* Mobile Menu Toggle */}
                 <button
                     onClick={onOpenMobileMenu}
-                    className="md:hidden w-10 h-10 rounded-lg flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+                    className="md:hidden w-10 h-10 rounded-lg flex items-center justify-center text-shades-black hover:bg-neutrals-02 transition-colors"
                     aria-label="Open menu"
                 >
                     <Menu size={24} />
@@ -40,12 +40,12 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
                         href="/"
                         className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary-01 hover:bg-primary-01/10 transition-colors"
                     >
-                        <span>View as Customer</span>
+                        <span>View profile as Customer</span>
                     </Link>
 
                     {/* Language Toggle */}
                     <button
-                        className="w-10 h-10 rounded-full border border-neutrals-04 dark:border-[#2C2C2C] flex items-center justify-center text-[#FFFFFF] dark:text-gray-400 transition-all duration-200 hover:text-primary-01 hover:border-primary-01"
+                        className="w-10 h-10 rounded-full border border-neutrals-03 flex items-center justify-center text-neutrals-06 transition-all duration-200 hover:text-primary-01 hover:border-primary-01 hover:bg-primary-01/5"
                         aria-label="Language"
                     >
                         <Globe size={20} />
@@ -54,7 +54,7 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
                     {/* Theme Toggle */}
                     <button
                         onClick={toggleTheme}
-                        className="w-10 h-10 rounded-full border border-neutrals-04 dark:border-[#2C2C2C] flex items-center justify-center text-[#FFFFFF] dark:text-gray-400 transition-all duration-300 hover:text-primary-01 hover:border-primary-01"
+                        className="w-10 h-10 rounded-full border border-neutrals-03 flex items-center justify-center text-neutrals-06 transition-all duration-300 hover:text-primary-01 hover:border-primary-01 hover:bg-primary-01/5"
                         aria-label="Toggle theme"
                     >
                         {mounted && (

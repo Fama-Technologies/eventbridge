@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ArrowUp, ArrowDown, TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface CardProps {
   title: string;
@@ -45,9 +45,9 @@ export default function Card({
   const trend = getTrend(stat);
 
   const badgeStyles: Record<Trend, string> = {
-    neutral: "bg-[#3a3a3a] text-gray-200",
-    positive: "bg-[#FFFFFF33] text-[#00E64D]",
-    negative: "bg-red-600 text-white",
+    neutral: "bg-neutrals-02 text-neutrals-07",
+    positive: "bg-neutrals-02 text-accents-discount",
+    negative: "bg-errors-bg text-errors-main",
   };
 
   const TrendIcon =
@@ -58,10 +58,10 @@ export default function Card({
         : null;
 
   return (
-    <div className="h-[162px] w-full bg-[#222222] p-6 rounded-xl border border-[#666666] shadow-sm flex flex-col justify-between">
+    <div className="h-[162px] w-full bg-shades-white p-6 rounded-xl border border-neutrals-03 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-neutrals-05">
       <div className="flex justify-between items-start">
-        <div className="w-10 h-10 rounded-md bg-[#FF704333] flex items-center justify-center">
-          <Icon size={18} className="text-[#FF7043]" />
+        <div className="w-10 h-10 rounded-md bg-primary-01/15 flex items-center justify-center">
+          <Icon size={18} className="text-primary-01" />
         </div>
 
         <div
@@ -73,8 +73,8 @@ export default function Card({
       </div>
 
       <div>
-        <p className="text-sm text-gray-400">{title}</p>
-        <p className="mt-2 text-2xl font-semibold text-white">
+        <p className="text-sm text-neutrals-07">{title}</p>
+        <p className="mt-2 text-2xl font-semibold text-shades-black">
           {formatCount(title, count)}
         </p>
       </div>

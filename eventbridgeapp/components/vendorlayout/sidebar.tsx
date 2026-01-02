@@ -26,14 +26,13 @@ const navigation = [
         name: 'Bookings',
         href: '/vendor/bookings',
         icon: Calendar,
-        // This puts the Plus icon next to Bookings
-        action: <PlusCircle size={18} className="text-gray-400" />
+        action: <PlusCircle size={18} className="text-neutrals-05" />
     },
     {
         name: 'Earnings',
         href: '/vendor/earnings',
         icon: Wallet,
-        action: <ChevronDown size={18} className="text-gray-400" />
+        action: <ChevronDown size={18} className="text-neutrals-05" />
     },
 ];
 
@@ -83,28 +82,30 @@ export default function Sidebar() {
 
 
     return (
-        <div className="flex h-screen w-[288px] flex-col bg-[#222222] text-white shrink-0">
-            {/*the first div contaings logo and links*/}
-            <div className='flex flex-col h-full p-5'>
+        <div className="flex h-screen w-[288px] flex-col bg-shades-white text-shades-black shrink-0 border-r border-neutrals-03 transition-colors duration-300">
+            {/*the first div contains logo and links*/}
+            <div className='flex flex-col h-full p-5 overflow-hidden'>
                 {/*the logo*/}
-                <div className='flex gap-2 items-center'>
+                <div className='flex gap-2 items-center shrink-0'>
                     <Image src="/logo.svg" alt="Logo" width={50} height={50} />
-                    <h1 className='text-2xl font-bold'>EventBridge</h1>
+                    <h1 className='text-2xl font-bold text-shades-black'>Event Bridge</h1>
                 </div>
 
-                {/*the links*/}
-                <div className='flex flex-col gap-2 mt-5 flex-1'>
+                {/*the links - scrollable area*/}
+                <div className='flex flex-col gap-2 mt-5 flex-1 overflow-y-auto min-h-0'>
                     {navigation.map((item) => (
                         <Link
                             key={item.name}
                             href={item.href}
                             className={cn(
-                                'flex items-center justify-between gap-2 px-4 py-2 rounded-lg font-medium hover:bg-primary-01/10 transition-colors',
-                                pathname === item.href ? 'bg-[rgba(255,112,67,0.4)] text-[#FF7043]' : 'text-gray-400'
+                                'flex items-center justify-between gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200',
+                                pathname === item.href 
+                                    ? 'bg-primary-01/15 text-primary-01 shadow-sm' 
+                                    : 'text-neutrals-06 hover:bg-neutrals-02 hover:text-shades-black'
                             )}
                         >
-                            <div className="flex items-center gap-2">
-                                <item.icon size={18} />
+                            <div className="flex items-center gap-3">
+                                <item.icon size={20} />
                                 <span>{item.name}</span>
                             </div>
                             {/* Renders the Plus icon for Bookings or Chevron for Earnings */}
@@ -119,34 +120,36 @@ export default function Sidebar() {
 
             </div>
 
-            <div className='flex flex-col gap-2 px-5 mt-auto'>
+            <div className='flex flex-col gap-2 px-5 pb-5 shrink-0'>
                 {secondaryNavigation.map((item) => (
                     <Link
                         key={item.name}
                         href={item.href}
                         onClick={item.onClick}
                         className={cn(
-                            'flex items-center justify-between gap-2 px-4 py-2 rounded-lg font-medium hover:bg-primary-01/10 transition-colors',
-                            pathname === item.href ? 'bg-[rgba(255,112,67,0.4)] text-[#FF7043]' : 'text-gray-400'
+                            'flex items-center justify-between gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200',
+                            pathname === item.href 
+                                ? 'bg-primary-01/15 text-primary-01 shadow-sm' 
+                                : 'text-neutrals-06 hover:bg-neutrals-02 hover:text-shades-black'
                         )}
                     >
-                        <div className="flex items-center gap-2">
-                            <item.icon size={18} />
+                        <div className="flex items-center gap-3">
+                            <item.icon size={20} />
                             <span>{item.name}</span>
                         </div>
                         {(item as any).badge && (
                             <div
                                 onClick={(e) => e.preventDefault()}
-                                className='bg-[#FF6B4F] text-white flex flex-col items-center justify-center min-w-[20px] h-[20px] rounded-full px-[6px] py-[2px] text-[10px] font-bold'
+                                className='bg-errors-main text-white flex flex-col items-center justify-center min-w-[20px] h-[20px] rounded-full px-[6px] py-[2px] text-[10px] font-bold shadow-sm'
                             >
                                 {(item as any).badge}
                             </div>
                         )}
                     </Link>
                 ))}
-                <div>
-                    <div className='flex items-center gap-2 pb-5'>
-                        <div className="h-10 w-10 overflow-hidden rounded-full border border-gray-600 bg-gray-700 shrink-0 flex items-center justify-center text-sm font-semibold">
+                <div className='border-t border-neutrals-03 pt-4 mt-2'>
+                    <div className='flex items-center gap-3 pb-5'>
+                        <div className="h-10 w-10 overflow-hidden rounded-full border-2 border-neutrals-03 bg-neutrals-02 shrink-0 flex items-center justify-center text-sm font-semibold text-shades-black">
                             {user?.image ? (
                                 <img
                                     src={user.image}
@@ -162,15 +165,12 @@ export default function Sidebar() {
                             )}
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                            <span className="text-sm font-semibold text-[#FF7043] truncate">{user ? `${user.firstName} ${user.lastName}` : 'Loading...'}</span>
-                            <span className="text-xs text-gray-400 truncate">{user?.email || ''}</span>
+                            <span className="text-sm font-semibold text-primary-01 truncate">{user ? `${user.firstName} ${user.lastName}` : 'Loading...'}</span>
+                            <span className="text-xs text-neutrals-06 truncate">{user?.email || ''}</span>
                         </div>
                     </div>
                 </div>
             </div>
-
-
-
         </div>
     );
 }

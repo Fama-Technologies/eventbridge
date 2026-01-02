@@ -47,6 +47,12 @@ export default function RootLayout({
             ? 'dark'
             : 'light';
         document.documentElement.setAttribute('data-theme', resolved);
+        // Also add/remove 'dark' class for Tailwind dark mode utilities
+        if (resolved === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       } catch (e) {}
     })();
   `;

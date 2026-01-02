@@ -13,7 +13,7 @@ export default function VendorLayout({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden bg-neutrals-01">
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-[288px] flex-col flex-shrink-0">
                 <Sidebar />
@@ -29,11 +29,11 @@ export default function VendorLayout({
                     />
 
                     {/* Sidebar Panel */}
-                    <div className="fixed inset-y-0 left-0 w-[288px] bg-[#222222] shadow-xl animate-in slide-in-from-left duration-300">
+                    <div className="fixed inset-y-0 left-0 w-[288px] bg-shades-white shadow-xl animate-in slide-in-from-left duration-300">
                         <div className="absolute top-4 right-4 z-50">
                             <button
                                 onClick={() => setMobileMenuOpen(false)}
-                                className="p-2 text-white hover:bg-white/10 rounded-lg"
+                                className="p-2 text-shades-black hover:bg-neutrals-02 rounded-lg transition-colors"
                             >
                                 <X size={24} />
                             </button>
@@ -46,7 +46,7 @@ export default function VendorLayout({
             {/* Main Content */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <VendorHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
-                <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-[#1A1A1A]">
+                <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-neutrals-01 transition-colors duration-300">
                     {children}
                 </main>
             </div>
