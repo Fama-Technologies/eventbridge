@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, createToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
-import { users, accounts } from '@/drizzle/schema';
+import { users, accounts, sessions } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { type NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
@@ -87,11 +87,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google') {
-        if (!user.email || !account) return false;
+        if (!user.email || !account) {
+          console.error('Missing user email or account');
+          return false;
+        }
 
         const email = user.email.toLowerCase();
 
         try {
+          console.log('Google sign-in attempt for:', email);
+          
           const existingUser = await db
             .select()
             .from(users)
@@ -99,6 +104,7 @@ export const authOptions: NextAuthOptions = {
             .limit(1);
 
           let userId: number;
+          let userAccountType: string;
 
           // Create user if not exists
           if (existingUser.length === 0) {
@@ -111,37 +117,48 @@ export const authOptions: NextAuthOptions = {
               user.name?.split(' ').slice(1).join(' ') ||
               '';
 
+            // Check if there's a pending account type from signup flow
+            const accountType = 'CUSTOMER'; // Default, will be overridden by session storage in frontend
+
+            console.log('Creating new user:', { email, firstName, lastName, accountType });
+
             const [newUser] = await db
               .insert(users)
               .values({
                 email,
                 firstName,
                 lastName,
-                image: user.image,
+                image: user.image ?? null,
                 provider: 'google',
-                accountType: 'CUSTOMER',
+                accountType: accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN',
                 emailVerified: true,
                 isActive: true,
               })
-              .returning({ id: users.id });
+              .returning({ id: users.id, accountType: users.accountType });
 
             userId = newUser.id;
+            userAccountType = newUser.accountType;
+            console.log('Created user with ID:', userId, 'Account type:', userAccountType);
           } else {
             userId = existingUser[0].id;
+            userAccountType = existingUser[0].accountType;
+            console.log('Found existing user with ID:', userId, 'Account type:', userAccountType);
 
-            // Update user image if changed
+            // Update user image and verification if changed
             if (user.image && user.image !== existingUser[0].image) {
               await db
                 .update(users)
                 .set({
                   image: user.image,
                   emailVerified: true,
+                  updatedAt: new Date(),
                 })
                 .where(eq(users.id, userId));
+              console.log('Updated user image and verification');
             }
           }
 
-          // Ensure account exists
+          // Ensure account link exists
           const existingAccount = await db
             .select()
             .from(accounts)
@@ -149,8 +166,10 @@ export const authOptions: NextAuthOptions = {
             .limit(1);
 
           if (existingAccount.length === 0) {
+            console.log('Creating account link for user:', userId);
+            
             await db.insert(accounts).values({
-              userId,
+              userId: userId,
               type: account.type,
               provider: account.provider,
               providerAccountId: account.providerAccountId,
@@ -162,11 +181,21 @@ export const authOptions: NextAuthOptions = {
               id_token: account.id_token ?? null,
               session_state: (account.session_state as string) ?? null,
             });
+            
+            console.log('Account link created successfully');
+          } else {
+            console.log('Account link already exists');
           }
 
+          console.log('Google sign-in successful for user:', userId);
           return true;
         } catch (error) {
-          console.error('Google sign-in error:', error);
+          console.error('Error in Google sign-in callback:', error);
+          console.error('Error details:', {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+          });
           return false;
         }
       }
@@ -197,6 +226,8 @@ export const authOptions: NextAuthOptions = {
           token.name = `${dbUser[0].firstName} ${dbUser[0].lastName}`;
           token.picture = dbUser[0].image;
           token.accountType = dbUser[0].accountType;
+          
+          console.log('JWT created for user:', dbUser[0].id, 'Account type:', dbUser[0].accountType);
         }
       }
 
@@ -214,34 +245,60 @@ export const authOptions: NextAuthOptions = {
           | 'CUSTOMER'
           | 'PLANNER'
           | 'ADMIN';
+          
+        console.log('Session created for user:', token.userId, 'Account type:', token.accountType);
       }
 
       return session;
     },
 
     async redirect({ url, baseUrl }) {
+      console.log('Redirect callback - URL:', url, 'Base URL:', baseUrl);
+
+      // Parse the URL to check for account type info
+      try {
+        const urlObj = new URL(url);
+        
+        // If there's a callbackUrl parameter, use it
+        const callbackUrl = urlObj.searchParams.get('callbackUrl');
+        if (callbackUrl) {
+          console.log('Using callbackUrl:', callbackUrl);
+          return callbackUrl;
+        }
+      } catch (e) {
+        // Invalid URL, continue with default logic
+      }
+
       // Allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      if (url.startsWith('/')) {
+        console.log('Redirecting to relative URL:', url);
+        return `${baseUrl}${url}`;
+      }
 
       // Allows callback URLs on the same origin
       try {
-        if (new URL(url).origin === baseUrl) return url;
+        if (new URL(url).origin === baseUrl) {
+          console.log('Redirecting to same origin URL:', url);
+          return url;
+        }
       } catch {
         // Invalid URL
       }
 
-      // Check for redirect parameter
-      try {
-        const urlObj = new URL(url);
-        const redirectParam = urlObj.searchParams.get('redirect');
-        if (redirectParam) {
-          return `${baseUrl}${redirectParam}`;
-        }
-      } catch (e) {
-        // Invalid URL, ignore
-      }
-
+      // Default redirect to dashboard
+      console.log('Redirecting to default dashboard');
       return `${baseUrl}/dashboard`;
+    },
+  },
+
+  events: {
+    async signIn({ user, account, isNewUser }) {
+      console.log('SignIn event triggered:', {
+        userId: user.id,
+        email: user.email,
+        provider: account?.provider,
+        isNewUser,
+      });
     },
   },
 };
