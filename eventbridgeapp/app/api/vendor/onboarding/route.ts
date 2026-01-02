@@ -8,10 +8,12 @@ import {
   onboardingProgress,
   vendorPackages,
   vendorPortfolio,
+  vendorVideos,
   cancellationPolicies,
   verificationDocuments,
+  userUploads,
 } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
 export const runtime = 'nodejs';
@@ -148,17 +150,22 @@ export async function POST(request: NextRequest) {
       phone,
       website,
       profilePhotoUrl,
+      coverImageUrl,
       galleryImageUrls,
+      videoUrls,
       documentUrls,
     } = body;
 
     console.log('Received onboarding data:', {
       businessName,
       hasProfilePhoto: !!profilePhotoUrl,
+      hasCoverImage: !!coverImageUrl,
       galleryCount: galleryImageUrls?.length || 0,
+      videoCount: videoUrls?.length || 0,
       documentCount: documentUrls?.length || 0,
     });
 
+    // ===== VALIDATION =====
     if (!businessName || businessName.trim().length < 3) {
       return NextResponse.json(
         { error: 'Business name is required (min 3 characters)' },
@@ -173,10 +180,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ✅ ENFORCE UPLOAD CAPS
+    if (galleryImageUrls && galleryImageUrls.length > 10) {
+      return NextResponse.json(
+        { error: 'Maximum 10 gallery images allowed' },
+        { status: 400 }
+      );
+    }
+
+    if (videoUrls && videoUrls.length > 5) {
+      return NextResponse.json(
+        { error: 'Maximum 5 videos allowed' },
+        { status: 400 }
+      );
+    }
+
+    if (documentUrls && documentUrls.length > 5) {
+      return NextResponse.json(
+        { error: 'Maximum 5 documents allowed' },
+        { status: 400 }
+      );
+    }
+
     const locationParts = primaryLocation?.split(',').map((p: string) => p.trim()) || [];
     const city = locationParts[0] || null;
     const state = locationParts[1] || null;
 
+    // ===== CREATE OR UPDATE VENDOR PROFILE =====
     const [existingProfile] = await db
       .select()
       .from(vendorProfiles)
@@ -193,6 +223,7 @@ export async function POST(request: NextRequest) {
       phone: phone || null,
       website: website || null,
       profileImage: profilePhotoUrl || null,
+      coverImage: coverImageUrl || null,
       verificationStatus: 'under_review',
       verificationSubmittedAt: new Date(),
       canAccessDashboard: false,
@@ -219,6 +250,7 @@ export async function POST(request: NextRequest) {
       console.log('Created new vendor profile:', vendorProfileId);
     }
 
+    // ===== SAVE PACKAGES =====
     if (pricingStructure && pricingStructure.length > 0) {
       await db
         .delete(vendorPackages)
@@ -239,6 +271,7 @@ export async function POST(request: NextRequest) {
       console.log('Saved packages:', packages.length);
     }
 
+    // ===== SAVE PORTFOLIO (GALLERY IMAGES) =====
     if (galleryImageUrls && galleryImageUrls.length > 0) {
       await db
         .delete(vendorPortfolio)
@@ -253,9 +286,50 @@ export async function POST(request: NextRequest) {
 
       await db.insert(vendorPortfolio).values(portfolioItems);
       console.log('Saved portfolio items:', portfolioItems.length);
+
+      // ✅ Link gallery uploads to vendor profile
+      await db
+        .update(userUploads)
+        .set({ vendorId: vendorProfileId })
+        .where(
+          and(
+            eq(userUploads.userId, user.id),
+            eq(userUploads.uploadType, 'gallery')
+          )
+        );
     }
 
-    const defaultPolicy = 'Standard cancellation policy: Full refund if cancelled 7 days before event. 50% refund if cancelled 3-7 days before. No refund if cancelled less than 3 days before event.';
+    // ===== SAVE VIDEOS =====
+    if (videoUrls && videoUrls.length > 0) {
+      await db
+        .delete(vendorVideos)
+        .where(eq(vendorVideos.vendorId, vendorProfileId));
+
+      const videoItems = videoUrls.map((url: string, index: number) => ({
+        vendorId: vendorProfileId,
+        videoUrl: url,
+        title: `Video ${index + 1}`,
+        displayOrder: index,
+      }));
+
+      await db.insert(vendorVideos).values(videoItems);
+      console.log('Saved videos:', videoItems.length);
+
+      // ✅ Link video uploads to vendor profile
+      await db
+        .update(userUploads)
+        .set({ vendorId: vendorProfileId })
+        .where(
+          and(
+            eq(userUploads.userId, user.id),
+            eq(userUploads.uploadType, 'video')
+          )
+        );
+    }
+
+    // ===== SAVE CANCELLATION POLICY =====
+    const defaultPolicy =
+      'Standard cancellation policy: Full refund if cancelled 7 days before event. 50% refund if cancelled 3-7 days before. No refund if cancelled less than 3 days before event.';
 
     const [existingPolicy] = await db
       .select()
@@ -279,6 +353,7 @@ export async function POST(request: NextRequest) {
     }
     console.log('Saved cancellation policy');
 
+    // ===== SAVE VERIFICATION DOCUMENTS =====
     if (documentUrls && documentUrls.length > 0) {
       await db
         .delete(verificationDocuments)
@@ -294,10 +369,24 @@ export async function POST(request: NextRequest) {
 
       await db.insert(verificationDocuments).values(documents);
       console.log('Saved verification documents:', documents.length);
+
+      // ✅ Link document uploads to vendor profile
+      await db
+        .update(userUploads)
+        .set({ vendorId: vendorProfileId })
+        .where(
+          and(
+            eq(userUploads.userId, user.id),
+            eq(userUploads.uploadType, 'document')
+          )
+        );
     }
 
-    // Update user account type and sync profile image
-    const userUpdate: { accountType?: 'VENDOR' | 'CUSTOMER' | 'ADMIN' | 'PLANNER'; image?: string } = {};
+    // ===== UPDATE USER ACCOUNT TYPE AND SYNC IMAGES =====
+    const userUpdate: {
+      accountType?: 'VENDOR' | 'CUSTOMER' | 'ADMIN' | 'PLANNER';
+      image?: string;
+    } = {};
 
     if (user.accountType === 'CUSTOMER') {
       userUpdate.accountType = 'VENDOR';
@@ -305,16 +394,38 @@ export async function POST(request: NextRequest) {
 
     if (profilePhotoUrl) {
       userUpdate.image = profilePhotoUrl;
+
+      // ✅ Link profile photo to vendor
+      await db
+        .update(userUploads)
+        .set({ vendorId: vendorProfileId })
+        .where(
+          and(
+            eq(userUploads.userId, user.id),
+            eq(userUploads.uploadType, 'profile')
+          )
+        );
+    }
+
+    // ✅ Link cover image to vendor
+    if (coverImageUrl) {
+      await db
+        .update(userUploads)
+        .set({ vendorId: vendorProfileId })
+        .where(
+          and(
+            eq(userUploads.userId, user.id),
+            eq(userUploads.uploadType, 'cover')
+          )
+        );
     }
 
     if (Object.keys(userUpdate).length > 0) {
-      await db
-        .update(users)
-        .set(userUpdate)
-        .where(eq(users.id, user.id));
+      await db.update(users).set(userUpdate).where(eq(users.id, user.id));
       console.log('Updated user profile:', userUpdate);
     }
 
+    // ===== MARK ONBOARDING AS COMPLETE =====
     const [progress] = await db
       .select()
       .from(onboardingProgress)

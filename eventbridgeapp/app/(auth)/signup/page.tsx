@@ -4,31 +4,28 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Store, User, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { signIn } from 'next-auth/react';
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<'accountType' | 'details'>('accountType');
   const [accountType, setAccountType] = useState<'VENDOR' | 'CUSTOMER' | null>(null);
 
-  // Auto-select account type based on URL parameter
   useEffect(() => {
     const type = searchParams.get('type');
     const accepted = searchParams.get('accepted');
 
     if (type === 'vendor') {
       setAccountType('VENDOR');
-      setStep('details'); // Skip to signup form
+      setStep('details');
     } else if (type === 'customer') {
       setAccountType('CUSTOMER');
-      setStep('details'); // Skip to signup form
+      setStep('details');
     }
 
     if (accepted === 'true') {
-      // Logic moved to props passing
-      // Determine if we need to switch to details view if not already there
-      // Assuming user was on details step when they clicked to view terms
       setStep('details');
     }
   }, [searchParams]);
@@ -47,7 +44,6 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
-      {/* Left side - Form */}
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           {step === 'accountType' ? (
@@ -65,7 +61,6 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Right side - Image */}
       <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
           <div className="flex items-center gap-2">
@@ -81,7 +76,7 @@ export default function SignupPage() {
             href="/"
             className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
           >
-            Back to Website →
+            Back to Website
           </Link>
         </div>
         <div className="relative h-full w-full">
@@ -130,19 +125,22 @@ function AccountTypeSelection({
           <button
             type="button"
             onClick={() => setTempSelection('VENDOR')}
-            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${tempSelection === 'VENDOR'
-              ? 'border-primary-01 bg-neutrals-03'
-              : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
-              }`}
+            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${
+              tempSelection === 'VENDOR'
+                ? 'border-primary-01 bg-neutrals-03'
+                : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
+            }`}
           >
-            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${tempSelection === 'VENDOR'
-              ? 'bg-accents-peach'
-              : 'bg-neutrals-03 group-hover:bg-accents-peach'
-              }`}>
-              <Store size={32} className={`transition-all ${tempSelection === 'VENDOR'
-                ? 'text-primary-01'
-                : 'text-shades-black group-hover:text-primary-01'
-                }`} />
+            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${
+              tempSelection === 'VENDOR'
+                ? 'bg-accents-peach'
+                : 'bg-neutrals-03 group-hover:bg-accents-peach'
+            }`}>
+              <Store size={32} className={`transition-all ${
+                tempSelection === 'VENDOR'
+                  ? 'text-primary-01'
+                  : 'text-shades-black group-hover:text-primary-01'
+              }`} />
             </div>
             <div className="text-center">
               <p className="text-sm text-neutrals-07">Are you a</p>
@@ -153,19 +151,22 @@ function AccountTypeSelection({
           <button
             type="button"
             onClick={() => setTempSelection('CUSTOMER')}
-            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${tempSelection === 'CUSTOMER'
-              ? 'border-primary-01 bg-neutrals-03'
-              : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
-              }`}
+            className={`group flex flex-col items-center gap-4 rounded-lg border p-8 transition-all ${
+              tempSelection === 'CUSTOMER'
+                ? 'border-primary-01 bg-neutrals-03'
+                : 'border-neutrals-04 bg-neutrals-02 hover:border-primary-01 hover:bg-neutrals-03'
+            }`}
           >
-            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${tempSelection === 'CUSTOMER'
-              ? 'bg-accents-peach'
-              : 'bg-neutrals-03 group-hover:bg-accents-peach'
-              }`}>
-              <User size={32} className={`transition-all ${tempSelection === 'CUSTOMER'
-                ? 'text-primary-01'
-                : 'text-shades-black group-hover:text-primary-01'
-                }`} />
+            <div className={`flex h-16 w-16 items-center justify-center rounded-lg transition-all ${
+              tempSelection === 'CUSTOMER'
+                ? 'bg-accents-peach'
+                : 'bg-neutrals-03 group-hover:bg-accents-peach'
+            }`}>
+              <User size={32} className={`transition-all ${
+                tempSelection === 'CUSTOMER'
+                  ? 'text-primary-01'
+                  : 'text-shades-black group-hover:text-primary-01'
+              }`} />
             </div>
             <div className="text-center">
               <p className="text-sm text-neutrals-07">Are you a</p>
@@ -187,7 +188,7 @@ function AccountTypeSelection({
           href="/login"
           className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-shades-black"
         >
-          ← Back
+          Back
         </Link>
       </div>
     </>
@@ -203,6 +204,7 @@ function SignupForm({
   onBack: () => void;
   initialAgreeToTerms?: boolean;
 }) {
+  const router = useRouter();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -210,17 +212,63 @@ function SignupForm({
   const [agreeToTerms, setAgreeToTerms] = useState(initialAgreeToTerms);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // Removed custom error state as we use toasts now, but keeping it if needed for form-level error
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    console.log('Terms agreed:', agreeToTerms);
+    console.log('Is loading:', isLoading);
+  }, [agreeToTerms, isLoading]);
+
+  const handleGoogleSignup = async () => {
+    if (!agreeToTerms) {
+      toast.error('Please agree to the Terms of Service');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Step 1: Create the account
-      const signupRes = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      console.log('Initiating Google sign-in...');
+      console.log('Account type:', accountType);
+
+      sessionStorage.setItem('pendingAccountType', accountType);
+
+      const result = await signIn('google', {
+        callbackUrl: accountType === 'VENDOR' ? '/vendor/onboarding' : '/dashboard',
+        redirect: true,
+      });
+
+      console.log('Sign-in result:', result);
+
+      if (result?.error) {
+        console.error('Sign-in error:', result.error);
+        toast.error('Failed to sign up with Google. Please try again.');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Google signup error:', error);
+      toast.error('An error occurred during Google sign-up');
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignup = async () => {
+    toast.info('Apple sign-in coming soon');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!agreeToTerms) {
+      toast.error('Please agree to the Terms of Service');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const signupRes = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName,
           lastName,
@@ -233,41 +281,35 @@ function SignupForm({
       const signupData = await signupRes.json();
 
       if (!signupRes.ok) {
-        toast.error(signupData.message || "Signup failed");
+        toast.error(signupData.message || 'Signup failed');
         setIsLoading(false);
         return;
       }
 
-      // Step 2: Auto-login the user (include credentials so Set-Cookie is applied)
-      const loginRes = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: 'same-origin',
+      toast.success('Account created successfully');
+
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
       });
 
-      if (!loginRes.ok) {
-        // Account created but login failed - redirect to login
-        toast.success("Account created! Please log in.");
+      if (result?.error) {
+        toast.error('Account created but login failed. Please try logging in.');
         setTimeout(() => {
-          window.location.href = "/login";
+          router.push('/login');
         }, 1500);
         return;
       }
 
-      toast.success("Account created successfully!");
-
-      // Success - redirect based on account type
       if (accountType === 'VENDOR') {
-        // Redirect vendors directly to onboarding
-        window.location.href = "/vendor/onboarding";
+        router.push('/vendor/onboarding');
       } else {
-        // Redirect customers to dashboard/home
-        window.location.href = "/";
+        router.push('/dashboard');
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong. Please try again.");
+      console.error('Signup error:', err);
+      toast.error('Something went wrong. Please try again.');
       setIsLoading(false);
     }
   };
@@ -334,18 +376,24 @@ function SignupForm({
           </button>
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-shades-black">
+        <label className="flex items-start gap-2 text-sm text-shades-black cursor-pointer">
           <input
             type="checkbox"
             checked={agreeToTerms}
-            onChange={(e) => setAgreeToTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50"
-            required
+            onChange={(e) => {
+              console.log('Checkbox changed:', e.target.checked);
+              setAgreeToTerms(e.target.checked);
+            }}
+            className="mt-1 h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50 cursor-pointer"
             disabled={isLoading}
           />
           <span>
             I agree to the{' '}
-            <Link href={`/terms?type=${accountType.toLowerCase()}`} className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
+            <Link 
+              href={`/terms?type=${accountType.toLowerCase()}`} 
+              className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+              target="_blank"
+            >
               Terms of Service
             </Link>
           </span>
@@ -353,7 +401,7 @@ function SignupForm({
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !agreeToTerms}
           className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading && <Loader2 className="animate-spin" size={20} />}
@@ -364,9 +412,9 @@ function SignupForm({
           type="button"
           onClick={onBack}
           disabled={isLoading}
-          className="w-full text-sm text-neutrals-07 hover:text-shades-black disabled:opacity-50"
+          className="w-full text-sm text-neutrals-07 hover:text-shades-black disabled:opacity-50 transition-colors"
         >
-          ← Back to account type
+          Back to account type
         </button>
 
         <div className="flex items-center gap-4">
@@ -378,25 +426,38 @@ function SignupForm({
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50"
-            disabled={isLoading}
+            onClick={handleGoogleSignup}
+            disabled={isLoading || !agreeToTerms}
+            className={`flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black transition-colors ${
+              isLoading || !agreeToTerms 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-neutrals-02 cursor-pointer'
+            }`}
           >
             <Image src="/google.svg" alt="Google" width={20} height={20} />
-            Sign up with Google
+            <span className="text-sm font-medium">Sign up with Google</span>
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-02 transition-colors disabled:opacity-50"
-            disabled={isLoading}
+            onClick={handleAppleSignup}
+            disabled={isLoading || !agreeToTerms}
+            className={`flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black transition-colors ${
+              isLoading || !agreeToTerms 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-neutrals-02 cursor-pointer'
+            }`}
           >
             <Image src="/apple.svg" alt="Apple" width={20} height={20} />
-            Sign up with Apple
+            <span className="text-sm font-medium">Sign up with Apple</span>
           </button>
         </div>
 
         <p className="text-center text-sm text-neutrals-07">
           Already have an account?{' '}
-          <Link href="/login" className={`text-accents-link hover:text-primary-01 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
+          <Link 
+            href="/login" 
+            className={`text-accents-link hover:text-primary-01 font-medium ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+          >
             Login
           </Link>
         </p>

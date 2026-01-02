@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
     const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ message: 'Email and password required' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Email and password required' },
+        { status: 400 }
+      );
     }
 
     // Query user from database
@@ -23,19 +26,37 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       console.log('Login attempt with non-existent email:', email);
-      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json(
+        { message: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
     // Check if account is active
     if (user.isActive === false) {
-      return NextResponse.json({ message: 'Account is deactivated' }, { status: 403 });
+      return NextResponse.json(
+        { message: 'Account is deactivated' },
+        { status: 403 }
+      );
+    }
+
+    // Guard against users without a password (e.g. OAuth accounts)
+    if (!user.password) {
+      console.log('Password login attempted for OAuth-only account:', user.email);
+      return NextResponse.json(
+        { message: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
     // Verify password
     const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
       console.log('Invalid password attempt for user:', user.email);
-      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json(
+        { message: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
     console.log('Login successful for user:', user.email);
@@ -43,7 +64,10 @@ export async function POST(req: NextRequest) {
     // Validate account type
     if (!isValidAccountType(user.accountType)) {
       console.error('Invalid account type in database:', user.accountType);
-      return NextResponse.json({ message: 'Account configuration error' }, { status: 500 });
+      return NextResponse.json(
+        { message: 'Account configuration error' },
+        { status: 500 }
+      );
     }
 
     // Create JWT token
@@ -67,11 +91,14 @@ export async function POST(req: NextRequest) {
     };
 
     // Create response
-    const response = NextResponse.json({ 
-      message: 'Login successful', 
-      user: userData, 
-      token 
-    }, { status: 200 });
+    const response = NextResponse.json(
+      {
+        message: 'Login successful',
+        user: userData,
+        token,
+      },
+      { status: 200 }
+    );
 
     // Set authentication cookie
     response.cookies.set('auth-token', token, {
@@ -85,6 +112,9 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

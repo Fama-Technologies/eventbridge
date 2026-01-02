@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -16,6 +17,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +32,6 @@ export default function LoginPage() {
         credentials: 'same-origin',
       });
 
-      // Check if response is JSON
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         toast.error("Server error. Please try again.");
@@ -47,7 +49,6 @@ export default function LoginPage() {
 
       toast.success("Login successful!");
 
-      // Determine redirect URL
       if (redirectUrl) {
         window.location.href = redirectUrl;
       } else if (data.user?.accountType === "VENDOR") {
@@ -62,9 +63,45 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    console.log('Google sign-in button clicked');
+    
+    try {
+      setIsGoogleLoading(true);
+      console.log('Starting Google sign-in...');
+      
+      const callbackUrl = redirectUrl || '/dashboard';
+      console.log('Callback URL:', callbackUrl);
+      
+      const result = await signIn('google', { 
+        callbackUrl,
+        redirect: true 
+      });
+      
+      console.log('Sign-in result:', result);
+      
+      if (result?.error) {
+        console.error('Sign-in error:', result.error);
+        toast.error("Failed to sign in with Google");
+        setIsGoogleLoading(false);
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      toast.error("Failed to sign in with Google");
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setIsAppleLoading(true);
+    toast.info("Apple Sign-In coming soon!");
+    setIsAppleLoading(false);
+  };
+
+  const anyLoading = isLoading || isGoogleLoading || isAppleLoading;
+
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
-      {/* Left side - Form */}
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <h1 className="mb-2 text-4xl font-bold text-shades-black">
@@ -83,7 +120,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
-                disabled={isLoading}
+                disabled={anyLoading}
               />
             </div>
 
@@ -95,13 +132,13 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
-                disabled={isLoading}
+                disabled={anyLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black disabled:opacity-50"
-                disabled={isLoading}
+                disabled={anyLoading}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -114,18 +151,18 @@ export default function LoginPage() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50"
-                  disabled={isLoading}
+                  disabled={anyLoading}
                 />
                 Remember me
               </label>
-              <Link href="/forgot-password" className={`text-sm text-primary-01 hover:text-primary-02 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
+              <Link href="/forgot-password" className={`text-sm text-primary-01 hover:text-primary-02 ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}>
                 Forget Password
               </Link>
             </div>
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={anyLoading}
               className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading && <Loader2 className="animate-spin" size={20} />}
@@ -141,25 +178,35 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                disabled={isLoading}
+                onClick={handleGoogleSignIn}
+                disabled={anyLoading}
                 className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Image src="/google.svg" alt="Google" width={20} height={20} />
+                {isGoogleLoading ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Image src="/google.svg" alt="Google" width={20} height={20} />
+                )}
                 Sign in with Google
               </button>
               <button
                 type="button"
-                disabled={isLoading}
+                onClick={handleAppleSignIn}
+                disabled={anyLoading}
                 className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Image src="/apple.svg" alt="Apple" width={20} height={20} />
+                {isAppleLoading ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Image src="/apple.svg" alt="Apple" width={20} height={20} />
+                )}
                 Sign in with Apple
               </button>
             </div>
 
             <p className="text-center text-sm text-neutrals-07">
               Don't have an account?{' '}
-              <Link href="/signup" className={`text-primary-01 hover:text-primary-02 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
+              <Link href="/signup" className={`text-primary-01 hover:text-primary-02 ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}>
                 Sign up
               </Link>
             </p>
@@ -167,7 +214,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right side - Image */}
       <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
           <div className="flex items-center gap-2">
@@ -183,7 +229,7 @@ export default function LoginPage() {
             href="/"
             className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
           >
-            Back to Website →
+            Back to Website
           </Link>
         </div>
         <div className="relative h-full w-full">
