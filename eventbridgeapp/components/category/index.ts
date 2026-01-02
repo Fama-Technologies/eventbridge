@@ -5,3 +5,6 @@ export { default as CategoryPills, CATEGORIES } from './CategoryPills';
 export { default as PlanningEventCTA } from './PlanningEventCTA';
 export { default as ServiceGrid } from './ServiceGrid';
 export { default as CategoryFooter } from './CategoryFooter';
+export { default as HowItWorksModal } from './HowItWorksModal';
+export { default as FeaturesModal } from './FeaturesModal';
+export { default as BurgerMenu } from './BurgerMenu';

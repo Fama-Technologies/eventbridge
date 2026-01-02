@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Menu, Moon, Sun } from 'lucide-react';
+import { Search, MapPin, Calendar, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@/providers/theme-provider';
 import { useRouter } from 'next/navigation';
+import BurgerMenu from './BurgerMenu';
 
 export default function CategoryHeader() {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function CategoryHeader() {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 relative">
           <Link
             href="/signup?type=vendor"
             className="text-primary-01 font-medium text-sm hover:text-primary-02 transition-colors hidden md:block"
@@ -114,13 +115,8 @@ export default function CategoryHeader() {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          {/* Menu */}
-          <button
-            className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:border-white/40 transition-all"
-            aria-label="Menu"
-          >
-            <Menu size={18} />
-          </button>
+          {/* Burger Menu */}
+          <BurgerMenu />
         </div>
       </div>
     </header>
