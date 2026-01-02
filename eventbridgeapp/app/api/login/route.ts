@@ -1,18 +1,20 @@
-// app/api/auth/login/route.ts
+// app/api/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { createToken, isValidAccountType } from '@/lib/jwt';
-import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Login request received at /api/login');
+    
     const body = await req.json();
     const { email, password } = body;
 
     if (!email || !password) {
+      console.log('Missing email or password');
       return NextResponse.json(
         { message: 'Email and password required' },
         { status: 400 }
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
       .limit(1);
 
     if (!user) {
-      console.log('Login attempt with non-existent email:', email);
+      console.log('User not found:', email);
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
 
     // Check if account is active
     if (user.isActive === false) {
+      console.log('Account inactive:', email);
       return NextResponse.json(
         { message: 'Account is deactivated' },
         { status: 403 }
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // Guard against users without a password (e.g. OAuth accounts)
     if (!user.password) {
-      console.log('Password login attempted for OAuth-only account:', user.email);
+      console.log('No password set (OAuth account):', user.email);
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }
@@ -54,18 +57,18 @@ export async function POST(req: NextRequest) {
     // Verify password
     const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
-      console.log('Invalid password attempt for user:', user.email);
+      console.log('Invalid password for:', user.email);
       return NextResponse.json(
         { message: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
-    console.log('Login successful for user:', user.email);
+    console.log('Login successful for:', user.email);
 
     // Validate account type
     if (!isValidAccountType(user.accountType)) {
-      console.error('Invalid account type in database:', user.accountType);
+      console.error('Invalid account type:', user.accountType);
       return NextResponse.json(
         { message: 'Account configuration error' },
         { status: 500 }
@@ -94,13 +97,17 @@ export async function POST(req: NextRequest) {
       createdAt: user.createdAt,
     };
 
+    // Determine redirect path based on account type
+    const redirectTo = getRedirectPath(user.accountType);
+    console.log('Redirecting to:', redirectTo);
+
     // Create response
     const response = NextResponse.json(
       {
         message: 'Login successful',
         user: userData,
         token,
-        redirectTo: getRedirectPath(user.accountType), // Add redirect path
+        redirectTo, // Added redirect path
       },
       { status: 200 }
     );
@@ -114,12 +121,11 @@ export async function POST(req: NextRequest) {
       path: '/',
     });
 
-    // Also set a non-httpOnly cookie for client-side account type detection
-    // This helps with immediate redirect after login
-    response.cookies.set('user-account-type', user.accountType, {
+    // Optional: Set account type cookie for client-side detection
+    response.cookies.set('user-account-type', user.accountType.toLowerCase(), {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60, // 60 seconds - just enough for redirect
+      maxAge: 60, // 60 seconds
       path: '/',
     });
 
@@ -133,42 +139,34 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Helper function to determine redirect path based on account type
+// Helper function to determine redirect path
 function getRedirectPath(accountType: string): string {
-  switch (accountType.toLowerCase()) {
+  const normalizedType = accountType.toLowerCase();
+  
+  switch (normalizedType) {
     case 'vendor':
       return '/vendor/dashboard';
     case 'admin':
       return '/admin/dashboard';
-    case 'user':
+    case 'customer':
+      return '/dashboard';
+    case 'planner':
+      return '/planner/dashboard';
     default:
+      console.warn('Unknown account type, defaulting to /dashboard:', accountType);
       return '/dashboard';
   }
 }
 
-// Optional: GET method to check auth status
-export async function GET(req: NextRequest) {
-  try {
-    const token = req.cookies.get('auth-token')?.value;
-    
-    if (!token) {
-      return NextResponse.json(
-        { isAuthenticated: false },
-        { status: 200 }
-      );
-    }
-
-    // You might want to verify the token here
-    // const decoded = await verifyToken(token);
-    
-    return NextResponse.json(
-      { isAuthenticated: true },
-      { status: 200 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { isAuthenticated: false },
-      { status: 200 }
-    );
-  }
+// Optional: Add GET method to test the endpoint
+export async function GET() {
+  return NextResponse.json(
+    { 
+      message: 'Login endpoint is active',
+      endpoint: '/api/login',
+      method: 'POST',
+      requiredFields: ['email', 'password']
+    },
+    { status: 200 }
+  );
 }

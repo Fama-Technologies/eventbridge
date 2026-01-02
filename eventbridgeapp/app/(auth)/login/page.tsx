@@ -4,14 +4,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -26,16 +25,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Correct endpoint: /api/auth/login instead of /api/login
-      const res = await fetch("/api/auth/login", {
+      // FIXED: Use /api/login instead of /api/auth/login
+      const res = await fetch("/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ email, password }),
-        credentials: 'include', // Changed from 'same-origin' to 'include' for better cookie handling
+        credentials: 'include',
       });
 
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error('Non-JSON response:', text);
         toast.error("Server error. Please try again.");
         setIsLoading(false);
         return;
@@ -44,6 +48,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        console.error('Login failed:', data);
         toast.error(data.message || "Login failed");
         setIsLoading(false);
         return;
@@ -60,7 +65,7 @@ export default function LoginPage() {
         // Fallback to account type based redirect
         const accountType = data.user.accountType.toLowerCase();
         if (accountType === 'vendor') {
-          window.location.href = "/vendor/dashboard"; // Fixed: Changed from "/vendor" to "/vendor/dashboard"
+          window.location.href = "/vendor/dashboard";
         } else if (accountType === 'admin') {
           window.location.href = "/admin/dashboard";
         } else {
@@ -72,7 +77,13 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Something went wrong. Please try again.");
+      
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        toast.error("Cannot connect to server. Please check your connection.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+      
       setIsLoading(false);
     }
   };
@@ -84,11 +95,7 @@ export default function LoginPage() {
       setIsGoogleLoading(true);
       console.log('Starting Google sign-in...');
       
-      // Determine callback URL based on potential account type
-      // Note: With OAuth, we can't know account type until after authentication
-      // We'll handle the redirect in the OAuth callback
-      const callbackUrl = redirectUrl || '/auth/callback'; // You should have an OAuth callback page
-      
+      const callbackUrl = redirectUrl || '/dashboard';
       console.log('Callback URL:', callbackUrl);
       
       await signIn('google', { 
@@ -96,8 +103,6 @@ export default function LoginPage() {
         redirect: true 
       });
       
-      // Note: signIn with redirect: true will navigate away from this page
-      // So no need to handle the result here
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Failed to sign in with Google");
