@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Globe, Sun, Moon } from 'lucide-react';
+import { Menu, Globe, Sun, Moon, MenuIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
@@ -98,6 +98,14 @@ export default function Header() {
               </div>
             )}
           </button>
+           {/* Language Icon */}
+          <button
+            className="w-10 h-10 rounded-full border border-neutrals-04 flex items-center justify-center text-shades-black transition-all duration-200 hover:text-primary-01 hover:border-primary-01"
+            aria-label="Language"
+          >
+            <MenuIcon size={20} />
+          </button>
+
 
           {/* Mobile Menu Button */}
           <button
@@ -109,6 +117,7 @@ export default function Header() {
           </button>
         </div>
       </div>
+
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (

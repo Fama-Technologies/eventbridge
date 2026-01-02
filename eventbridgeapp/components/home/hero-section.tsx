@@ -1,139 +1,75 @@
 'use client';
 
-import { Search, MapPin, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Calendar } from 'lucide-react';
 import type { MediaItem } from './HeroCarousel';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import HeroCarousel from './HeroCarousel';
 import { useRouter } from 'next/navigation';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
-
-interface DatePickerProps {
-  onDateSelect: (date: Date) => void;
-  selectedDate: Date | null;
-}
-
-function DatePicker({ onDateSelect, selectedDate }: DatePickerProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
-  // Get the day of week for the first day (0 = Sunday, 1 = Monday, etc.)
-  const firstDayOfWeek = monthStart.getDay();
-
-  // Create empty cells for days before the month starts
-  const emptyCells = Array(firstDayOfWeek).fill(null);
-
-  const allCells = [...emptyCells, ...days];
-
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  return (
-    <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-2xl p-4 z-50 w-80 border border-neutrals-03">
-      {/* Month Navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="p-1 hover:bg-neutrals-02 rounded-lg transition-colors"
-        >
-          <ChevronLeft size={20} className="text-neutrals-06" />
-        </button>
-        <h3 className="font-semibold text-shades-black">
-          {format(currentMonth, 'MMMM yyyy')}
-        </h3>
-        <button
-          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          className="p-1 hover:bg-neutrals-02 rounded-lg transition-colors"
-        >
-          <ChevronRight size={20} className="text-neutrals-06" />
-        </button>
-      </div>
-
-      {/* Week Day Headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
-        {weekDays.map((day) => (
-          <div key={day} className="text-center text-xs font-semibold text-neutrals-06 py-2">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {allCells.map((day, index) => {
-          if (!day) {
-            return <div key={`empty-${index}`} className="aspect-square" />;
-          }
-
-          const isSelected = selectedDate && isSameDay(day, selectedDate);
-          const isCurrentDay = isToday(day);
-          const isCurrentMonth = isSameMonth(day, currentMonth);
-
-          return (
-            <button
-              key={day.toISOString()}
-              onClick={() => onDateSelect(day)}
-              disabled={!isCurrentMonth}
-              className={`
-                aspect-square rounded-lg text-sm font-medium transition-all
-                ${!isCurrentMonth ? 'text-neutrals-04 cursor-not-allowed' : 'text-shades-black hover:bg-primary-01/10'}
-                ${isSelected ? 'bg-primary-01 text-white hover:bg-primary-02' : ''}
-                ${isCurrentDay && !isSelected ? 'border-2 border-primary-01' : ''}
-              `}
-            >
-              {format(day, 'd')}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Clear Selection Button */}
-      {selectedDate && (
-        <button
-          onClick={() => onDateSelect(new Date())}
-          className="w-full mt-4 py-2 text-sm text-primary-01 hover:bg-primary-01/10 rounded-lg transition-colors font-medium"
-        >
-          Clear Selection
-        </button>
-      )}
-    </div>
-  );
-}
-
+import { format } from 'date-fns';
+import { DualMonthCalendar, EventTypeDropdown, LocationDropdown } from './search';
 
 export default function HeroSection() {
   const router = useRouter();
   const [what, setWhat] = useState('');
   const [where, setWhere] = useState('');
-  const [when, setWhen] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  
+  // Dropdown visibility states
+  const [showEventDropdown, setShowEventDropdown] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const datePickerRef = useRef<HTMLDivElement>(null);
 
-  // Close date picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
-        setShowDatePicker(false);
-      }
-    };
+  // Refs for positioning dropdowns
+  const whatInputRef = useRef<HTMLDivElement>(null);
+  const whereInputRef = useRef<HTMLDivElement>(null);
+  const whenInputRef = useRef<HTMLDivElement>(null);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+  // Store anchor rects for dropdown positioning
+  const [whatRect, setWhatRect] = useState<DOMRect | null>(null);
+  const [whereRect, setWhereRect] = useState<DOMRect | null>(null);
+  const [whenRect, setWhenRect] = useState<DOMRect | null>(null);
+
+  // Update rects on scroll or resize
+  const updateRects = useCallback(() => {
+    if (whatInputRef.current) setWhatRect(whatInputRef.current.getBoundingClientRect());
+    if (whereInputRef.current) setWhereRect(whereInputRef.current.getBoundingClientRect());
+    if (whenInputRef.current) setWhenRect(whenInputRef.current.getBoundingClientRect());
   }, []);
+
+  useEffect(() => {
+    // Update rects when dropdowns open
+    updateRects();
+    
+    // Listen to scroll and resize
+    window.addEventListener('scroll', updateRects, true);
+    window.addEventListener('resize', updateRects);
+    
+    return () => {
+      window.removeEventListener('scroll', updateRects, true);
+      window.removeEventListener('resize', updateRects);
+    };
+  }, [updateRects, showEventDropdown, showLocationDropdown, showDatePicker]);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    setWhen(format(date, 'yyyy-MM-dd'));
     setShowDatePicker(false);
+  };
+
+  const handleEventSelect = (eventType: string) => {
+    setWhat(eventType);
+    setShowEventDropdown(false);
+  };
+
+  const handleLocationSelect = (location: string) => {
+    setWhere(location);
+    setShowLocationDropdown(false);
   };
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (what) params.set('what', what);
     if (where) params.set('where', where);
-    if (when) params.set('when', when);
+    if (selectedDate) params.set('when', format(selectedDate, 'yyyy-MM-dd'));
     router.push(`/search?${params.toString()}`);
   };
 
@@ -165,65 +101,84 @@ export default function HeroSection() {
         </p>
 
         {/* Search Bar */}
-        <div className="bg-white rounded-full p-1.5 pl-2 flex items-center shadow-2xl max-w-3xl mx-auto">
+        <div className="bg-[#1E1E1E] rounded-full p-2 flex items-center shadow-2xl max-w-3xl mx-auto border border-white/10">
           {/* What */}
-          <div className="flex items-center gap-2 px-4 flex-1 border-r border-neutrals-03">
-            <Search size={18} className="text-neutrals-06 flex-shrink-0" />
+          <div ref={whatInputRef} className="flex items-center gap-3 px-5 flex-1 border-r border-white/20">
+            <Search size={18} className="text-white/50 shrink-0" />
             <div className="flex-1 text-left">
-              <label className="text-xs font-semibold text-shades-black block">What</label>
+              <label className="text-xs font-medium text-white/70 block">What</label>
               <input
                 type="text"
                 placeholder="Wedding, Birthday..."
                 value={what}
-                onChange={(e) => setWhat(e.target.value)}
-                className="w-full text-sm text-neutrals-06 placeholder:text-neutrals-06 focus:outline-none bg-transparent"
+                onChange={(e) => {
+                  setWhat(e.target.value);
+                  setShowEventDropdown(true);
+                  setShowLocationDropdown(false);
+                  setShowDatePicker(false);
+                }}
+                onFocus={() => {
+                  setShowEventDropdown(true);
+                  setShowLocationDropdown(false);
+                  setShowDatePicker(false);
+                  updateRects();
+                }}
+                className="w-full text-sm text-white placeholder:text-white/40 focus:outline-none bg-transparent"
               />
             </div>
           </div>
 
           {/* Where */}
-          <div className="flex items-center gap-2 px-4 flex-1 border-r border-neutrals-03">
-            <MapPin size={18} className="text-neutrals-06 flex-shrink-0" />
+          <div ref={whereInputRef} className="flex items-center gap-3 px-5 flex-1 border-r border-white/20">
+            <MapPin size={18} className="text-white/50 shrink-0" />
             <div className="flex-1 text-left">
-              <label className="text-xs font-semibold text-shades-black block">Where</label>
+              <label className="text-xs font-medium text-white/70 block">Where</label>
               <input
                 type="text"
                 placeholder="City or Zip code"
                 value={where}
-                onChange={(e) => setWhere(e.target.value)}
-                className="w-full text-sm text-neutrals-06 placeholder:text-neutrals-06 focus:outline-none bg-transparent"
+                onChange={(e) => {
+                  setWhere(e.target.value);
+                  setShowLocationDropdown(true);
+                  setShowEventDropdown(false);
+                  setShowDatePicker(false);
+                }}
+                onFocus={() => {
+                  setShowLocationDropdown(true);
+                  setShowEventDropdown(false);
+                  setShowDatePicker(false);
+                  updateRects();
+                }}
+                className="w-full text-sm text-white placeholder:text-white/40 focus:outline-none bg-transparent"
               />
             </div>
           </div>
 
           {/* When */}
-          <div className="flex items-center gap-2 px-4 flex-1 relative" ref={datePickerRef}>
-            <Calendar size={18} className="text-neutrals-06 flex-shrink-0" />
+          <div ref={whenInputRef} className="flex items-center gap-3 px-5 flex-1">
+            <Calendar size={18} className="text-white/50 shrink-0" />
             <div className="flex-1 text-left">
-              <label className="text-xs font-semibold text-shades-black block">When</label>
+              <label className="text-xs font-medium text-white/70 block">When</label>
               <input
                 type="text"
                 placeholder="Add dates"
                 value={selectedDate ? format(selectedDate, 'MMM dd, yyyy') : ''}
-                onClick={() => setShowDatePicker(!showDatePicker)}
+                onClick={() => {
+                  setShowDatePicker(!showDatePicker);
+                  setShowEventDropdown(false);
+                  setShowLocationDropdown(false);
+                  updateRects();
+                }}
                 readOnly
-                className="w-full text-sm text-neutrals-06 placeholder:text-neutrals-06 focus:outline-none bg-transparent cursor-pointer"
+                className="w-full text-sm text-white placeholder:text-white/40 focus:outline-none bg-transparent cursor-pointer"
               />
             </div>
-
-            {/* Date Picker Popup */}
-            {showDatePicker && (
-              <DatePicker
-                onDateSelect={handleDateSelect}
-                selectedDate={selectedDate}
-              />
-            )}
           </div>
 
           {/* Search Button */}
           <button
             onClick={handleSearch}
-            className="bg-primary-01 hover:bg-primary-02 text-white rounded-full w-12 h-12 flex items-center justify-center transition-colors flex-shrink-0"
+            className="bg-primary-01 hover:bg-primary-02 text-white rounded-full w-11 h-11 flex items-center justify-center transition-colors shrink-0 ml-2"
             aria-label="Search"
           >
             <Search size={20} />
@@ -246,6 +201,34 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* Dropdowns - using portaled fixed positioning */}
+      {showEventDropdown && what && (
+        <EventTypeDropdown 
+          onSelect={handleEventSelect} 
+          searchValue={what} 
+          onClose={() => setShowEventDropdown(false)}
+          anchorRect={whatRect}
+        />
+      )}
+      
+      {showLocationDropdown && where && (
+        <LocationDropdown 
+          onSelect={handleLocationSelect} 
+          searchValue={where}
+          onClose={() => setShowLocationDropdown(false)}
+          anchorRect={whereRect}
+        />
+      )}
+      
+      {showDatePicker && (
+        <DualMonthCalendar
+          onDateSelect={handleDateSelect}
+          selectedDate={selectedDate}
+          onClose={() => setShowDatePicker(false)}
+          anchorRect={whenRect}
+        />
+      )}
     </section>
   );
 }
