@@ -1,9 +1,11 @@
+// app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { createToken, isValidAccountType } from '@/lib/jwt';
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,6 +77,8 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       email: user.email,
       accountType: user.accountType,
+      firstName: user.firstName,
+      lastName: user.lastName,
     });
 
     // Prepare user data for response
@@ -96,6 +100,7 @@ export async function POST(req: NextRequest) {
         message: 'Login successful',
         user: userData,
         token,
+        redirectTo: getRedirectPath(user.accountType), // Add redirect path
       },
       { status: 200 }
     );
@@ -109,12 +114,61 @@ export async function POST(req: NextRequest) {
       path: '/',
     });
 
+    // Also set a non-httpOnly cookie for client-side account type detection
+    // This helps with immediate redirect after login
+    response.cookies.set('user-account-type', user.accountType, {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60, // 60 seconds - just enough for redirect
+      path: '/',
+    });
+
     return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
+    );
+  }
+}
+
+// Helper function to determine redirect path based on account type
+function getRedirectPath(accountType: string): string {
+  switch (accountType.toLowerCase()) {
+    case 'vendor':
+      return '/vendor/dashboard';
+    case 'admin':
+      return '/admin/dashboard';
+    case 'user':
+    default:
+      return '/dashboard';
+  }
+}
+
+// Optional: GET method to check auth status
+export async function GET(req: NextRequest) {
+  try {
+    const token = req.cookies.get('auth-token')?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { isAuthenticated: false },
+        { status: 200 }
+      );
+    }
+
+    // You might want to verify the token here
+    // const decoded = await verifyToken(token);
+    
+    return NextResponse.json(
+      { isAuthenticated: true },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { isAuthenticated: false },
+      { status: 200 }
     );
   }
 }

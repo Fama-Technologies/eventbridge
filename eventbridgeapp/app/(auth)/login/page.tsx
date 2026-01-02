@@ -4,13 +4,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
+  const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -25,11 +26,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/login", {
+      // Correct endpoint: /api/auth/login instead of /api/login
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: 'same-origin',
+        credentials: 'include', // Changed from 'same-origin' to 'include' for better cookie handling
       });
 
       const contentType = res.headers.get("content-type");
@@ -49,11 +51,23 @@ export default function LoginPage() {
 
       toast.success("Login successful!");
 
-      if (redirectUrl) {
+      // Use the redirectTo from API response if available
+      if (data.redirectTo) {
+        window.location.href = data.redirectTo;
+      } else if (redirectUrl) {
         window.location.href = redirectUrl;
-      } else if (data.user?.accountType === "VENDOR") {
-        window.location.href = "/vendor";
+      } else if (data.user?.accountType) {
+        // Fallback to account type based redirect
+        const accountType = data.user.accountType.toLowerCase();
+        if (accountType === 'vendor') {
+          window.location.href = "/vendor/dashboard"; // Fixed: Changed from "/vendor" to "/vendor/dashboard"
+        } else if (accountType === 'admin') {
+          window.location.href = "/admin/dashboard";
+        } else {
+          window.location.href = "/dashboard";
+        }
       } else {
+        // Default fallback
         window.location.href = "/dashboard";
       }
     } catch (error) {
@@ -70,21 +84,20 @@ export default function LoginPage() {
       setIsGoogleLoading(true);
       console.log('Starting Google sign-in...');
       
-      const callbackUrl = redirectUrl || '/dashboard';
+      // Determine callback URL based on potential account type
+      // Note: With OAuth, we can't know account type until after authentication
+      // We'll handle the redirect in the OAuth callback
+      const callbackUrl = redirectUrl || '/auth/callback'; // You should have an OAuth callback page
+      
       console.log('Callback URL:', callbackUrl);
       
-      const result = await signIn('google', { 
+      await signIn('google', { 
         callbackUrl,
         redirect: true 
       });
       
-      console.log('Sign-in result:', result);
-      
-      if (result?.error) {
-        console.error('Sign-in error:', result.error);
-        toast.error("Failed to sign in with Google");
-        setIsGoogleLoading(false);
-      }
+      // Note: signIn with redirect: true will navigate away from this page
+      // So no need to handle the result here
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Failed to sign in with Google");
@@ -121,6 +134,7 @@ export default function LoginPage() {
                 className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
                 disabled={anyLoading}
+                autoComplete="email"
               />
             </div>
 
@@ -133,19 +147,21 @@ export default function LoginPage() {
                 className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
                 disabled={anyLoading}
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black disabled:opacity-50"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={anyLoading}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-shades-black">
+              <label className="flex items-center gap-2 text-sm text-shades-black cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -155,8 +171,11 @@ export default function LoginPage() {
                 />
                 Remember me
               </label>
-              <Link href="/forgot-password" className={`text-sm text-primary-01 hover:text-primary-02 ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}>
-                Forget Password
+              <Link 
+                href="/forgot-password" 
+                className={`text-sm text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Forgot Password
               </Link>
             </div>
 
@@ -185,9 +204,15 @@ export default function LoginPage() {
                 {isGoogleLoading ? (
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
-                  <Image src="/google.svg" alt="Google" width={20} height={20} />
+                  <Image 
+                    src="/google.svg" 
+                    alt="Google" 
+                    width={20} 
+                    height={20} 
+                    className="w-5 h-5"
+                  />
                 )}
-                Sign in with Google
+                {isGoogleLoading ? 'Signing in...' : 'Sign in with Google'}
               </button>
               <button
                 type="button"
@@ -198,15 +223,24 @@ export default function LoginPage() {
                 {isAppleLoading ? (
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
-                  <Image src="/apple.svg" alt="Apple" width={20} height={20} />
+                  <Image 
+                    src="/apple.svg" 
+                    alt="Apple" 
+                    width={20} 
+                    height={20} 
+                    className="w-5 h-5"
+                  />
                 )}
-                Sign in with Apple
+                {isAppleLoading ? 'Signing in...' : 'Sign in with Apple'}
               </button>
             </div>
 
             <p className="text-center text-sm text-neutrals-07">
               Don't have an account?{' '}
-              <Link href="/signup" className={`text-primary-01 hover:text-primary-02 ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}>
+              <Link 
+                href="/signup" 
+                className={`text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
+              >
                 Sign up
               </Link>
             </p>
@@ -222,12 +256,13 @@ export default function LoginPage() {
               alt="Event Bridge Logo"
               width={32}
               height={32}
+              className="w-8 h-8"
             />
             <span className="text-xl font-semibold text-white">Event Bridge</span>
           </div>
           <Link
             href="/"
-            className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
+            className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50 transition-colors"
           >
             Back to Website
           </Link>
@@ -238,6 +273,7 @@ export default function LoginPage() {
             alt="Event"
             fill
             className="object-cover"
+            priority
           />
         </div>
       </div>
