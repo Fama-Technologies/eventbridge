@@ -1,6 +1,7 @@
 'use client';
 
 import { X, Calendar, Search, MessageSquare, ShieldCheck } from 'lucide-react';
+import { useTheme } from '@/providers/theme-provider';
 
 interface HowItWorksModalProps {
   isOpen: boolean;
@@ -35,6 +36,9 @@ const STEPS = [
 ];
 
 export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
   if (!isOpen) return null;
 
   return (
@@ -46,11 +50,15 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-4xl bg-[#1a1a1a] rounded-3xl p-8 md:p-12 shadow-2xl">
+      <div className={`relative w-full max-w-4xl rounded-3xl p-8 md:p-12 shadow-2xl ${
+        isDark ? 'bg-[#1a1a1a]' : 'bg-white'
+      }`}>
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-neutrals-06 hover:text-white transition-colors"
+          className={`absolute top-6 right-6 transition-colors ${
+            isDark ? 'text-neutrals-06 hover:text-white' : 'text-neutrals-07 hover:text-shades-black'
+          }`}
           aria-label="Close modal"
         >
           <X size={24} />
@@ -58,7 +66,9 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
 
         {/* Header */}
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          <h2 className={`text-3xl md:text-4xl font-bold mb-3 ${
+            isDark ? 'text-white' : 'text-shades-black'
+          }`}>
             How EventBridge Works
           </h2>
           <p className="text-neutrals-06 text-lg">
@@ -75,13 +85,17 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
                 <div className="w-10 h-10 rounded-full bg-primary-01 flex items-center justify-center text-white font-bold text-lg shrink-0">
                   {step.number}
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-neutrals-03 flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  isDark ? 'bg-neutrals-03' : 'bg-neutrals-02'
+                }`}>
                   <step.icon size={20} className="text-neutrals-06" />
                 </div>
               </div>
               
               {/* Content */}
-              <h3 className="text-white font-semibold text-lg mb-2">
+              <h3 className={`font-semibold text-lg mb-2 ${
+                isDark ? 'text-white' : 'text-shades-black'
+              }`}>
                 {step.title}
               </h3>
               <p className="text-neutrals-06 text-sm leading-relaxed">

@@ -1,6 +1,7 @@
 'use client';
 
 import { X, ShieldCheck, Building2, MessageSquareText, Star, Heart, Wallet, Users, Clock, CheckSquare, Lock } from 'lucide-react';
+import { useTheme } from '@/providers/theme-provider';
 
 interface FeaturesModalProps {
   isOpen: boolean;
@@ -59,6 +60,9 @@ const PREMIUM_FEATURES = [
 ];
 
 export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
   if (!isOpen) return null;
 
   return (
@@ -70,11 +74,15 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-5xl bg-[#1a1a1a] rounded-3xl p-6 md:p-10 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className={`relative w-full max-w-5xl rounded-3xl p-6 md:p-10 shadow-2xl max-h-[90vh] overflow-y-auto ${
+        isDark ? 'bg-[#1a1a1a]' : 'bg-white'
+      }`}>
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-neutrals-06 hover:text-white transition-colors"
+          className={`absolute top-6 right-6 transition-colors ${
+            isDark ? 'text-neutrals-06 hover:text-white' : 'text-neutrals-07 hover:text-shades-black'
+          }`}
           aria-label="Close modal"
         >
           <X size={24} />
@@ -82,7 +90,9 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+          <h2 className={`text-2xl md:text-3xl font-bold mb-3 ${
+            isDark ? 'text-white' : 'text-shades-black'
+          }`}>
             Powerful Features & Tools
           </h2>
           <p className="text-neutrals-06">
@@ -93,7 +103,7 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
         {/* Free Plan Section */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <h3 className="text-white font-semibold">Included in Free Plan</h3>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-shades-black'}`}>Included in Free Plan</h3>
             <span className="px-3 py-1 bg-accents-discount/20 text-accents-discount text-xs font-bold rounded-full uppercase">
               Free Forever
             </span>
@@ -103,12 +113,18 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
             {FREE_FEATURES.map((feature, index) => (
               <div 
                 key={index} 
-                className="bg-neutrals-02 rounded-xl p-4 border border-neutrals-04"
+                className={`rounded-xl p-4 border ${
+                  isDark 
+                    ? 'bg-neutrals-02 border-neutrals-04' 
+                    : 'bg-neutrals-01 border-neutrals-03'
+                }`}
               >
                 <div className="w-10 h-10 rounded-lg bg-primary-01/20 flex items-center justify-center mb-3">
                   <feature.icon size={20} className="text-primary-01" />
                 </div>
-                <h4 className="text-white font-semibold text-sm mb-1">
+                <h4 className={`font-semibold text-sm mb-1 ${
+                  isDark ? 'text-white' : 'text-shades-black'
+                }`}>
                   {feature.title}
                 </h4>
                 <p className="text-neutrals-06 text-xs leading-relaxed">
@@ -122,7 +138,7 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
         {/* Premium Section */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <h3 className="text-white font-semibold">Premium Features for Organisers</h3>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-shades-black'}`}>Premium Features for Organisers</h3>
             <span className="px-3 py-1 bg-primary-01/20 text-primary-01 text-xs font-bold rounded-full uppercase flex items-center gap-1">
               <Lock size={10} />
               Premium
@@ -133,7 +149,11 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
             {PREMIUM_FEATURES.map((feature, index) => (
               <div 
                 key={index} 
-                className="bg-neutrals-02 rounded-xl p-4 border border-neutrals-04 relative"
+                className={`rounded-xl p-4 border relative ${
+                  isDark 
+                    ? 'bg-neutrals-02 border-neutrals-04' 
+                    : 'bg-neutrals-01 border-neutrals-03'
+                }`}
               >
                 {/* Lock indicator */}
                 <div className="absolute top-4 right-4">
@@ -143,7 +163,9 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
                 <div className="w-10 h-10 rounded-lg bg-primary-01/20 flex items-center justify-center mb-3">
                   <feature.icon size={20} className="text-primary-01" />
                 </div>
-                <h4 className="text-white font-semibold text-sm mb-1">
+                <h4 className={`font-semibold text-sm mb-1 ${
+                  isDark ? 'text-white' : 'text-shades-black'
+                }`}>
                   {feature.title}
                 </h4>
                 <p className="text-neutrals-06 text-xs leading-relaxed">
@@ -155,17 +177,25 @@ export default function FeaturesModal({ isOpen, onClose }: FeaturesModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-neutrals-04">
+        <div className={`flex items-center justify-between pt-4 border-t ${
+          isDark ? 'border-neutrals-04' : 'border-neutrals-03'
+        }`}>
           <button
             onClick={onClose}
-            className="text-neutrals-06 hover:text-white transition-colors text-sm"
+            className={`transition-colors text-sm ${
+              isDark ? 'text-neutrals-06 hover:text-white' : 'text-neutrals-07 hover:text-shades-black'
+            }`}
           >
             Maybe later
           </button>
           
           <div className="flex items-center gap-3">
             <button
-              className="bg-neutrals-03 hover:bg-neutrals-04 text-white font-medium px-6 py-3 rounded-xl transition-colors text-sm"
+              className={`font-medium px-6 py-3 rounded-xl transition-colors text-sm ${
+                isDark 
+                  ? 'bg-neutrals-03 hover:bg-neutrals-04 text-white' 
+                  : 'bg-neutrals-02 hover:bg-neutrals-03 text-shades-black'
+              }`}
             >
               Unlock Premium
             </button>

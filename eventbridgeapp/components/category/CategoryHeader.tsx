@@ -116,7 +116,7 @@ export default function CategoryHeader() {
           </button>
 
           {/* Burger Menu */}
-          <BurgerMenu />
+          <BurgerMenu variant="dark" />
         </div>
       </div>
     </header>

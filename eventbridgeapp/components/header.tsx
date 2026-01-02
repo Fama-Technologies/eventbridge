@@ -1,18 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, Globe, Sun, Moon, MenuIcon } from 'lucide-react';
+import { Globe, Sun, Moon, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
+import { BurgerMenu } from '@/components/category';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme: updateTheme, resolvedTheme } = useTheme();
+  const { setTheme: updateTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
-    setMounted(true);
+    // Set mounted state after initial render
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const toggleTheme = () => {
@@ -98,20 +101,17 @@ export default function Header() {
               </div>
             )}
           </button>
-           {/* Language Icon */}
-          <button
-            className="w-10 h-10 rounded-full border border-neutrals-04 flex items-center justify-center text-shades-black transition-all duration-200 hover:text-primary-01 hover:border-primary-01"
-            aria-label="Language"
-          >
-            <MenuIcon size={20} />
-          </button>
-
+          
+          {/* Burger Menu with Dropdown */}
+          <div className="relative">
+            <BurgerMenu variant="light" />
+          </div>
 
           {/* Mobile Menu Button */}
           <button
             className="md:hidden w-10 h-10 rounded-full border border-neutrals-04 flex items-center justify-center text-shades-black transition-all duration-200 hover:text-primary-01 hover:border-primary-01"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Menu"
+            aria-label="Mobile Menu"
           >
             <Menu size={20} />
           </button>
