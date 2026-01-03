@@ -2,21 +2,50 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 export default function Footer() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check for saved theme preference or default to system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    
+    if (newMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    }
+  };
   return (
     <footer className="bg-shades-white text-shades-black">
       {/* CTA Section */}
       {/* background: linear-gradient(90deg, #222222 36.07%, #CB5E21 71.72%); */}
 
-      <div className="max-w-7xl mx-auto px-6 pt-12">
-        <div className="relative overflow-hidden rounded-2xl mb-16 flex flex-col md:flex-row bg-gradient-to-r from-[#222222] via-[#3d2f1f] to-[#CB5E21]">
+      <div className="max-w-7xl mx-auto px-6 pt-12 ">
+        <div className="relative overflow-hidden rounded-2xl mb-16 flex flex-col md:flex-row bg-linear-to-r from-[#ffffff] from-40% via-[#CB5E21] via-80% to-[#CB5E21]">
           {/* Left side - Gradient background with text */}
-          <div className="flex-1 p-8 md:p-10">
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+          <div className="flex-1 p-8 md:p-10  border-[#FF704333] border-2">
+            <h3 className="text-2xl md:text-3xl font-bold text-black mb-3">
               Planning an Event
             </h3>
-            <p className="text-white text-sm leading-relaxed max-w-md">
+            <p className="text-[#222222] text-sm leading-relaxed max-w-md">
               Connect with trusted service providers seamlessly to make your vision a
               reality. From intimate gatherings to grand celebrations
             </p>
@@ -248,15 +277,39 @@ export default function Footer() {
             </p>
             {/* Dark Mode Toggle */}
             <div className="flex items-center gap-3">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-primary-01">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+             {/*lets this will have a toggle button for sun and moon*/}
+             <Image src="/icons/moon.svg" alt="sun" width={24} height={24} />
               <span className="text-sm text-neutrals-07">Dark mode</span>
-              <div className="w-6 h-6 rounded-full bg-primary-01 flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              
+              {/* Animated Toggle Button */}
+              <button
+                onClick={toggleDarkMode}
+                className={`relative w-12 h-6 rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-01 focus:ring-offset-2 ${
+                  isDarkMode ? 'bg-primary-01' : 'bg-gray-300'
+                }`}
+                aria-label="Toggle dark mode"
+              >
+                <div
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out ${
+                    isDarkMode ? 'transform translate-x-6' : 'transform translate-x-0'
+                  }`}
+                >
+                  {/* Icon inside the toggle circle */}
+                  <div className="w-full h-full flex items-center justify-center">
+                    {isDarkMode ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2a10 10 0 1 0 10 10c0-5.523-4.477-10-10-10z" fill="#FF7043"/>
+                        <path d="M12 22a10 10 0 0 1 0-20c-2.5 2-4 5.5-4 10s1.5 8 4 10z" fill="#7C3F1C"/>
+                      </svg>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="5" fill="#FFA726"/>
+                        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24" stroke="#FFA726" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
