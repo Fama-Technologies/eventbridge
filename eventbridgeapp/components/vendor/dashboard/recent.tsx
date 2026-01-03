@@ -13,16 +13,16 @@ interface RecentProps {
 export default function Recent({ title, badge, firstname, lastname, date, onDecline, onRespond }: RecentProps) {
     const normalizedBadge = String(badge).toUpperCase();
     const badgeColor = normalizedBadge === "URGENT" 
-        ? "bg-errors-bg text-errors-main" 
+        ? "bg-[#FF00001A] text-[#C13515]" 
         : normalizedBadge === "PENDING" 
-            ? "bg-accents-peach text-accents-orange" 
+            ? "bg-[#FEF3C780] text-[#A44801]" 
             : "bg-neutrals-02 text-accents-discount";
     const displayBadge = String(badge).charAt(0).toUpperCase() + String(badge).slice(1).toLowerCase();
 
     const formattedDate = typeof date === "string" ? date : date.toISOString().split("T")[0];
-
+// bg-shades-white p-6 rounded-lg border border-neutrals-03 shadow-sm transition-colors duration-300
     return (
-        <div className="w-full bg-neutrals-01 p-4 rounded-lg border border-neutrals-03 transition-colors duration-300 hover:border-neutrals-04">
+        <div className="w-full bg-shades-white p-6 rounded-lg border border-neutrals-03 shadow-sm transition-colors duration-300 hover:border-neutrals-04">
             <article className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-4" aria-label={`Message: ${title}`}>
                 <div className="flex flex-col items-start gap-2 w-full">
                     <div className="flex flex-row items-center gap-2 flex-wrap">

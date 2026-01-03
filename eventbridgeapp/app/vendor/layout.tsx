@@ -15,7 +15,7 @@ export default function VendorLayout({
     return (
         <div className="flex h-screen overflow-hidden bg-neutrals-01">
             {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-[288px] flex-col flex-shrink-0">
+            <aside className="hidden md:flex w-[250px] flex-col flex-shrink-0">
                 <Sidebar />
             </aside>
 
@@ -29,7 +29,7 @@ export default function VendorLayout({
                     />
 
                     {/* Sidebar Panel */}
-                    <div className="fixed inset-y-0 left-0 w-[288px] bg-shades-white shadow-xl animate-in slide-in-from-left duration-300">
+                    <div className="fixed inset-y-0 left-0 w-[250px] bg-shades-white shadow-xl animate-in slide-in-from-left duration-300">
                         <div className="absolute top-4 right-4 z-50">
                             <button
                                 onClick={() => setMobileMenuOpen(false)}

@@ -64,9 +64,9 @@ export default function BookTrackerRecent() {
     };
 
     return (
-        <div className="w-full bg-shades-white p-6 rounded-xl border border-neutrals-03 shadow-sm transition-colors duration-300">
+        <div className="w-full  ">
             <h2 className="font-font1 font-semibold text-[18px] leading-6 text-shades-black mb-6">Recent Activity</h2>
-            <div className="relative flex flex-col gap-0">
+            <div className="relative flex flex-col gap-0 bg-shades-white p-6 rounded-xl border border-neutrals-03 shadow-sm transition-colors duration-300">
                 {events.map((event, index) => (
                     <div key={event.id} className="relative pl-6 pb-8 last:pb-0">
                         {/* Connecting Line */}
@@ -98,8 +98,7 @@ export default function BookTrackerRecent() {
                         </div>
                     </div>
                 ))}
-            </div>
-
+                
             <div className="mt-6 pt-4 border-t border-neutrals-03 flex justify-center">
                 <Link
                     href="#"
@@ -108,6 +107,8 @@ export default function BookTrackerRecent() {
                     View full history
                 </Link>
             </div>
+            </div>
+
         </div>
     );
 }

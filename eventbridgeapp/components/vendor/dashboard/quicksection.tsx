@@ -5,13 +5,14 @@ import React from "react";
 const CalendarIcon = (props: any) => <Icon icon="mdi:calendar-edit-outline" {...props} />;
 const CameraIcon = (props: any) => <Icon icon="mdi:camera-plus-outline" {...props} />;
 const MoneyIcon = (props: any) => <Icon icon="mdi:attach-money" {...props} />;
-const SupportIcon = (props: any) => <Icon icon="mdi:headset" {...props} />;
-
+const SupportIcon = (props: any) => <Icon icon="mdi:customer-service" {...props} />;
+const PackageIcon = (props: any) => <Icon icon="ph:package-light" {...props} />;
 const items = [
     { icon: CalendarIcon, title: "Block Dates", href: "/vendor/bookings" },
     { icon: CameraIcon, title: "Add Photos", href: "/vendor/settings" },
     { icon: MoneyIcon, title: "Update Prices", href: "/vendor/settings" },
     { icon: SupportIcon, title: "Support", href: "/vendor/settings" },
+    { icon: PackageIcon, title: "Add Service Package", href: "/vendor/package" }
 ];
 
 export default function QuickSection() {
