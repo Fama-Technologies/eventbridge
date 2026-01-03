@@ -52,7 +52,7 @@ export default function Footer() {
           </div>
 
           {/* Right side - Animated gradient button area */}
-          <div className="bg-[#CB5E21] shadow-[0px_4px_40px_0px_rgba(0,0,0,0.4)] md:rounded-l-[40px] flex justify-center items-center w-full md:w-auto py-6 md:py-0">
+          <div className="bg-[#CB5E21] md:rounded-l-[40px] flex justify-center items-center w-full md:w-auto py-6 md:py-0" style={{ boxShadow: '0px 4px 6px -4px var(--primary-01), 0px 10px 15px -3px var(--primary-01)' }}>
             <Link
               href="/get-started"
               className="group relative flex items-center justify-center px-12 md:px-20 min-w-[200px] md:min-w-[280px] overflow-hidden"
