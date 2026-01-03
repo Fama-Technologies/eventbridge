@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Calendar, Search, MessageSquare, ShieldCheck } from 'lucide-react';
+import { X, Search, MessageSquare, ShieldCheck, CalendarDays } from 'lucide-react';
 import { useTheme } from '@/providers/theme-provider';
 
 interface HowItWorksModalProps {
@@ -11,7 +11,7 @@ interface HowItWorksModalProps {
 const STEPS = [
   {
     number: 1,
-    icon: Calendar,
+    icon: CalendarDays,
     title: 'Create your event',
     description: 'Add details like date, location, and guest count to get personalized recommendations.',
   },
@@ -77,17 +77,15 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
         </div>
 
         {/* Steps Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
           {STEPS.map((step) => (
             <div key={step.number} className="text-left">
               {/* Step Number & Icon */}
-              <div className="flex items-start gap-3 mb-4">
+              <div className="flex items-start gap-3 justify-between  mb-4">
                 <div className="w-10 h-10 rounded-full bg-primary-01 flex items-center justify-center text-white font-bold text-lg shrink-0">
                   {step.number}
                 </div>
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  isDark ? 'bg-neutrals-03' : 'bg-neutrals-02'
-                }`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center `}>
                   <step.icon size={20} className="text-neutrals-06" />
                 </div>
               </div>
@@ -109,7 +107,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
         <div className="text-center">
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 bg-primary-01 hover:bg-primary-02 text-white font-semibold px-8 py-4 rounded-xl transition-colors"
+            className="inline-flex items-center  gap-2 bg-primary-01 hover:bg-primary-02 text-white font-semibold px-8 py-4 rounded-full transition-colors"
+             style={{ boxShadow: '0px 4px 6px -4px var(--primary-01), 0px 10px 15px -3px var(--primary-01)' }}
           >
             Get Started
             <span className="text-xl">→</span>
@@ -119,3 +118,5 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
     </div>
   );
 }
+      // <div className="bg-[#CB5E21] md:rounded-l-[40px] flex justify-center items-center w-full md:w-auto py-6 md:py-0" style={{ boxShadow: '0px 4px 6px -4px var(--primary-01), 0px 10px 15px -3px var(--primary-01)' }}>
+

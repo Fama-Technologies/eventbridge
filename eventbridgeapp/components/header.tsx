@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Globe, Sun, Moon, Menu } from 'lucide-react';
+import { Globe, Sun, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
@@ -90,8 +90,10 @@ export default function Header() {
                       : 'rotate-90 scale-0 opacity-0'
                   }`}
                 />
-                <Moon
-                  size={20}
+                <Image src="/icons/moon.svg"
+                  alt="Moon"
+                  width={20}
+                  height={20}
                   className={`absolute inset-0 transition-all duration-500 ${
                     resolvedTheme === 'light'
                       ? 'rotate-0 scale-100 opacity-100'
