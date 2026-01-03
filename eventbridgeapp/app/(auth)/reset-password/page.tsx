@@ -22,7 +22,6 @@ export default function ResetPasswordPage() {
   const token = searchParams.get('token');
 
   useEffect(() => {
-    // Validate token on mount
     const validateToken = async () => {
       if (!token) {
         setError('Invalid or missing reset token');
@@ -151,7 +150,6 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
-      {/* Left side - Form */}
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <h1 className="mb-2 text-4xl font-bold text-shades-black">
@@ -232,7 +230,6 @@ export default function ResetPasswordPage() {
         </div>
       </div>
 
-      {/* Right side - Image */}
       <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
           <div className="flex items-center gap-2">
