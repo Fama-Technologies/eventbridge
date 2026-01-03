@@ -2,24 +2,19 @@ import nodemailer from 'nodemailer';
 
 // Create transporter with Gmail SMTP
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
-  tls: {
-    rejectUnauthorized: false
-  }
 });
 
-// Verify transporter configuration on startup
+// Verify transporter on startup
 transporter.verify(function (error, success) {
   if (error) {
-    console.error('Gmail SMTP verification failed:', error);
+    console.error('❌ Gmail SMTP verification failed:', error);
   } else {
-    console.log('Gmail SMTP server is ready to send emails');
+    console.log('✅ Gmail SMTP is ready to send emails');
   }
 });
 
@@ -38,7 +33,7 @@ export async function sendPasswordResetEmail({
 }: SendPasswordResetEmailParams) {
   // Validate environment variables
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    throw new Error('Gmail SMTP configuration missing: EMAIL_USER or EMAIL_PASSWORD not set');
+    throw new Error('EMAIL_USER or EMAIL_PASSWORD not set in .env.local');
   }
 
   const expiryTime = expiresAt.toLocaleString();
@@ -188,14 +183,13 @@ export async function sendPasswordResetEmail({
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Password reset email sent successfully via Gmail:', {
+    console.log('✅ Password reset email sent successfully:', {
       messageId: info.messageId,
       recipient: to,
-      from: process.env.EMAIL_USER,
     });
     return info;
   } catch (error) {
-    console.error('❌ Failed to send password reset email via Gmail:', error);
-    throw new Error(`Gmail SMTP failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('❌ Failed to send password reset email:', error);
+    throw error;
   }
 }
