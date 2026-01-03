@@ -33,7 +33,7 @@ export default function RecentMessages() {
     ];
     return (
         <div className="flex flex-col">
-            <div className="w-full flex flex-row justify-between gap-6">
+            <div className="w-full flex flex-row justify-between ">
                 <h2 className="font-font1 font-semibold text-[18px] leading-6 tracking-normal text-shades-black">Action Required</h2>
                
                 <Link href="/vendor/messages" className="text-primary-01 text-sm hover:text-primary-02 transition-colors flex items-center gap-1">
@@ -41,7 +41,7 @@ export default function RecentMessages() {
                     <ArrowRight size={16} className="inline-block" aria-hidden />
                 </Link>
             </div>
-            <div className="mt-6 flex flex-col gap-4">
+            <div className="mt-6 flex flex-col gap-4 ">
                 {messages.map((m) => (
                     <Recent key={m.id} title={m.sender} badge={m.badge} firstname={m.firstname} lastname={m.lastname} date={m.date} />
                 ))}
