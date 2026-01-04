@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Globe, Sun, Moon, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/providers/theme-provider';
+import Image from 'next/image';
 
 interface VendorHeaderProps {
     onOpenMobileMenu?: () => void;
@@ -66,8 +67,9 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
                                         : 'rotate-90 scale-0 opacity-0'
                                         }`}
                                 />
-                                <Moon
-                                    size={20}
+                                <Image src="/icons/moon_black.svg"
+                                    width={20}
+                                    height={20}
                                     className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'light'
                                         ? 'rotate-0 scale-100 opacity-100'
                                         : '-rotate-90 scale-0 opacity-0'
