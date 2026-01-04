@@ -42,7 +42,7 @@ export default function MostUsedServices() {
   ];
 
   return (
-    <section className="py-12 px-6 bg-accents-peach/10">
+    <section className="py-12 px-6" style={{ backgroundColor: '#fff5f2' }}>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-8 bg-primary-01 rounded-full"></div>
