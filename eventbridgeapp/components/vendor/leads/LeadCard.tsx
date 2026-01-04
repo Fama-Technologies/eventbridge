@@ -43,7 +43,10 @@ const statusConfig = {
         cardBorder: 'border-l-4 border-l-accents-discount',
     },
     responded: {
-      
+        label: 'RESPONDED',
+        bgColor: 'bg-[#F1F5F9]',
+        textColor: 'text-[#475569]',
+        cardBorder: 'border-l-4 border-l-neutrals-04',
     },
     quote_sent: {
         label: 'QUOTE SENT',
