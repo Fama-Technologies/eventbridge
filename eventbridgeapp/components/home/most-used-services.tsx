@@ -42,7 +42,7 @@ export default function MostUsedServices() {
   ];
 
   return (
-    <section className="py-12 px-6 bg-background">
+    <section className="py-12 px-6 bg-neutrals-01">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-2xl font-bold text-shades-black mb-6">Top Recommended Services</h2>
 
