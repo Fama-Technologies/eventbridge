@@ -16,25 +16,6 @@ interface LeadDetailModalProps {
     onDecline?: (lead: Lead) => void;
 }
 
-interface EventRequirements {
-    eventType: string;
-    duration: string;
-    preferredTime: string;
-    flexibility: string;
-    specialRequirements: string[];
-    inquiryNote: string;
-}
-
-// Mock data - in production, this would come from the lead
-const mockRequirements: EventRequirements = {
-    eventType: 'Corporate Offsite',
-    duration: '3 Days, 2 Nights',
-    preferredTime: 'Morning Start (9:00 AM)',
-    flexibility: '+/- 2 Days',
-    specialRequirements: ['AV Equipment', 'Lunch Catering', 'Breakout Rooms'],
-    inquiryNote: '"Hi! We are looking for a venue for our executive retreat. We really need a space that feels disconnected from the city but still has high-speed internet. We also need AV equipment for presentations and catering for lunch on both days. Is the date flexible by +/- 2 days?"',
-};
-
 export default function LeadDetailModal({
     lead,
     isOpen,
@@ -46,13 +27,12 @@ export default function LeadDetailModal({
     onDecline,
 }: LeadDetailModalProps) {
     const [activeTab, setActiveTab] = useState<'details' | 'messages' | 'attachments'>('details');
-    const [messageCount] = useState(1);
 
     if (!isOpen || !lead) return null;
 
     const tabs = [
         { id: 'details', label: 'Details' },
-        { id: 'messages', label: 'Messages', count: messageCount },
+        { id: 'messages', label: 'Messages', count: lead.messageCount || 0 },
         { id: 'attachments', label: 'Attachments' },
     ];
 
@@ -101,12 +81,14 @@ export default function LeadDetailModal({
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-shades-white border border-neutrals-03 rounded-full text-sm text-shades-black">
                                     <DollarSign size={14} />
-                                    {lead.budget} Est. Budget
+                                    ${lead.budget} Est. Budget
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-shades-white border border-neutrals-03 rounded-full text-sm text-shades-black">
-                                    <MapPin size={14} />
-                                    Napa Valley, CA
-                                </span>
+                                {lead.location && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-shades-white border border-neutrals-03 rounded-full text-sm text-shades-black">
+                                        <MapPin size={14} />
+                                        {lead.location}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -146,14 +128,16 @@ export default function LeadDetailModal({
                         {activeTab === 'details' && (
                             <div className="space-y-6">
                                 {/* Inquiry Note */}
-                                <div>
-                                    <span className="text-xs font-medium text-primary-01 uppercase tracking-wider">Inquiry Note</span>
-                                    <div className="mt-2 p-4 bg-neutrals-01 rounded-lg border-l-4 border-primary-01">
-                                        <p className="text-sm text-shades-black italic leading-relaxed">
-                                            {mockRequirements.inquiryNote}
-                                        </p>
+                                {lead.inquiryNote && (
+                                    <div>
+                                        <span className="text-xs font-medium text-primary-01 uppercase tracking-wider">Inquiry Note</span>
+                                        <div className="mt-2 p-4 bg-neutrals-01 rounded-lg border-l-4 border-primary-01">
+                                            <p className="text-sm text-shades-black italic leading-relaxed">
+                                                {lead.inquiryNote}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Event Requirements */}
                                 <div>
@@ -161,36 +145,44 @@ export default function LeadDetailModal({
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                                         <div>
                                             <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Event Type</span>
-                                            <p className="text-sm font-medium text-shades-black mt-1">{mockRequirements.eventType}</p>
+                                            <p className="text-sm font-medium text-shades-black mt-1">{lead.eventType}</p>
                                         </div>
-                                        <div>
-                                            <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Duration</span>
-                                            <p className="text-sm font-medium text-shades-black mt-1">{mockRequirements.duration}</p>
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Preferred Time</span>
-                                            <p className="text-sm font-medium text-shades-black mt-1">{mockRequirements.preferredTime}</p>
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Flexibility</span>
-                                            <p className="text-sm font-medium text-shades-black mt-1">{mockRequirements.flexibility}</p>
-                                        </div>
+                                        {lead.duration && (
+                                            <div>
+                                                <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Duration</span>
+                                                <p className="text-sm font-medium text-shades-black mt-1">{lead.duration}</p>
+                                            </div>
+                                        )}
+                                        {lead.preferredTime && (
+                                            <div>
+                                                <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Preferred Time</span>
+                                                <p className="text-sm font-medium text-shades-black mt-1">{lead.preferredTime}</p>
+                                            </div>
+                                        )}
+                                        {lead.flexibility && (
+                                            <div>
+                                                <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Flexibility</span>
+                                                <p className="text-sm font-medium text-shades-black mt-1">{lead.flexibility}</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Special Requirements */}
-                                    <div className="mt-4">
-                                        <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Special Requirements</span>
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {mockRequirements.specialRequirements.map((req) => (
-                                                <span
-                                                    key={req}
-                                                    className="px-3 py-1.5 bg-primary-01/10 text-primary-01 rounded-full text-sm font-medium"
-                                                >
-                                                    {req}
-                                                </span>
-                                            ))}
+                                    {lead.specialRequirements && lead.specialRequirements.length > 0 && (
+                                        <div className="mt-4">
+                                            <span className="text-xs font-medium text-neutrals-06 uppercase tracking-wider">Special Requirements</span>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {lead.specialRequirements.map((req) => (
+                                                    <span
+                                                        key={req}
+                                                        className="px-3 py-1.5 bg-primary-01/10 text-primary-01 rounded-full text-sm font-medium"
+                                                    >
+                                                        {req}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -213,13 +205,15 @@ export default function LeadDetailModal({
                     {/* Right Sidebar */}
                     <div className="w-full lg:w-72 p-6 bg-neutrals-01 border-t lg:border-t-0 lg:border-l border-neutrals-03">
                         {/* Response Timer */}
-                        <div className="text-center mb-6">
-                            <span className="text-xs font-medium text-primary-01 uppercase tracking-wider">Response Needed</span>
-                            <div className="flex items-center justify-center gap-2 mt-1">
-                                <Clock size={16} className="text-primary-01" />
-                                <span className="text-primary-01 font-semibold">1h 42m remaining</span>
+                        {lead.responseTime && (
+                            <div className="text-center mb-6">
+                                <span className="text-xs font-medium text-primary-01 uppercase tracking-wider">Response Needed</span>
+                                <div className="flex items-center justify-center gap-2 mt-1">
+                                    <Clock size={16} className="text-primary-01" />
+                                    <span className="text-primary-01 font-semibold">{lead.responseTime}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Action Buttons */}
                         <div className="space-y-3">

@@ -72,7 +72,7 @@ export default function BookingCard({ booking, onViewDetails, onMessage, onCance
     return (
         <div className={`bg-shades-white rounded-xl border border-neutrals-03 p-5 transition-all hover:shadow-md ${
             isCancelled ? 'opacity-70' : ''
-        }`}>
+        }`} style={{ boxShadow: '0px 1px 2px 0px #0000000D' }}>
             <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                 {/* Left: Avatar and Info */}
                 <div className="flex items-start gap-4 flex-1">

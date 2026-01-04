@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Users, PartyPopper, Clock } from 'lucide-react';
+import { Calendar, Users, PartyPopper, Clock, Banknote, CircleCheckBig } from 'lucide-react';
 import Image from 'next/image';
 
 export type LeadStatus = 'new' | 'responded' | 'quote_sent' | 'booked';
@@ -17,6 +17,13 @@ export interface Lead {
     inquiredAt: string;
     status: LeadStatus;
     responseTime?: string;
+    location?: string;
+    duration?: string;
+    preferredTime?: string;
+    flexibility?: string;
+    specialRequirements?: string[];
+    inquiryNote?: string;
+    messageCount?: number;
 }
 
 interface LeadCardProps {
@@ -31,27 +38,25 @@ interface LeadCardProps {
 const statusConfig = {
     new: {
         label: 'NEW INQUIRY',
-        bgColor: 'bg-accents-discount',
+        bgColor: 'bg-[#2563EB]',
         textColor: 'text-white',
         cardBorder: 'border-l-4 border-l-accents-discount',
     },
     responded: {
-        label: 'RESPONDED',
-        bgColor: 'bg-neutrals-06',
-        textColor: 'text-white',
-        cardBorder: 'border-l-4 border-l-neutrals-06',
+      
     },
     quote_sent: {
         label: 'QUOTE SENT',
-        bgColor: 'bg-neutrals-06',
-        textColor: 'text-white',
+        bgColor: 'bg-[#F1F5F9]',
+        textColor: 'text-[#475569]',
         cardBorder: 'border-l-4 border-l-neutrals-06',
+        border:'border-2 border-[#E2E8F0]'
     },
     booked: {
         label: 'BOOKED',
-        bgColor: 'bg-accents-discount',
-        textColor: 'text-white',
-        cardBorder: 'bg-shades-black',
+        bgColor: 'bg-[#D1FAE5]',
+        textColor: 'text-[#047857]',
+        cardBorder: 'bg-[#A7F3D0] border-1',
     },
 };
 
@@ -67,14 +72,13 @@ export default function LeadCard({
     const isBooked = lead.status === 'booked';
 
     return (
-        <div className={`relative rounded-xl ${isBooked ? 'bg-shades-black text-white' : 'bg-shades-white border border-neutrals-03'} ${!isBooked ? config.cardBorder : ''}`}>
+        <div className={`relative rounded-xl ${isBooked ? 'bg-neutrals-05 text-white' : 'bg-shades-white border border-neutrals-03'} ${!isBooked ? config.cardBorder : ''}`} style={{ boxShadow: '0px 1px 2px 0px #0000000D' }}>
             {/* Status Badge */}
             <div className="absolute -top-3 left-4">
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${config.bgColor} ${config.textColor}`}>
                     {lead.status === 'quote_sent' && (
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                        <CircleCheckBig size="20" />
+                         
                     )}
                     {lead.status === 'booked' && (
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +104,7 @@ export default function LeadCard({
                         </div>
                         <div>
                             <h3 className={`font-semibold ${isBooked ? 'text-white' : 'text-shades-black'}`}>{lead.name}</h3>
-                            <p className={`text-sm ${isBooked ? 'text-white/70' : 'text-neutrals-06'}`}>{lead.inquiredAt}</p>
+                            <p className={`text-sm ${isBooked ? 'text-white/70' : 'text-neutrals-06'}`}>Inquired {lead.inquiredAt}</p>
                         </div>
                     </div>
 
@@ -122,8 +126,11 @@ export default function LeadCard({
                             <div>
                                 <p className={`text-sm ${isBooked ? 'text-white' : 'text-shades-black'}`}>{lead.eventDate}</p>
                                 <p className={`text-sm font-semibold flex items-center gap-1 ${isBooked ? 'text-primary-01' : 'text-accents-discount'}`}>
-                                    <span className="w-4 h-4 rounded bg-accents-discount/20 flex items-center justify-center text-[10px]">$</span>
-                                    {lead.budget}
+                                    <span className="w-4 h-4 rounded  flex items-center justify-center text-[10px]">
+                                    <Banknote />
+                                    
+                                    </span>
+                                    UGX {lead.budget}
                                 </p>
                             </div>
                         </div>
@@ -134,7 +141,7 @@ export default function LeadCard({
                         {lead.status === 'new' && (
                             <>
                                 {lead.responseTime && (
-                                    <span className="text-xs text-primary-01 flex items-center gap-1 px-2 py-1 bg-primary-01/10 rounded-full">
+                                    <span className="text-xs text-errors-main flex items-center gap-1 px-2 py-1 bg-primary-01/10 rounded-full">
                                         <Clock size={12} />
                                         Response in {lead.responseTime}
                                     </span>
@@ -175,7 +182,7 @@ export default function LeadCard({
                                 <span className="text-xs text-neutrals-06">Awaiting Reply</span>
                                 <button
                                     onClick={() => onUpdateQuote?.(lead)}
-                                    className="px-4 py-2 text-sm border border-neutrals-04 rounded-lg hover:bg-neutrals-02 transition-colors text-shades-black"
+                                    className="px-4 py-2    text-sm border border-neutrals-04 rounded-lg hover:bg-neutrals-02 transition-colors text-shades-black"
                                 >
                                     Update Quote
                                 </button>
