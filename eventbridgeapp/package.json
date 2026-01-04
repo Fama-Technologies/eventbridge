@@ -16,6 +16,7 @@
     "@auth/drizzle-adapter": "^1.11.1",
     "@aws-sdk/client-s3": "^3.958.0",
     "@aws-sdk/s3-request-presigner": "^3.958.0",
+    "@cloudflare/stream-react": "^1.9.3",
     "@hookform/resolvers": "^5.2.2",
     "@iconify/react": "^6.0.2",
     "@neondatabase/serverless": "^1.0.2",
