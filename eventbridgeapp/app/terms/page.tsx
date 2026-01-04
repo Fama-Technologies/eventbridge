@@ -1,40 +1,66 @@
+'use client';
 
 import Link from 'next/link';
 import { ArrowLeft, Check } from 'lucide-react';
+import { useTheme } from '@/providers/theme-provider';
+import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 
-export default function TermsPage({
-    searchParams,
-}: {
-    searchParams: { [key: string]: string | string[] | undefined };
-}) {
-    const type = searchParams?.type;
+export default function TermsPage() {
+    const searchParams = useSearchParams();
+    const type = searchParams?.get('type');
     const returnUrl = type ? `/signup?accepted=true&type=${type}` : '/signup?accepted=true';
     const declineUrl = type ? `/signup?type=${type}` : '/signup';
+    
+    const { theme, resolvedTheme } = useTheme();
+    const [showFooter, setShowFooter] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+    
+    const isDark = resolvedTheme === 'dark';
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+    
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const element = e.currentTarget;
+        const bottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 50;
+        setShowFooter(bottom);
+    };
+    
+    if (!mounted) {
+        return null;
+    }
 
     return (
-        <div className="flex h-screen flex-col bg-neutrals-01 dark:bg-shades-black">
+        <div className="flex h-screen flex-col" style={{ backgroundColor: isDark ? '#000000' : '#f7f7f7' }}>
             {/* Header */}
-            <header className="flex items-center justify-between border-b border-neutrals-04 bg-shades-white px-6 py-4 dark:bg-neutrals-02">
+            <header className="flex items-center justify-between border-b px-6 py-4" style={{ 
+                backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+                borderColor: isDark ? '#333333' : '#e5e5e5'
+            }}>
                 <div className="flex items-center gap-4">
                     <Link
                         href={declineUrl}
-                        className="flex items-center gap-2 text-sm font-medium text-neutrals-07 hover:text-shades-black dark:text-neutrals-05 dark:hover:text-shades-white"
+                        className="flex items-center gap-2 text-sm font-medium transition-colors"
+                        style={{ color: isDark ? '#a3a3a3' : '#737373' }}
                     >
                         <ArrowLeft size={16} />
                         Back to Sign Up
                     </Link>
-                    <div className="h-6 w-px bg-neutrals-04" />
-                    <h1 className="text-lg font-bold text-shades-black dark:text-shades-white">Terms of Service</h1>
+                    <div className="h-6 w-px" style={{ backgroundColor: isDark ? '#333333' : '#e5e5e5' }} />
+                    <h1 className="text-lg font-bold" style={{ color: isDark ? '#ffffff' : '#000000' }}>Terms of Service</h1>
                 </div>
-                <div className="text-sm text-neutrals-06">
+                <div className="text-sm" style={{ color: isDark ? '#737373' : '#a3a3a3' }}>
                     Last Updated: Dec 22, 2025
                 </div>
             </header>
 
             {/* Main Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="mx-auto max-w-3xl px-6 py-12">
-                    <div className="space-y-8 text-shades-black dark:text-neutrals-05">
+            <div className="flex-1 overflow-y-auto" ref={contentRef} onScroll={handleScroll}>
+                <div className="mx-auto max-w-3xl px-6 py-12 pb-32">
+                    <div className="space-y-8" style={{ color: isDark ? '#d4d4d4' : '#000000' }}>
                         <section>
                             <h2 className="text-2xl font-bold mb-4">Welcome to EventBridge</h2>
                             <p className="mb-4 leading-relaxed">
@@ -301,22 +327,39 @@ export default function TermsPage({
                 </div>
             </div>
 
-            {/* Footer / Accept Action */}
-            <div className="border-t border-neutrals-04 bg-shades-white p-6 dark:bg-neutrals-02">
+            {/* Footer / Accept Action - Slides up from bottom */}
+            <div 
+                className="fixed bottom-0 left-0 right-0 border-t p-6 transition-transform duration-500 ease-out"
+                style={{
+                    backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+                    borderColor: isDark ? '#333333' : '#e5e5e5',
+                    transform: showFooter ? 'translateY(0)' : 'translateY(100%)',
+                    boxShadow: isDark ? '0 -4px 6px rgba(0, 0, 0, 0.3)' : '0 -4px 6px rgba(0, 0, 0, 0.1)'
+                }}
+            >
                 <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-4 sm:flex-row">
-                    <div className="text-sm text-neutrals-07">
+                    <div className="text-sm" style={{ color: isDark ? '#a3a3a3' : '#737373' }}>
                         By clicking accept, you agree to these Terms.
                     </div>
                     <div className="flex gap-4">
                         <Link
                             href={declineUrl}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-01 disabled:pointer-events-none disabled:opacity-50 border border-neutrals-04 bg-transparent text-shades-black hover:bg-neutrals-02 h-10 px-4 py-2"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-colors h-10 px-4 py-2 border"
+                            style={{
+                                borderColor: isDark ? '#333333' : '#e5e5e5',
+                                backgroundColor: 'transparent',
+                                color: isDark ? '#ffffff' : '#000000'
+                            }}
                         >
                             Decline
                         </Link>
                         <Link
                             href={returnUrl}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-01 disabled:pointer-events-none disabled:opacity-50 bg-primary-01 text-shades-white hover:bg-primary-02 h-10 px-4 py-2"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-colors h-10 px-4 py-2"
+                            style={{
+                                backgroundColor: '#ff7043',
+                                color: '#ffffff'
+                            }}
                         >
                             Accept & Continue
                             <Check className="ml-2 h-4 w-4" />
