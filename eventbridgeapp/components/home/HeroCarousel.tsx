@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface MediaItem {
     type: 'image' | 'video';
@@ -32,14 +31,6 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ mediaItems, autoplayDelay =
         return () => clearInterval(interval);
     }, [mediaItems.length, autoplayDelay]);
 
-    const prevSlide = () => {
-        setCurrent((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
-    };
-
-    const nextSlide = () => {
-        setCurrent((prev) => (prev + 1) % mediaItems.length);
-    };
-
     return (
         <div className="absolute inset-0 overflow-hidden">
             {mediaItems.map((item, idx) => (
@@ -70,22 +61,6 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ mediaItems, autoplayDelay =
                     )}
                 </div>
             ))}
-
-            {/* Navigation arrows */}
-            <button
-                onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2"
-                aria-label="Previous slide"
-            >
-                <ChevronLeft size={24} />
-            </button>
-            <button
-                onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2"
-                aria-label="Next slide"
-            >
-                <ChevronRight size={24} />
-            </button>
 
             {/* Dot indicators */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
