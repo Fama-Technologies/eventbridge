@@ -151,20 +151,32 @@ export default function CategoryHeader() {
               
               {/* Service Dropdown */}
               {showServiceDropdown && filteredServices.length > 0 && (
-                <div className="absolute top-full left-0 mt-2 w-80 bg-[#1E1E1E] rounded-2xl shadow-2xl border border-white/10 z-50">
+                <div className={`absolute top-full left-0 mt-2 w-80 rounded-2xl shadow-2xl border z-50 ${
+                  isDark 
+                    ? 'bg-[#1E1E1E] border-white/10' 
+                    : 'bg-shades-white border-neutrals-03'
+                }`}>
                   <div className="p-2 max-h-72 overflow-y-auto">
                     {filteredServices.map((item, index) => (
                       <button
                         key={index}
                         onClick={() => handleServiceSelect(item.name)}
-                        className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-3 rounded-lg transition-colors"
+                        className={`w-full flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                          isDark 
+                            ? 'hover:bg-white/5' 
+                            : 'hover:bg-neutrals-02'
+                        }`}
                       >
-                        <div className="w-10 h-10 bg-[#444] rounded-lg shrink-0 flex items-center justify-center">
-                          <PartyPopper size={20} className="text-white/70" />
+                        <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center ${
+                          isDark 
+                            ? 'bg-[#444]' 
+                            : 'bg-neutrals-03'
+                        }`}>
+                          <PartyPopper size={20} className={isDark ? 'text-white/70' : 'text-neutrals-06'} />
                         </div>
                         <div className="flex-1">
-                          <div className="text-white font-medium">{item.name}</div>
-                          <div className="text-white/60 text-xs">{item.services}</div>
+                          <div className={isDark ? 'text-white font-medium' : 'text-foreground font-medium'}>{item.name}</div>
+                          <div className={isDark ? 'text-white/60 text-xs' : 'text-neutrals-06 text-xs'}>{item.services}</div>
                         </div>
                       </button>
                     ))}
@@ -197,16 +209,28 @@ export default function CategoryHeader() {
               
               {/* Location Dropdown */}
               {showLocationDropdown && filteredLocations.length > 0 && (
-                <div className="absolute top-full left-0 mt-2 w-80 bg-[#1E1E1E] rounded-2xl shadow-2xl border border-white/10 z-50">
+                <div className={`absolute top-full left-0 mt-2 w-80 rounded-2xl shadow-2xl border z-50 ${
+                  isDark 
+                    ? 'bg-[#1E1E1E] border-white/10' 
+                    : 'bg-shades-white border-neutrals-03'
+                }`}>
                   <div className="p-2 max-h-72 overflow-y-auto">
                     {filteredLocations.map((loc, index) => (
                       <button
                         key={index}
                         onClick={() => handleLocationSelect(loc.city, loc.country)}
-                        className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-3 rounded-lg transition-colors"
+                        className={`w-full flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
+                          isDark 
+                            ? 'hover:bg-white/5' 
+                            : 'hover:bg-neutrals-02'
+                        }`}
                       >
-                        <div className="w-10 h-10 bg-[#555] rounded-lg shrink-0" />
-                        <span className="text-white font-medium">
+                        <div className={`w-10 h-10 rounded-lg shrink-0 ${
+                          isDark 
+                            ? 'bg-[#555]' 
+                            : 'bg-neutrals-03'
+                        }`} />
+                        <span className={isDark ? 'text-white font-medium' : 'text-foreground font-medium'}>
                           {loc.city}, {loc.country}
                         </span>
                       </button>
@@ -235,7 +259,11 @@ export default function CategoryHeader() {
               
               {/* Simple Date Picker */}
               {showDatePicker && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-[#1E1E1E] rounded-2xl shadow-2xl border border-white/10 z-50 p-4">
+                <div className={`absolute top-full right-0 mt-2 w-64 rounded-2xl shadow-2xl border z-50 p-4 ${
+                  isDark 
+                    ? 'bg-[#1E1E1E] border-white/10' 
+                    : 'bg-shades-white border-neutrals-03'
+                }`}>
                   <input
                     type="date"
                     onChange={(e) => {
@@ -244,7 +272,11 @@ export default function CategoryHeader() {
                       }
                     }}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full bg-[#2a2a2a] text-white border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-01"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-01 ${
+                      isDark 
+                        ? 'bg-[#2a2a2a] text-white border-white/10' 
+                        : 'bg-shades-white text-foreground border-neutrals-03'
+                    }`}
                   />
                 </div>
               )}
