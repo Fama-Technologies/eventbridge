@@ -149,7 +149,7 @@ export default function ForgotPasswordPage() {
           </div>
           <div className="relative h-full w-full">
             <Image
-              src="/forgotpassword.png"
+              src="/forgot.jpg"
               alt="Security Lock"
               fill
               className="object-cover"
