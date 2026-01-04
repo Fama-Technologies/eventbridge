@@ -68,6 +68,7 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
                                         }`}
                                 />
                                 <Image src="/icons/moon_black.svg"
+                                    alt="Dark mode"
                                     width={20}
                                     height={20}
                                     className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'light'
