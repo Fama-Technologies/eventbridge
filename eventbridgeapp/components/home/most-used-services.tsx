@@ -42,9 +42,12 @@ export default function MostUsedServices() {
   ];
 
   return (
-    <section className="py-12 px-6 bg-neutrals-01">
+    <section className="py-12 px-6 bg-accents-peach/10">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl font-bold text-shades-black mb-6">Top Recommended Services</h2>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-8 bg-primary-01 rounded-full"></div>
+          <h2 className="text-2xl font-bold text-shades-black">Top Recommended Services</h2>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service) => (
