@@ -246,17 +246,15 @@ export default function LoginPage() {
         </div>
       </div>
       
-      {/* Right Column (Image Display) - Assumed structure based on visual input */}
-      <div className="relative hidden lg:block lg:w-1/2 bg-gray-800">
-        {/* Placeholder for your actual image implementation (e.g., using a background image or Next/Image) */}
-        {/* You will need to replace the src path below with your actual image path and configure styling */}
+      {/* Right Column (Image Display) - Reinstated with corrected usage for Next/Image fill prop */}
+      <div className="relative hidden lg:block lg:w-1/2">
+        {/* CRITICAL: Replace "background-image.jpg" with the exact file name you put in your /public directory */}
         <Image 
-          src="/path/to/your/event-background-image.jpg" 
+          src="/background-image.jpg" 
           alt="Event venue background" 
-          layout="fill" 
-          objectFit="cover"
+          fill={true} 
+          style={{ objectFit: 'cover' }} 
         />
-        {/* Optional overlay for lighting effects seen in the original image */}
         <div className="absolute inset-0 bg-black opacity-40"></div>
       </div>
     </div>
