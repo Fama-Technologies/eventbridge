@@ -1,45 +1,49 @@
 {
-  "name": "eventbridgeapp",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "db:check": "drizzle-kit check",
-    "db:drop": "drizzle-kit drop",
-    "db:reset": "drizzle-kit drop && drizzle-kit push",
-    "db:seed": "node seed-users.js"
-  },
-  "dependencies": {
-    "@auth/core": "^0.34.3",
-    "@auth/drizzle-adapter": "^1.11.1",
-    "@neondatabase/serverless": "^1.0.2",
-    "bcryptjs": "^3.0.3",
-    "drizzle-orm": "^0.45.1",
-    "jose": "^5.9.6",
-    "next": "^14.2.35",
-    "next-auth": "^4.24.13",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.8",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.8",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+    "name": "eventbridgeapp",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio",
+        "db:check": "drizzle-kit check",
+        "db:drop": "drizzle-kit drop",
+        "db:reset": "drizzle-kit drop && drizzle-kit push",
+        "db:seed": "node seed-users.js"
+    },
+    "dependencies": {
+        "@auth/core": "^0.34.3",
+        "@auth/drizzle-adapter": "^1.11.1",
+        "@neondatabase/serverless": "^1.0.2",
+        "bcryptjs": "^3.0.3",
+        "drizzle-orm": "^0.45.1",
+        "jose": "^5.9.6",
+        "lucide-react": "^0.560.0",
+        "next": "^14.2.35",
+        "next-auth": "^4.24.13",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "sonner": "^2.0.7"
+    },
+    "devDependencies": {
+        "@types/bcryptjs": "^2.4.6",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "autoprefixer": "^10.4.23",
+        "drizzle-kit": "^0.31.8",
+        "eslint": "^9",
+        "eslint-config-next": "16.0.8",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^3.4.19",
+        "typescript": "^5"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
 }

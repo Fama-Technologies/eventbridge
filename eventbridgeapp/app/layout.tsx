@@ -1,8 +1,8 @@
-export const dynamic = 'force-dynamic';
+﻿export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -76,7 +76,7 @@ export default function RootLayout({
             </ThemeProvider>
           </Providers>
         </NextAuthProvider>
-        <SpeedInsights />
+        
       </body>
     </html>
   );
