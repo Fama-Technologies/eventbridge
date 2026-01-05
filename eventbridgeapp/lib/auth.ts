@@ -1,4 +1,4 @@
-// lib/auth.ts - UPDATED VERSION
+// lib/auth.ts
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, createToken } from '@/lib/jwt';
@@ -10,7 +10,6 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { getToken } from 'next-auth/jwt';
-
 
 /* =========================
 TYPES
@@ -77,9 +76,6 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60,
   },
-
-  // FIX: Remove the adapter completely or use proper Drizzle adapter
-  // adapter: DrizzleAdapter(db) as any, // Uncomment if you install @auth/drizzle-adapter
 
   secret: process.env.NEXTAUTH_SECRET,
 
@@ -206,9 +202,8 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-
 /* =========================
-GET AUTH USER (APP ROUTER)
+   AUTH USER HELPERS
 ========================= */
 export async function getAuthUser(
   req: NextRequest
@@ -232,3 +227,8 @@ export async function getAuthUser(
     accountType: token.accountType as AuthUser['accountType'],
   };
 }
+
+/* =========================
+BACKWARD COMPAT EXPORT
+========================= */
+export const getCurrentUser = getAuthUser;
