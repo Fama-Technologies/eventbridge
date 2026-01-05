@@ -1,11 +1,32 @@
-// lib/db.ts
+﻿import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
 import * as schema from '@/drizzle/schema';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in environment variables');
+// Don't throw error immediately - check at runtime
+function getDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error('❌ DATABASE_URL is not set in environment variables');
+    console.error('Please add it to your .env file:');
+    console.error('DATABASE_URL="postgresql://user:pass@host/db"');
+    // Return empty string but don't throw until connection is attempted
+    return '';
+  }
+  return url;
 }
 
-const sql = neon(process.env.DATABASE_URL);
-export const db = drizzle(sql, { schema });
+const databaseUrl = getDatabaseUrl();
+let sql: any = null;
+let db: any = null;
+
+if (databaseUrl) {
+  try {
+    sql = neon(databaseUrl);
+    db = drizzle({ client: sql, schema });
+    console.log('Database client initialized');
+  } catch (error) {
+    console.error('Failed to initialize database client:', error);
+  }
+}
+
+export { db, sql };

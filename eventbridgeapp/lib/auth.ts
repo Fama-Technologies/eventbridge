@@ -1,4 +1,4 @@
-// lib/auth.ts
+// lib/auth.ts - UPDATED VERSION
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, createToken } from '@/lib/jwt';
@@ -76,8 +76,8 @@ export const authOptions: NextAuthOptions = {
     maxAge: 7 * 24 * 60 * 60,
   },
 
-  // CRITICAL FIX FOR 500 ERROR: Disable the default adapter
-  adapter: null as any,
+  // FIX: Remove the adapter completely or use proper Drizzle adapter
+  // adapter: DrizzleAdapter(db) as any, // Uncomment if you install @auth/drizzle-adapter
 
   secret: process.env.NEXTAUTH_SECRET,
 
@@ -127,7 +127,6 @@ export const authOptions: NextAuthOptions = {
 
         userId = created.id;
       } else {
-        // ✅ CORRECTED FIX FOR 'Property id does not exist on type array':
         userId = existing[0].id;
       }
 
@@ -204,123 +203,3 @@ export const authOptions: NextAuthOptions = {
 
   debug: process.env.NODE_ENV === 'development',
 };
-
-/* =========================
-   JWT AUTH HELPERS
-========================= */
-export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
-  const token =
-    req.cookies.get('auth-token')?.value ??
-    req.headers.get('authorization')?.replace('Bearer ', '');
-
-  if (!token) return null;
-
-  const payload = await verifyToken(token);
-  if (!payload?.userId) return null;
-
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      accountType: users.accountType,
-    })
-    .from(users)
-    .where(eq(users.id, payload.userId))
-    .limit(1);
-
-  if (!user) return null;
-
-  return user as AuthUser;
-}
-
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const cookieStore = cookies();
-  const token =
-    cookieStore.get('auth-token')?.value ??
-    cookieStore.get('session_token')?.value;
-
-  if (!token) return null;
-
-  const payload = await verifyToken(token);
-  if (!payload?.userId) return null;
-
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      accountType: users.accountType,
-    })
-    .from(users)
-    .where(eq(users.id, payload.userId))
-    .limit(1);
-
-  return user ? (user as AuthUser) : null;
-}
-
-/* =========================
-RESPONSE + GUARDS
-========================= */
-export async function createAuthResponse(user: AuthUser) {
-  const token = await createToken({
-    userId: user.id,
-    email: user.email,
-    accountType: user.accountType,
-  });
-
-  return new Response(JSON.stringify({ success: true, user }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Set-Cookie': [
-        `auth-token=${token}`,
-        'Path=/',
-        'HttpOnly',
-        'SameSite=Lax',
-        `Max-Age=${7 * 24 * 60 * 60}`,
-        process.env.NODE_ENV === 'production' ? 'Secure' : '',
-      ]
-        .filter(Boolean)
-        .join('; '),
-    },
-  });
-}
-
-export function requireAuth(
-  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
-) {
-  return async (req: NextRequest) => {
-    const user = await getAuthUser(req);
-    if (!user) {
-      return Response.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-    return handler(req, user);
-  };
-}
-
-export function requireVendor(
-  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
-) {
-  return async (req: NextRequest) => {
-    const user = await getAuthUser(req);
-    if (!user || user.accountType !== 'VENDOR') {
-      return Response.json({ message: 'Forbidden' }, { status: 403 });
-    }
-    return handler(req, user);
-  };
-}
-
-export function requireAdmin(
-  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
-) {
-  return async (req: NextRequest) => {
-    const user = await getAuthUser(req);
-    if (!user || user.accountType !== 'ADMIN') {
-      return Response.json({ message: 'Forbidden' }, { status: 403 });
-    }
-    return handler(req, user);
-  };
-}

@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       userCount: allUsers.length,
-      users: allUsers.map(u => ({ id: u.id, email: u.email, provider: u.provider })),
+      users: allUsers.map((u: { id: any; email: any; provider: any; }) => ({ id: u.id, email: u.email, provider: u.provider })),
     });
   } catch (error) {
     return NextResponse.json({
