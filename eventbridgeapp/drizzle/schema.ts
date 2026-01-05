@@ -1,4 +1,4 @@
-// drizzle/schema.ts - COMPLETE UPDATED VERSION
+// drizzle/schema.ts
 import {
   pgTable,
   serial,
