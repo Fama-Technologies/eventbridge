@@ -1,4 +1,4 @@
-// drizzle/schema.ts - COMPLETE CORRECTED VERSION
+// drizzle/schema.ts - COMPLETE UPDATED VERSION
 import {
   pgTable,
   serial,
@@ -7,6 +7,8 @@ import {
   integer,
   boolean,
   jsonb,
+  index,
+  unique,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -32,6 +34,11 @@ export const users = pgTable('users', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    emailIdx: index('users_email_idx').on(table.email),
+    accountTypeIdx: index('users_account_type_idx').on(table.accountType),
+  };
 });
 
 /* ===================== ACCOUNTS ===================== */
@@ -55,6 +62,13 @@ export const accounts = pgTable('accounts', {
   session_state: text('session_state'),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    // Add composite unique constraint (required by auth libraries)
+    providerProviderAccountIdUnique: unique('provider_provider_account_id_unique')
+      .on(table.provider, table.providerAccountId),
+    userIdIdx: index('accounts_user_id_idx').on(table.userId),
+  };
 });
 
 /* ===================== SESSIONS ===================== */
@@ -69,6 +83,12 @@ export const sessions = pgTable('sessions', {
   expiresAt: timestamp('expires_at').notNull(),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    tokenIdx: index('sessions_token_idx').on(table.token),
+    userIdIdx: index('sessions_user_id_idx').on(table.userId),
+    expiresAtIdx: index('sessions_expires_at_idx').on(table.expiresAt),
+  };
 });
 
 /* ===================== EVENTS ===================== */
@@ -90,6 +110,11 @@ export const events = pgTable('events', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('events_vendor_id_idx').on(table.vendorId),
+    startDateIdx: index('events_start_date_idx').on(table.startDate),
+  };
 });
 
 /* ===================== PASSWORD RESET TOKENS ===================== */
@@ -105,6 +130,11 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
   used: boolean('used').default(false).notNull(),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    tokenHashIdx: index('password_reset_tokens_token_hash_idx').on(table.tokenHash),
+    userIdIdx: index('password_reset_tokens_user_id_idx').on(table.userId),
+  };
 });
 
 /* ===================== EVENT CATEGORIES ===================== */
@@ -130,6 +160,13 @@ export const eventCategoryRelations = pgTable('event_category_relations', {
     .references(() => eventCategories.id, { onDelete: 'cascade' }),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    eventIdIdx: index('event_category_relations_event_id_idx').on(table.eventId),
+    categoryIdIdx: index('event_category_relations_category_id_idx').on(table.categoryId),
+    uniqueEventCategory: unique('event_category_relations_unique_event_category')
+      .on(table.eventId, table.categoryId),
+  };
 });
 
 /* ===================== VENDOR PROFILES ===================== */
@@ -170,6 +207,12 @@ export const vendorProfiles = pgTable('vendor_profiles', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('vendor_profiles_user_id_idx').on(table.userId),
+    verificationStatusIdx: index('vendor_profiles_verification_status_idx').on(table.verificationStatus),
+    isVerifiedIdx: index('vendor_profiles_is_verified_idx').on(table.isVerified),
+  };
 });
 
 /* ===================== VENDOR SERVICES ===================== */
@@ -188,6 +231,11 @@ export const vendorServices = pgTable('vendor_services', {
   isActive: boolean('is_active').default(true),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_services_vendor_id_idx').on(table.vendorId),
+    isActiveIdx: index('vendor_services_is_active_idx').on(table.isActive),
+  };
 });
 
 /* ===================== VENDOR PACKAGES ===================== */
@@ -210,6 +258,11 @@ export const vendorPackages = pgTable('vendor_packages', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_packages_vendor_id_idx').on(table.vendorId),
+    isActiveIdx: index('vendor_packages_is_active_idx').on(table.isActive),
+  };
 });
 
 /* ===================== SERVICE GALLERY ===================== */
@@ -224,6 +277,10 @@ export const serviceGallery = pgTable('service_gallery', {
   mediaType: text('media_type').notNull(),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    serviceIdIdx: index('service_gallery_service_id_idx').on(table.serviceId),
+  };
 });
 
 /* ===================== VENDOR PORTFOLIO ===================== */
@@ -246,6 +303,11 @@ export const vendorPortfolio = pgTable('vendor_portfolio', {
   displayOrder: integer('display_order').default(0),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_portfolio_vendor_id_idx').on(table.vendorId),
+    categoryIdx: index('vendor_portfolio_category_idx').on(table.category),
+  };
 });
 
 /* ===================== VENDOR VIDEOS ===================== */
@@ -269,6 +331,10 @@ export const vendorVideos = pgTable('vendor_videos', {
   displayOrder: integer('display_order').default(0),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_videos_vendor_id_idx').on(table.vendorId),
+  };
 });
 
 /* ===================== CANCELLATION POLICIES ===================== */
@@ -283,6 +349,10 @@ export const cancellationPolicies = pgTable('cancellation_policies', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('cancellation_policies_vendor_id_idx').on(table.vendorId),
+  };
 });
 
 /* ===================== VENDOR DISCOUNTS ===================== */
@@ -308,6 +378,13 @@ export const vendorDiscounts = pgTable('vendor_discounts', {
   isActive: boolean('is_active').default(true),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_discounts_vendor_id_idx').on(table.vendorId),
+    codeIdx: index('vendor_discounts_code_idx').on(table.code),
+    validUntilIdx: index('vendor_discounts_valid_until_idx').on(table.validUntil),
+    isActiveIdx: index('vendor_discounts_is_active_idx').on(table.isActive),
+  };
 });
 
 /* ===================== VERIFICATION DOCUMENTS ===================== */
@@ -326,6 +403,11 @@ export const verificationDocuments = pgTable('verification_documents', {
   status: text('status').default('pending').notNull(),
 
   uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('verification_documents_vendor_id_idx').on(table.vendorId),
+    statusIdx: index('verification_documents_status_idx').on(table.status),
+  };
 });
 
 /* ===================== ONBOARDING PROGRESS ===================== */
@@ -345,6 +427,11 @@ export const onboardingProgress = pgTable('onboarding_progress', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('onboarding_progress_user_id_idx').on(table.userId),
+    isCompleteIdx: index('onboarding_progress_is_complete_idx').on(table.isComplete),
+  };
 });
 
 /* ===================== USER UPLOADS ===================== */
@@ -370,6 +457,13 @@ export const userUploads = pgTable('user_uploads', {
   height: integer('height'),
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('user_uploads_user_id_idx').on(table.userId),
+    fileKeyIdx: index('user_uploads_file_key_idx').on(table.fileKey),
+    uploadTypeIdx: index('user_uploads_upload_type_idx').on(table.uploadType),
+    vendorIdIdx: index('user_uploads_vendor_id_idx').on(table.vendorId),
+  };
 });
 
 /* ===================== BOOKINGS ===================== */
@@ -409,6 +503,14 @@ export const bookings = pgTable('bookings', {
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    eventIdIdx: index('bookings_event_id_idx').on(table.eventId),
+    vendorIdIdx: index('bookings_vendor_id_idx').on(table.vendorId),
+    clientIdIdx: index('bookings_client_id_idx').on(table.clientId),
+    statusIdx: index('bookings_status_idx').on(table.status),
+    bookingDateIdx: index('bookings_booking_date_idx').on(table.bookingDate),
+  };
 });
 
 /* ===================== REVIEWS ===================== */
@@ -432,6 +534,15 @@ export const reviews = pgTable('reviews', {
   isAnonymous: boolean('is_anonymous').default(false),
 
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    bookingIdIdx: index('reviews_booking_id_idx').on(table.bookingId),
+    vendorIdIdx: index('reviews_vendor_id_idx').on(table.vendorId),
+    clientIdIdx: index('reviews_client_id_idx').on(table.clientId),
+    ratingIdx: index('reviews_rating_idx').on(table.rating),
+    uniqueBookingReview: unique('reviews_unique_booking_review')
+      .on(table.bookingId), // One review per booking
+  };
 });
 
 /* ===================== RELATIONS ===================== */
@@ -450,6 +561,13 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, {
     fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
     references: [users.id],
   }),
 }));
@@ -511,6 +629,27 @@ export const vendorVideosRelations = relations(vendorVideos, ({ one }) => ({
   }),
 }));
 
+export const cancellationPoliciesRelations = relations(cancellationPolicies, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [cancellationPolicies.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+export const vendorDiscountsRelations = relations(vendorDiscounts, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorDiscounts.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
+export const verificationDocumentsRelations = relations(verificationDocuments, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [verificationDocuments.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
 export const bookingsRelations = relations(bookings, ({ one }) => ({
   event: one(events, {
     fields: [bookings.eventId],
@@ -557,22 +696,52 @@ export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 
 export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+
 export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+export type EventCategory = typeof eventCategories.$inferSelect;
+export type EventCategoryRelation = typeof eventCategoryRelations.$inferSelect;
 
 export type VendorProfile = typeof vendorProfiles.$inferSelect;
+export type NewVendorProfile = typeof vendorProfiles.$inferInsert;
+
 export type VendorService = typeof vendorServices.$inferSelect;
+export type NewVendorService = typeof vendorServices.$inferInsert;
+
 export type VendorPackage = typeof vendorPackages.$inferSelect;
+export type NewVendorPackage = typeof vendorPackages.$inferInsert;
+
 export type VendorVideo = typeof vendorVideos.$inferSelect;
+export type NewVendorVideo = typeof vendorVideos.$inferInsert;
+
 export type VendorPortfolioItem = typeof vendorPortfolio.$inferSelect;
+export type NewVendorPortfolioItem = typeof vendorPortfolio.$inferInsert;
+
 export type ServiceGallery = typeof serviceGallery.$inferSelect;
+export type NewServiceGallery = typeof serviceGallery.$inferInsert;
+
 export type CancellationPolicy = typeof cancellationPolicies.$inferSelect;
+export type NewCancellationPolicy = typeof cancellationPolicies.$inferInsert;
+
 export type VendorDiscount = typeof vendorDiscounts.$inferSelect;
+export type NewVendorDiscount = typeof vendorDiscounts.$inferInsert;
+
 export type VerificationDocument = typeof verificationDocuments.$inferSelect;
+export type NewVerificationDocument = typeof verificationDocuments.$inferInsert;
 
 export type UserUpload = typeof userUploads.$inferSelect;
 export type NewUserUpload = typeof userUploads.$inferInsert;
 
 export type Booking = typeof bookings.$inferSelect;
+export type NewBooking = typeof bookings.$inferInsert;
+
 export type Review = typeof reviews.$inferSelect;
+export type NewReview = typeof reviews.$inferInsert;
 
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type NewOnboardingProgress = typeof onboardingProgress.$inferInsert;
