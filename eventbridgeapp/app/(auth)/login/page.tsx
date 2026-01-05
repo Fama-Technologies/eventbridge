@@ -251,7 +251,7 @@ export default function LoginPage() {
         {/* CRITICAL: Replace "background-image.jpg" with the exact file name you put in your /public directory */}
         <Image 
           src="/background-image.jpg" 
-          alt="Event venue background" 
+          alt="login.jpg" 
           fill={true} 
           style={{ objectFit: 'cover' }} 
         />
