@@ -9,6 +9,8 @@ import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
+import { getToken } from 'next-auth/jwt';
+
 
 /* =========================
 TYPES
@@ -204,3 +206,29 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
+
+/* =========================
+GET AUTH USER (APP ROUTER)
+========================= */
+export async function getAuthUser(
+  req: NextRequest
+): Promise<AuthUser | null> {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  if (!token || !token.userId) {
+    return null;
+  }
+
+  const [firstName, ...rest] = (token.name as string)?.split(' ') ?? [];
+
+  return {
+    id: Number(token.userId),
+    email: token.email as string,
+    firstName: firstName ?? '',
+    lastName: rest.join(' '),
+    accountType: token.accountType as AuthUser['accountType'],
+  };
+}
