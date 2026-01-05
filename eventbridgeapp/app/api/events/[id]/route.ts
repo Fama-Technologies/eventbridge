@@ -166,7 +166,7 @@ export async function PUT(request: NextRequest, context: any) {
 
     // Update categories if provided
     if (categoryIds !== undefined) {
-      await db.transaction(async (tx) => {
+      await db.transaction(async (tx: typeof db) => {
         // Remove existing categories
         await tx
           .delete(eventCategoryRelations)
