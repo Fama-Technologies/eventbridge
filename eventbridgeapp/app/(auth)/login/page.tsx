@@ -202,7 +202,7 @@ export default function LoginPage() {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
                   <Image 
-                    src="/google.svg" 
+                    src="/google.svg" // Corrected path for SVG in /public
                     alt="Google" 
                     width={20} 
                     height={20} 
@@ -222,7 +222,7 @@ export default function LoginPage() {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
                   <Image 
-                    src="/apple.svg" 
+                    src="/apple.svg" // Corrected path for SVG in /public
                     alt="Apple" 
                     width={20} 
                     height={20} 
