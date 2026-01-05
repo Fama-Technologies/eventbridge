@@ -250,8 +250,8 @@ export default function LoginPage() {
       <div className="relative hidden lg:block lg:w-1/2">
         {/* CRITICAL: Replace "background-image.jpg" with the exact file name you put in your /public directory */}
         <Image 
-          src="/background-image.jpg" 
-          alt="login.jpg" 
+          src="/login.jpg" 
+          alt="Event venue" 
           fill={true} 
           style={{ objectFit: 'cover' }} 
         />
