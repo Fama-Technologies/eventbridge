@@ -131,7 +131,7 @@ export default function ServiceCard({
       {/* Content */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-semibold text-shades-black">{businessName}</h3>
+          <h3 className="text-sm font-semibold text-black">{businessName}</h3>
           <div className="flex items-center gap-1">
             <Star size={14} className="fill-shades-black text-shades-black" />
             <span className="text-sm text-shades-black">{rating.toFixed(2)}</span>
