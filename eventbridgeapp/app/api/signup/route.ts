@@ -1,8 +1,12 @@
+// app/api/signup/route.ts - COMPLETE FIXED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
+
+// Define allowed account types
+type AccountType = 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,13 +31,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate account type (include ADMIN)
-    if (!['VENDOR', 'CUSTOMER', 'PLANNER', 'ADMIN'].includes(accountType)) {
+    // Validate and type-check account type
+    const validAccountTypes: AccountType[] = ['VENDOR', 'CUSTOMER', 'PLANNER', 'ADMIN'];
+    
+    if (!validAccountTypes.includes(accountType)) {
       return NextResponse.json(
         { message: 'Invalid account type. Must be VENDOR, CUSTOMER, PLANNER, or ADMIN' },
         { status: 400 }
       );
     }
+
+    // Now TypeScript knows accountType is valid
+    const validatedAccountType: AccountType = accountType;
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,7 +78,7 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 12);
 
-    // Insert new user
+    // Insert new user with properly typed accountType
     const [newUser] = await db
       .insert(users)
       .values({
@@ -77,7 +86,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        accountType: accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN',
+        accountType: validatedAccountType, // ✅ No type error!
         provider: 'local',
         isActive: true,
         emailVerified: false,

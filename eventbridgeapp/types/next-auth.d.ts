@@ -1,4 +1,8 @@
+// types/next-auth.d.ts
 import 'next-auth';
+
+// Define AccountType once to be reused
+type AccountType = 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
 
 declare module 'next-auth' {
   interface Session {
@@ -7,22 +11,23 @@ declare module 'next-auth' {
       email: string;
       name?: string | null;
       image?: string | null;
-      accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
+      accountType: AccountType;
     };
   }
 
   interface User {
     id: string;
-    email?: string | null;
+    email: string;
     name?: string | null;
     image?: string | null;
-    accountType?: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
+    accountType: AccountType;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
+    id?: string;
     userId?: number;
-    accountType?: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
+    accountType?: AccountType;
   }
 }
