@@ -89,7 +89,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'google') {
         if (!user.email || !account) {
           console.error('Missing user email or account');
-          return false;
+          return '/login?error=missing_info';
         }
 
         const email = user.email.toLowerCase();
@@ -104,7 +104,6 @@ export const authOptions: NextAuthOptions = {
             .limit(1);
 
           let userId: number;
-          let userAccountType: string;
 
           // Create user if not exists
           if (existingUser.length === 0) {
@@ -117,10 +116,7 @@ export const authOptions: NextAuthOptions = {
               user.name?.split(' ').slice(1).join(' ') ||
               '';
 
-            // Check if there's a pending account type from signup flow
-            const accountType = 'CUSTOMER'; // Default, will be overridden by session storage in frontend
-
-            console.log('Creating new user:', { email, firstName, lastName, accountType });
+            console.log('Creating new user:', { email, firstName, lastName });
 
             const [newUser] = await db
               .insert(users)
@@ -130,19 +126,17 @@ export const authOptions: NextAuthOptions = {
                 lastName,
                 image: user.image ?? null,
                 provider: 'google',
-                accountType: accountType as 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN',
+                accountType: 'CUSTOMER',
                 emailVerified: true,
                 isActive: true,
               })
-              .returning({ id: users.id, accountType: users.accountType });
+              .returning({ id: users.id });
 
             userId = newUser.id;
-            userAccountType = newUser.accountType;
-            console.log('Created user with ID:', userId, 'Account type:', userAccountType);
+            console.log('Created user with ID:', userId);
           } else {
             userId = existingUser[0].id;
-            userAccountType = existingUser[0].accountType;
-            console.log('Found existing user with ID:', userId, 'Account type:', userAccountType);
+            console.log('Found existing user with ID:', userId);
 
             // Update user image and verification if changed
             if (user.image && user.image !== existingUser[0].image) {
@@ -196,7 +190,7 @@ export const authOptions: NextAuthOptions = {
             message: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : undefined,
           });
-          return false;
+          return '/login?error=callback_error';
         }
       }
 
@@ -204,7 +198,7 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       // Initial sign in
       if (user?.email) {
         const dbUser = await db
@@ -255,15 +249,14 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('Redirect callback - URL:', url, 'Base URL:', baseUrl);
 
-      // Parse the URL to check for account type info
+      // Parse the URL to check for callbackUrl
       try {
-        const urlObj = new URL(url);
-        
-        // If there's a callbackUrl parameter, use it
+        const urlObj = new URL(url, baseUrl);
         const callbackUrl = urlObj.searchParams.get('callbackUrl');
-        if (callbackUrl) {
+        
+        if (callbackUrl && callbackUrl.startsWith('/')) {
           console.log('Using callbackUrl:', callbackUrl);
-          return callbackUrl;
+          return `${baseUrl}${callbackUrl}`;
         }
       } catch (e) {
         // Invalid URL, continue with default logic
@@ -301,6 +294,8 @@ export const authOptions: NextAuthOptions = {
       });
     },
   },
+
+  debug: process.env.NODE_ENV === 'development',
 };
 
 /* =========================
