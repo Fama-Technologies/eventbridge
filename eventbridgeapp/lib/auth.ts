@@ -11,7 +11,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 
 /* =========================
-   TYPES
+TYPES
 ========================= */
 export interface AuthUser {
   id: number;
@@ -76,7 +76,9 @@ export const authOptions: NextAuthOptions = {
     maxAge: 7 * 24 * 60 * 60,
   },
 
+  // CRITICAL FIX FOR 500 ERROR: Disable the default adapter
   adapter: null as any,
+
   secret: process.env.NEXTAUTH_SECRET,
 
   pages: {
@@ -90,7 +92,7 @@ export const authOptions: NextAuthOptions = {
 
       const email = user.email.toLowerCase();
 
-      const [existingUser] = await db
+      const existing = await db
         .select()
         .from(users)
         .where(eq(users.email, email))
@@ -98,7 +100,7 @@ export const authOptions: NextAuthOptions = {
 
       let userId: number;
 
-      if (!existingUser) {
+      if (existing.length === 0) {
         const firstName =
           (profile as any)?.given_name ??
           user.name?.split(' ')[0] ??
@@ -125,16 +127,17 @@ export const authOptions: NextAuthOptions = {
 
         userId = created.id;
       } else {
-        userId = existingUser.id;
+        // ✅ CORRECTED FIX FOR 'Property id does not exist on type array':
+        userId = existing[0].id;
       }
 
-      const [linkedAccount] = await db
+      const linked = await db
         .select()
         .from(accounts)
         .where(eq(accounts.providerAccountId, account.providerAccountId))
         .limit(1);
 
-      if (!linkedAccount) {
+      if (linked.length === 0) {
         await db.insert(accounts).values({
           userId,
           type: account.type,
@@ -227,7 +230,9 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
     .where(eq(users.id, payload.userId))
     .limit(1);
 
-  return user ?? null;
+  if (!user) return null;
+
+  return user as AuthUser;
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
@@ -253,11 +258,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     .where(eq(users.id, payload.userId))
     .limit(1);
 
-  return user ?? null;
+  return user ? (user as AuthUser) : null;
 }
 
 /* =========================
-   RESPONSE + GUARDS
+RESPONSE + GUARDS
 ========================= */
 export async function createAuthResponse(user: AuthUser) {
   const token = await createToken({
