@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { signIn } from 'next-auth/react'; // Added signIn import
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -90,11 +90,9 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      // Calls the NextAuth signIn function for Google
       await signIn('google', { 
         callbackUrl: redirectUrl || '/dashboard', 
       });
-      // Note: Code below this point might not run if signIn causes a redirect
       setIsGoogleLoading(false);
     } catch (error) {
       console.error("Google sign-in error:", error);
@@ -113,6 +111,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
+      {/* Left Column (Login Form) */}
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <h1 className="mb-2 text-4xl font-bold text-shades-black">
@@ -246,7 +245,20 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
-      {/* Rest of the visual component (right side image display) is omitted for brevity as it's not relevant to the code logic */}
+      
+      {/* Right Column (Image Display) - Assumed structure based on visual input */}
+      <div className="relative hidden lg:block lg:w-1/2 bg-gray-800">
+        {/* Placeholder for your actual image implementation (e.g., using a background image or Next/Image) */}
+        {/* You will need to replace the src path below with your actual image path and configure styling */}
+        <Image 
+          src="/path/to/your/event-background-image.jpg" 
+          alt="Event venue background" 
+          layout="fill" 
+          objectFit="cover"
+        />
+        {/* Optional overlay for lighting effects seen in the original image */}
+        <div className="absolute inset-0 bg-black opacity-40"></div>
+      </div>
     </div>
   );
 }
