@@ -101,9 +101,9 @@ export async function GET(
       guestCapacity: '100+',
       description: vendor.description || '',
       images: portfolio.length > 0 
-        ? portfolio.map(p => p.imageUrl)
+        ? portfolio.map((p: any) => p.imageUrl)
         : [vendor.coverImage || '/categories/weddings.jpg'],
-      packages: packages.map(pkg => ({
+      packages: packages.map((pkg: any) => ({
         id: pkg.id.toString(),
         name: pkg.name,
         description: pkg.description || '',
@@ -112,7 +112,7 @@ export async function GET(
         features: (pkg.features as string[]) || [],
         badge: pkg.isPopular ? 'Popular' : undefined,
       })),
-      services: services.map(svc => ({
+      services: services.map((svc: any) => ({
         id: svc.id.toString(),
         name: svc.name,
         description: svc.description || '',
