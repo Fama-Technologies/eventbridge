@@ -19,7 +19,7 @@ const STEPS = [
     number: 2,
     icon: Search,
     title: 'Browse & compare',
-    description: 'Discover verified vendors in categories like venues, caterers, DJs, and more.',
+    description: 'Discover verified vendors in categories like ve nues, caterers, DJs, and more.',
   },
   {
     number: 3,

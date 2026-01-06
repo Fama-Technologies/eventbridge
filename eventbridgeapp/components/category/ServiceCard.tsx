@@ -40,7 +40,7 @@ export default function ServiceCard({
   };
 
   return (
-    <Link href={`/vendor/${id}`} className="group block">
+    <Link href={`/category/vendor/${id}`} className="group block">
       {/* Image Container */}
       <div className="relative aspect-4/3 rounded-xl overflow-hidden mb-3">
         <Image
