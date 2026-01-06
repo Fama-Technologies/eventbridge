@@ -9,6 +9,7 @@ import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
+import { getToken } from 'next-auth/jwt';
 
 /* =========================
 TYPES
@@ -202,121 +203,32 @@ export const authOptions: NextAuthOptions = {
 };
 
 /* =========================
-   JWT AUTH HELPERS
+   AUTH USER HELPERS
 ========================= */
-export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
-  const token =
-    req.cookies.get('auth-token')?.value ??
-    req.headers.get('authorization')?.replace('Bearer ', '');
+export async function getAuthUser(
+  req: NextRequest
+): Promise<AuthUser | null> {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-  if (!token) return null;
+  if (!token || !token.userId) {
+    return null;
+  }
 
-  const payload = await verifyToken(token);
-  if (!payload?.userId) return null;
+  const [firstName, ...rest] = (token.name as string)?.split(' ') ?? [];
 
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      accountType: users.accountType,
-    })
-    .from(users)
-    .where(eq(users.id, payload.userId))
-    .limit(1);
-
-  if (!user) return null;
-
-  return user as AuthUser;
-}
-
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const cookieStore = cookies();
-  const token =
-    cookieStore.get('auth-token')?.value ??
-    cookieStore.get('session_token')?.value;
-
-  if (!token) return null;
-
-  const payload = await verifyToken(token);
-  if (!payload?.userId) return null;
-
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      accountType: users.accountType,
-    })
-    .from(users)
-    .where(eq(users.id, payload.userId))
-    .limit(1);
-
-  return user ? (user as AuthUser) : null;
+  return {
+    id: Number(token.userId),
+    email: token.email as string,
+    firstName: firstName ?? '',
+    lastName: rest.join(' '),
+    accountType: token.accountType as AuthUser['accountType'],
+  };
 }
 
 /* =========================
-RESPONSE + GUARDS
+BACKWARD COMPAT EXPORT
 ========================= */
-export async function createAuthResponse(user: AuthUser) {
-  const token = await createToken({
-    userId: user.id,
-    email: user.email,
-    accountType: user.accountType,
-  });
-
-  return new Response(JSON.stringify({ success: true, user }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Set-Cookie': [
-        `auth-token=${token}`,
-        'Path=/',
-        'HttpOnly',
-        'SameSite=Lax',
-        `Max-Age=${7 * 24 * 60 * 60}`,
-        process.env.NODE_ENV === 'production' ? 'Secure' : '',
-      ]
-        .filter(Boolean)
-        .join('; '),
-    },
-  });
-}
-
-export function requireAuth(
-  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
-) {
-  return async (req: NextRequest) => {
-    const user = await getAuthUser(req);
-    if (!user) {
-      return Response.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-    return handler(req, user);
-  };
-}
-
-export function requireVendor(
-  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
-) {
-  return async (req: NextRequest) => {
-    const user = await getAuthUser(req);
-    if (!user || user.accountType !== 'VENDOR') {
-      return Response.json({ message: 'Forbidden' }, { status: 403 });
-    }
-    return handler(req, user);
-  };
-}
-
-export function requireAdmin(
-  handler: (req: NextRequest, user: AuthUser) => Promise<Response>
-) {
-  return async (req: NextRequest) => {
-    const user = await getAuthUser(req);
-    if (!user || user.accountType !== 'ADMIN') {
-      return Response.json({ message: 'Forbidden' }, { status: 403 });
-    }
-    return handler(req, user);
-  };
-}
+export const getCurrentUser = getAuthUser;

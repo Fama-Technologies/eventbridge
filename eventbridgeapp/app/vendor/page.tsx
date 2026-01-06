@@ -1,11 +1,25 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { cookies, headers } from 'next/headers';
 import ProfileStrengthCard from "@/components/vendor/dashboard/ProfileStrengthCard";
 import CardSection from "@/components/vendor/dashboard/cardsection";
 import EventSection from "@/components/vendor/dashboard/eventsection";
 
 export default async function VendorPage() {
-    const user = await getCurrentUser();
+    // Get cookies and headers to create a mock request
+    const cookieStore = await cookies();
+    const headersList = await headers();
+    
+    // Create a mock NextRequest-like object that getCurrentUser expects
+    const mockRequest = {
+        cookies: cookieStore,
+        headers: headersList,
+        url: '',
+        nextUrl: { pathname: '' },
+    } as any;
+    
+    // Pass the mock request to getCurrentUser
+    const user = await getCurrentUser(mockRequest);
 
     if (!user) {
         redirect("/login");

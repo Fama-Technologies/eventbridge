@@ -1,20 +1,12 @@
-/** @type {import('tailwindcss').Config} */
+﻿/** @type {import('tailwindcss').Config} */
 module.exports = {
-    darkMode: 'class', // use data-theme attribute for dark mode
-    content: [
-        './app/**/*.{js,ts,jsx,tsx}',
-        './components/**/*.{js,ts,jsx,tsx}',
-        // add other directories if needed
-    ],
-    theme: {
-        extend: {
-            fontFamily: {
-                'font1': ['"Font 1"', 'sans-serif'], // replace with your font
-            },
-
-        },
-    },
-    plugins: [
-        require('@tailwindcss/theme'), // enables @theme inline support
-    ],
-};
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}

@@ -34,18 +34,18 @@ export async function GET() {
       .orderBy(desc(users.createdAt));
 
     // Count by provider
-    const providerCounts = allUsers.reduce((acc, user) => {
+    const providerCounts = allUsers.reduce((acc: Record<string, number>, user: typeof users.$inferSelect) => {
       const provider = user.provider || 'null';
       acc[provider] = (acc[provider] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
     // Count by account type
-    const accountTypeCounts = allUsers.reduce((acc, user) => {
+    const accountTypeCounts = allUsers.reduce((acc: Record<string, number>, user: typeof users.$inferSelect) => {
       const type = user.accountType || 'null';
       acc[type] = (acc[type] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
     return NextResponse.json({
       summary: {
@@ -54,7 +54,7 @@ export async function GET() {
         providerBreakdown: providerCounts,
         accountTypeBreakdown: accountTypeCounts,
       },
-      recentUsers: allUsers.slice(0, 10).map(user => ({
+      recentUsers: allUsers.slice(0, 10).map((user: { id: any; email: any; firstName: any; lastName: any; provider: any; accountType: any; emailVerified: any; isActive: any; createdAt: any; }) => ({
         id: user.id,
         email: user.email,
         firstName: user.firstName,
@@ -66,7 +66,7 @@ export async function GET() {
         createdAt: user.createdAt,
       })),
       usersWithAccounts: usersWithAccounts.slice(0, 10),
-      allAccounts: allAccounts.slice(0, 10).map(acc => ({
+      allAccounts: allAccounts.slice(0, 10).map((acc: { id: any; userId: any; provider: any; providerAccountId: any; createdAt: any; }) => ({
         id: acc.id,
         userId: acc.userId,
         provider: acc.provider,
