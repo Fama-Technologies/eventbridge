@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { put } from '@vercel/blob';
 
 import OnboardingSidebar from './OnboardingSidebar';
 import ProfileSetupStep from './ProfileSetupStep';
@@ -98,30 +99,33 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   };
 
   /* ----------------------------------
-     UPLOAD TO CLOUDFLARE R2
+     UPLOAD TO VERCEL BLOB - CORRECT METHOD
   -----------------------------------*/
-  const uploadToR2 = async (file: File, type: 'profile' | 'gallery' | 'document'): Promise<string> => {
+  const uploadToBlob = async (file: File, type: 'profile' | 'gallery' | 'document'): Promise<string> => {
     try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
-      if (userId) formData.append('userId', userId.toString());
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 15);
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const fileName = `${timestamp}-${random}.${fileExtension}`;
+      
+      // Determine folder based on type
+      let folder = 'uploads';
+      if (type === 'profile') folder = 'profiles';
+      if (type === 'gallery') folder = 'gallery';
+      if (type === 'document') folder = 'documents';
+      
+      const pathname = `${folder}/${fileName}`;
 
-      // Upload to your API endpoint that handles R2 uploads
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
+      // Upload to Vercel Blob - CORRECT METHOD
+      const blob = await put(pathname, file, {
+        access: 'public',
+        // Add token from your API route
       });
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-      return result.url; // Return the uploaded file URL
+      return blob.url;
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Vercel Blob upload error:', error);
       throw error;
     }
   };
@@ -137,12 +141,13 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       let galleryImageUrls = [...data.galleryImageUrls];
       let documentUrls = [...data.verificationDocumentUrls];
 
-      // 1. Upload Profile Photo to R2
+      // 1. Upload Profile Photo to Vercel Blob
       if (data.profilePhoto) {
         toast.info("Uploading profile photo...");
         try {
-          const url = await uploadToR2(data.profilePhoto, 'profile');
+          const url = await uploadToBlob(data.profilePhoto, 'profile');
           profilePhotoUrl = url;
+          console.log('Profile photo uploaded:', url);
         } catch (error) {
           toast.error("Failed to upload profile photo");
           setIsLoading(false);
@@ -150,11 +155,11 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
         }
       }
 
-      // 2. Upload Gallery Images to R2
+      // 2. Upload Gallery Images to Vercel Blob
       if (data.serviceGallery.length > 0) {
         toast.info("Uploading gallery images...");
         const uploadPromises = data.serviceGallery.map(file => 
-          uploadToR2(file, 'gallery').catch(err => {
+          uploadToBlob(file, 'gallery').catch(err => {
             console.error('Gallery upload failed:', err);
             return null;
           })
@@ -163,13 +168,14 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
         const galleryUrls = await Promise.all(uploadPromises);
         const validUrls = galleryUrls.filter(url => url !== null) as string[];
         galleryImageUrls = [...galleryImageUrls, ...validUrls];
+        console.log('Gallery images uploaded:', validUrls.length);
       }
 
-      // 3. Upload Documents to R2
+      // 3. Upload Documents to Vercel Blob
       if (data.verificationDocuments.length > 0) {
         toast.info("Uploading documents...");
         const uploadPromises = data.verificationDocuments.map(file => 
-          uploadToR2(file, 'document').catch(err => {
+          uploadToBlob(file, 'document').catch(err => {
             console.error('Document upload failed:', err);
             return null;
           })
@@ -178,6 +184,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
         const documentUploadUrls = await Promise.all(uploadPromises);
         const validDocUrls = documentUploadUrls.filter(url => url !== null) as string[];
         documentUrls = [...documentUrls, ...validDocUrls];
+        console.log('Documents uploaded:', validDocUrls.length);
       }
 
       toast.info("Submitting application...");
@@ -252,7 +259,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   };
 
   /* ----------------------------------
-     Layout
+Layout
   -----------------------------------*/
   return (
     <div className="min-h-screen bg-neutrals-01 dark:bg-shades-black">

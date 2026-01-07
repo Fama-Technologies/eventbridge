@@ -1,78 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { v4 as uuidv4 } from 'uuid';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { NextResponse } from 'next/server';
 
-// Initialize S3 client for Cloudflare R2
-const s3Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
-  },
-});
+export async function POST(request: Request): Promise<NextResponse> {
+  const body = (await request.json()) as HandleUploadBody;
 
-export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const type = formData.get('type') as string;
-    const userId = formData.get('userId');
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        // Generate a client token for the browser to upload the file
+        return {
+          allowedContentTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'],
+          maximumSizeInBytes: 10 * 1024 * 1024, // 10MB
+          tokenPayload: JSON.stringify({
+            // optional, sent to your server on upload completion
+            userId: 'optional-user-id',
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // Get notified of client upload completion
+        // ⚠️ This will not run on your local machine
+        
+        console.log('Upload completed:', blob.url);
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
-    }
-
-    // Generate unique filename
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    
-    // Determine folder based on type
-    let folder = 'uploads';
-    if (type === 'profile') folder = 'profiles';
-    if (type === 'gallery') folder = 'gallery';
-    if (type === 'document') folder = 'documents';
-    
-    const key = `${folder}/${fileName}`;
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Upload to R2
-    const command = new PutObjectCommand({
-      Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
+        try {
+          // Run any logic after the file upload completed
+          // const { userId } = JSON.parse(tokenPayload);
+          // await db.update({ avatar: blob.url, userId });
+        } catch (error) {
+          throw new Error('Could not update user');
+        }
+      },
     });
 
-    await s3Client.send(command);
-
-    // Construct public URL
-    const publicUrl = `https://${process.env.CLOUDFLARE_R2_PUBLIC_DOMAIN}/${key}`;
-
-    return NextResponse.json({
-      success: true,
-      url: publicUrl,
-      key,
-    });
+    return NextResponse.json(jsonResponse);
   } catch (error) {
-    console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Upload failed' },
-      { status: 500 }
+      { error: (error as Error).message },
+      { status: 400 }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json(
-    { message: 'Upload endpoint is active' },
-    { status: 200 }
-  );
 }
