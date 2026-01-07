@@ -7,10 +7,7 @@ import { createToken, isValidAccountType } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Login request received');
-    
-    const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -19,22 +16,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Query user from database
     const [user] = await db
       .select()
       .from(users)
       .where(eq(users.email, email.toLowerCase()))
       .limit(1);
 
-    if (!user) {
-      console.log('User not found:', email);
+    if (!user || !user.password) {
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
-    // Check if account is active
     if (user.isActive === false) {
       return NextResponse.json(
         { success: false, message: 'Account is deactivated' },
@@ -42,37 +36,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Guard against users without a password (e.g. OAuth accounts)
-    if (!user.password) {
-      console.log('No password set (OAuth account):', user.email);
-      return NextResponse.json(
-        { success: false, message: 'Invalid credentials' },
-        { status: 401 }
-      );
-    }
-
-    // Verify password
     const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
-      console.log('Invalid password for:', user.email);
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
-    console.log('Login successful for:', user.email);
-
-    // Validate account type
     if (!isValidAccountType(user.accountType)) {
-      console.error('Invalid account type:', user.accountType);
       return NextResponse.json(
         { success: false, message: 'Account configuration error' },
         { status: 500 }
       );
     }
 
-    // Create JWT token
     const token = await createToken({
       userId: user.id,
       email: user.email,
@@ -81,41 +59,34 @@ export async function POST(req: NextRequest) {
       lastName: user.lastName,
     });
 
-    // Prepare user data for response
-    const userData = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      accountType: user.accountType,
-      image: user.image,
-      isActive: user.isActive,
-      emailVerified: user.emailVerified,
-      createdAt: user.createdAt,
-    };
-
-    // Determine redirect path based on account type
     const redirectTo = getRedirectPath(user.accountType);
-    console.log('Redirecting to:', redirectTo);
 
-    // Create response
     const response = NextResponse.json(
       {
         success: true,
         message: 'Login successful',
-        user: userData,
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          accountType: user.accountType,
+          image: user.image,
+          isActive: user.isActive,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+        },
         token,
-        redirectTo, // Added redirect path
+        redirectTo,
       },
       { status: 200 }
     );
 
-    // Set authentication cookie
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
 
@@ -129,40 +100,37 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Helper function to determine redirect path based on account type
+/**
+ * Redirect users based on account type
+ * Vendor dashboard is strictly /vendor
+ */
 function getRedirectPath(accountType: string): string {
-  const normalizedType = accountType.toLowerCase();
-  
-  switch (normalizedType) {
-    case 'vendor':
-      return '/vendor'; // Changed to /vendor (not /vendor/dashboard)
-    case 'admin':
+  switch (accountType.toUpperCase()) {
+    case 'VENDOR':
+      return '/vendor';
+
+    case 'ADMIN':
       return '/admin/dashboard';
-    case 'customer':
+
+    case 'CUSTOMER':
       return '/dashboard';
-    case 'planner':
+
+    case 'PLANNER':
       return '/planner/dashboard';
+
     default:
-      console.warn('Unknown account type, defaulting to /dashboard:', accountType);
+      console.warn('Unknown account type:', accountType);
       return '/vendor';
   }
 }
 
-// Optional: Add GET method to test the endpoint
 export async function GET() {
   return NextResponse.json(
-    { 
+    {
       success: true,
       message: 'Login endpoint is active',
       endpoint: '/api/login',
-      method: 'POST',
-      requiredFields: ['email', 'password'],
-      redirectPaths: {
-        vendor: '/vendor',
-        admin: '/admin/dashboard',
-        customer: '/dashboard',
-        planner: '/planner/dashboard'
-      }
+      vendorDashboard: '/vendor',
     },
     { status: 200 }
   );
