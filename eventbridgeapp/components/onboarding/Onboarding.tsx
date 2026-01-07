@@ -17,10 +17,9 @@ import { INITIAL_ONBOARDING_DATA } from './types';
 interface OnboardingProps {
   userId?: number;
   userEmail?: string;
-  onComplete?: () => void; // Add this prop
 }
 
-export default function Onboarding({ userId, userEmail, onComplete }: OnboardingProps) {
+export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('profile');
@@ -99,6 +98,9 @@ export default function Onboarding({ userId, userEmail, onComplete }: Onboarding
     }
   };
 
+  /* ----------------------------------
+     FINAL SUBMIT (NO FILE UPLOADS HERE)
+  -----------------------------------*/
   /* ----------------------------------
      FINAL SUBMIT (WITH UPLOADTHING)
   -----------------------------------*/
@@ -180,13 +182,7 @@ export default function Onboarding({ userId, userEmail, onComplete }: Onboarding
       localStorage.removeItem('vendorOnboardingDraft');
 
       toast.success('Application submitted successfully!');
-      
-      // Call onComplete if provided, otherwise use router
-      if (onComplete) {
-        onComplete();
-      } else {
-        router.push('/vendor'); // Fallback redirect
-      }
+      router.push('/vendor'); // Redirect to vendor dashboard, not home
     } catch (error) {
       console.error('Onboarding submission error:', error);
       toast.error('Failed to submit onboarding. Please try again.');

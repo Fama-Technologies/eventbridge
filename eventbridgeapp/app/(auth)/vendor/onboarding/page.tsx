@@ -62,10 +62,6 @@ export default function VendorOnboardingPage() {
     checkAuth();
   }, [router]);
 
-  const handleOnboardingComplete = () => {
-    router.push('/vendor');
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutrals-01 dark:bg-shades-black flex items-center justify-center">
@@ -85,7 +81,6 @@ export default function VendorOnboardingPage() {
     <Onboarding 
       userId={userData?.userId} 
       userEmail={userData?.email} 
-      onComplete={handleOnboardingComplete}
     />
   );
 }
