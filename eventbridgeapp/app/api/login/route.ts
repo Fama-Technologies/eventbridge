@@ -144,7 +144,7 @@ function getRedirectPath(accountType: string): string {
       return '/planner/dashboard';
     default:
       console.warn('Unknown account type, defaulting to /dashboard:', accountType);
-      return '/dashboard';
+      return '/vendor';
   }
 }
 

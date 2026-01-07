@@ -251,7 +251,7 @@ function SignupForm({
 
       sessionStorage.setItem('pendingAccountType', accountType);
 
-      const callbackUrl = accountType === 'VENDOR' ? '/vendor/onboarding' : '/dashboard';
+      const callbackUrl = accountType === 'VENDOR' ? '/vendor/onboarding' : '/vendor';
       
       console.log('Callback URL:', callbackUrl);
 
