@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import OnboardingSidebar from './OnboardingSidebar';
-import { uploadFiles } from '@/lib/uploadthing';
 import ProfileSetupStep from './ProfileSetupStep';
 import ServicesStep from './ServicesStep';
 import PricingStep from './PricingStep';
@@ -99,10 +98,36 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   };
 
   /* ----------------------------------
-     FINAL SUBMIT (NO FILE UPLOADS HERE)
+     UPLOAD TO CLOUDFLARE R2
   -----------------------------------*/
+  const uploadToR2 = async (file: File, type: 'profile' | 'gallery' | 'document'): Promise<string> => {
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      if (userId) formData.append('userId', userId.toString());
+
+      // Upload to your API endpoint that handles R2 uploads
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      return result.url; // Return the uploaded file URL
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  };
+
   /* ----------------------------------
-     FINAL SUBMIT (WITH UPLOADTHING)
+     FINAL SUBMIT
   -----------------------------------*/
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -112,44 +137,53 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       let galleryImageUrls = [...data.galleryImageUrls];
       let documentUrls = [...data.verificationDocumentUrls];
 
-      // 1. Upload Profile Photo
+      // 1. Upload Profile Photo to R2
       if (data.profilePhoto) {
         toast.info("Uploading profile photo...");
-        const res = await uploadFiles("profileImage", {
-          files: [data.profilePhoto],
-        });
-        if (res && res[0]) {
-          profilePhotoUrl = res[0].url;
+        try {
+          const url = await uploadToR2(data.profilePhoto, 'profile');
+          profilePhotoUrl = url;
+        } catch (error) {
+          toast.error("Failed to upload profile photo");
+          setIsLoading(false);
+          return;
         }
       }
 
-      // 2. Upload Gallery
+      // 2. Upload Gallery Images to R2
       if (data.serviceGallery.length > 0) {
         toast.info("Uploading gallery images...");
-        const res = await uploadFiles("galleryImages", {
-          files: data.serviceGallery,
-        });
-        if (res) {
-          const newUrls = res.map(f => f.url);
-          galleryImageUrls = [...galleryImageUrls, ...newUrls];
-        }
+        const uploadPromises = data.serviceGallery.map(file => 
+          uploadToR2(file, 'gallery').catch(err => {
+            console.error('Gallery upload failed:', err);
+            return null;
+          })
+        );
+        
+        const galleryUrls = await Promise.all(uploadPromises);
+        const validUrls = galleryUrls.filter(url => url !== null) as string[];
+        galleryImageUrls = [...galleryImageUrls, ...validUrls];
       }
 
-      // 3. Upload Documents
+      // 3. Upload Documents to R2
       if (data.verificationDocuments.length > 0) {
         toast.info("Uploading documents...");
-        const res = await uploadFiles("verificationDocuments", {
-          files: data.verificationDocuments,
-        });
-        if (res) {
-          const newUrls = res.map(f => f.url);
-          documentUrls = [...documentUrls, ...newUrls];
-        }
+        const uploadPromises = data.verificationDocuments.map(file => 
+          uploadToR2(file, 'document').catch(err => {
+            console.error('Document upload failed:', err);
+            return null;
+          })
+        );
+        
+        const documentUploadUrls = await Promise.all(uploadPromises);
+        const validDocUrls = documentUploadUrls.filter(url => url !== null) as string[];
+        documentUrls = [...documentUrls, ...validDocUrls];
       }
 
       toast.info("Submitting application...");
 
-      const response = await fetch('/api/vendor/onboarding/submit-verification', {
+      // Submit onboarding data to your API
+      const response = await fetch('/api/vendor/onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +216,9 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       localStorage.removeItem('vendorOnboardingDraft');
 
       toast.success('Application submitted successfully!');
-      router.push('/vendor'); // Redirect to vendor dashboard, not home
+      
+      // Redirect to vendor dashboard
+      router.push('/vendor');
     } catch (error) {
       console.error('Onboarding submission error:', error);
       toast.error('Failed to submit onboarding. Please try again.');
