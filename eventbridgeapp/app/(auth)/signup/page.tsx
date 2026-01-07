@@ -226,13 +226,13 @@ function SignupForm({
         if (pendingType === 'VENDOR') {
           router.push('/vendor/onboarding');
         } else {
-          router.push('/dashboard');
+          router.push('/vendor');
         }
       } else {
         if (userAccountType === 'VENDOR') {
           router.push('/vendor/onboarding');
         } else {
-          router.push('/dashboard');
+          router.push('/vendor');
         }
       }
     }
