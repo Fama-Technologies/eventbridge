@@ -59,7 +59,7 @@ export default function CategoryFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/vendor/dashboard" className="text-neutrals-07 hover:text-primary-01 transition-colors text-sm">
+                <Link href="/vendor" className="text-neutrals-07 hover:text-primary-01 transition-colors text-sm">
                   Provider Dashboard
                 </Link>
               </li>

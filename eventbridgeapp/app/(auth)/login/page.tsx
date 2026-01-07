@@ -91,7 +91,7 @@ export default function LoginPage() {
     try {
       setIsGoogleLoading(true);
       await signIn('google', { 
-        callbackUrl: redirectUrl || '/vendor', 
+        callbackUrl: redirectUrl || '/dashboard', 
       });
       setIsGoogleLoading(false);
     } catch (error) {

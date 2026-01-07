@@ -36,7 +36,7 @@ export default function VendorOnboardingPage() {
           const profile = await profileResponse.json();
           if (profile && profile.businessName) {
             // Already onboarded, redirect to dashboard
-            router.push('/vendor/dashboard');
+            router.push('/vendor');
             return;
           }
         }
