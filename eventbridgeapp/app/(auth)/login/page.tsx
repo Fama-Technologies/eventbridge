@@ -25,71 +25,64 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({ email, password }),
         credentials: 'include',
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || 'Login failed');
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error('Non-JSON response:', text);
+        toast.error("Server error. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      toast.success('Login successful');
+      const data = await res.json();
 
-      /* ===============================
-         SINGLE SOURCE OF TRUTH: API
-         =============================== */
+      if (!res.ok) {
+        console.error('Login failed:', data);
+        toast.error(data.message || "Login failed");
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Login successful!");
+
+      // Use the redirectTo from API response if available
       if (data.redirectTo) {
         window.location.href = data.redirectTo;
-        return;
-      }
-
-      /* ===============================
-         NEVER ALLOW redirect override
-         FOR VENDORS
-         =============================== */
-      if (
-        redirectUrl &&
-        data.user?.accountType &&
-        data.user.accountType.toUpperCase() !== 'VENDOR'
-      ) {
+      } else if (redirectUrl) {
         window.location.href = redirectUrl;
-        return;
-      }
-
-      /* ===============================
-         FINAL ROLE-BASED FALLBACK
-         =============================== */
-      if (data.user?.accountType) {
-        switch (data.user.accountType.toUpperCase()) {
-          case 'VENDOR':
-            window.location.href = '/vendor';
-            return;
-          case 'ADMIN':
-            window.location.href = '/admin/dashboard';
-            return;
-          case 'PLANNER':
-            window.location.href = '/planner/dashboard';
-            return;
-          default:
-            window.location.href = '/dashboard';
-            return;
+      } else if (data.user?.accountType) {
+        // Fallback to account type based redirect
+        const accountType = data.user.accountType.toLowerCase();
+        if (accountType === 'vendor') {
+          window.location.href = "/vendor"; // Changed to /vendor
+        } else if (accountType === 'admin') {
+          window.location.href = "/admin/dashboard";
+        } else {
+          window.location.href = "/dashboard";
         }
+      } else {
+        // Default fallback
+        window.location.href = "/dashboard";
       }
-
-      window.location.href = '/dashboard';
     } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
+      console.error("Login error:", error);
+      
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        toast.error("Cannot connect to server. Please check your connection.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+      
       setIsLoading(false);
     }
   };
@@ -97,20 +90,20 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-
-      await signIn('google', {
-        callbackUrl: redirectUrl ?? '/',
+      await signIn('google', { 
+        callbackUrl: redirectUrl || '/dashboard', 
       });
-    } catch {
-      toast.error('Google sign-in failed');
-    } finally {
+      setIsGoogleLoading(false);
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      toast.error("Failed to sign in with Google");
       setIsGoogleLoading(false);
     }
   };
 
   const handleAppleSignIn = async () => {
     setIsAppleLoading(true);
-    toast.info('Apple Sign-In coming soon');
+    toast.info("Apple Sign-In coming soon!");
     setIsAppleLoading(false);
   };
 
@@ -118,6 +111,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
+      {/* Left Column (Login Form) */}
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <h1 className="mb-2 text-4xl font-bold text-shades-black">
@@ -125,21 +119,21 @@ export default function LoginPage() {
             <br />
             <span className="text-primary-01">Welcome</span> Back
           </h1>
-
-          <p className="mb-8 text-sm text-neutrals-07">
-            Want to plan for another event?
-          </p>
+          <p className="mb-8 text-sm text-neutrals-07">Want to plan for another event?</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="email"
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={anyLoading}
-              className="w-full rounded-lg border px-4 py-3"
-            />
+            <div>
+              <input
+                type="email"
+                placeholder="Enter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                required
+                disabled={anyLoading}
+                autoComplete="email"
+              />
+            </div>
 
             <div className="relative">
               <input
@@ -147,70 +141,121 @@ export default function LoginPage() {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 required
                 disabled={anyLoading}
-                className="w-full rounded-lg border px-4 py-3"
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-06 hover:text-shades-black disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={anyLoading}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
 
-            <div className="flex justify-between text-sm">
-              <label className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-shades-black cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-neutrals-04 bg-transparent text-primary-01 focus:ring-primary-01 disabled:opacity-50"
+                  disabled={anyLoading}
                 />
                 Remember me
               </label>
-
-              <Link href="/forgot-password">Forgot password</Link>
+              <Link 
+                href="/forgot-password" 
+                className={`text-sm text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Forgot Password
+              </Link>
             </div>
 
             <button
               type="submit"
               disabled={anyLoading}
-              className="w-full rounded-lg bg-primary-01 py-3 text-white"
+              className="w-full rounded-lg bg-primary-01 py-3 font-semibold text-shades-white hover:bg-primary-02 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Sign in'}
+              {isLoading && <Loader2 className="animate-spin" size={20} />}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
+
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-neutrals-04" />
+              <span className="text-sm text-neutrals-07">Login with</span>
+              <div className="h-px flex-1 bg-neutrals-04" />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={anyLoading}
-                className="border rounded-lg py-3"
+                className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign in with Google
+                {isGoogleLoading ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Image 
+                    src="/google.svg" // Corrected path for SVG in /public
+                    alt="Google" 
+                    width={20} 
+                    height={20} 
+                    className="w-5 h-5"
+                  />
+                )}
+                {isGoogleLoading ? 'Signing in...' : 'Sign in with Google'}
               </button>
 
               <button
                 type="button"
                 onClick={handleAppleSignIn}
                 disabled={anyLoading}
-                className="border rounded-lg py-3"
+                className="flex items-center justify-center gap-2 rounded-lg border border-neutrals-04 bg-transparent px-4 py-3 text-shades-black hover:bg-neutrals-03 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign in with Apple
+                {isAppleLoading ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Image 
+                    src="/apple.svg" // Corrected path for SVG in /public
+                    alt="Apple" 
+                    width={20} 
+                    height={20} 
+                    className="w-5 h-5"
+                  />
+                )}
+                {isAppleLoading ? 'Signing in...' : 'Sign in with Apple'}
               </button>
             </div>
 
-            <p className="text-center text-sm">
-              Don&apos;t have an account? <Link href="/signup">Sign up</Link>
+            <p className="mt-4 text-center text-sm text-neutrals-07">
+              Don't have an account?{' '}
+              <Link 
+                href="/signup" 
+                className={`text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Sign up
+              </Link>
             </p>
           </form>
         </div>
       </div>
-
+      
+      {/* Right Column (Image Display) - Reinstated with corrected usage for Next/Image fill prop */}
       <div className="relative hidden lg:block lg:w-1/2">
-        <Image src="/login.jpg" alt="Login" fill style={{ objectFit: 'cover' }} />
+        {/* CRITICAL: Replace "background-image.jpg" with the exact file name you put in your /public directory */}
+        <Image 
+          src="/login.jpg" 
+          alt="Event venue" 
+          fill={true} 
+          style={{ objectFit: 'cover' }} 
+        />
+        <div className="absolute inset-0 bg-black opacity-40"></div>
       </div>
     </div>
   );
