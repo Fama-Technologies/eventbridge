@@ -29,19 +29,17 @@ export default function VendorOnboardingPage() {
         });
 
         if (user.accountType !== 'VENDOR') {
-          if (user.accountType === 'CUSTOMER') {
-            router.push('/');
-          } else {
-            router.push('/');
-          }
+          router.push('/');
           return;
         }
 
+        // Check if already completed onboarding
         try {
           const profileResponse = await fetch('/api/vendor/profile');
           if (profileResponse.ok) {
             const profile = await profileResponse.json();
             if (profile && profile.businessName) {
+              // Already onboarded, redirect to vendor dashboard
               router.push('/vendor');
               return;
             }
