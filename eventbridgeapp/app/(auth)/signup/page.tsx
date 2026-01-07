@@ -226,13 +226,13 @@ function SignupForm({
         if (pendingType === 'VENDOR') {
           router.push('/vendor/onboarding');
         } else {
-          router.push('/vendor');
+          router.push('/');
         }
       } else {
         if (userAccountType === 'VENDOR') {
           router.push('/vendor/onboarding');
         } else {
-          router.push('/vendor');
+          router.push('/');
         }
       }
     }
@@ -251,7 +251,7 @@ function SignupForm({
 
       sessionStorage.setItem('pendingAccountType', accountType);
 
-      const callbackUrl = accountType === 'VENDOR' ? '/vendor/onboarding' : '/vendor';
+      const callbackUrl = accountType === 'VENDOR' ? '/vendor/onboarding' : '/';
       
       console.log('Callback URL:', callbackUrl);
 
@@ -323,8 +323,8 @@ function SignupForm({
         console.log('Redirecting vendor to onboarding');
         router.push('/vendor/onboarding');
       } else {
-        console.log('Redirecting customer to dashboard');
-        router.push('/vendor');
+        console.log('Redirecting customer to home');
+        router.push('/');
       }
     } catch (err) {
       console.error('Signup error:', err);

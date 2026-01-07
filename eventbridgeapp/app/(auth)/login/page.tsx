@@ -55,24 +55,23 @@ export default function LoginPage() {
 
       toast.success("Login successful!");
 
-      // Use the redirectTo from API response if available
       if (data.redirectTo) {
         window.location.href = data.redirectTo;
       } else if (redirectUrl) {
         window.location.href = redirectUrl;
       } else if (data.user?.accountType) {
-        // Fallback to account type based redirect
         const accountType = data.user.accountType.toLowerCase();
         if (accountType === 'vendor') {
-          window.location.href = "/vendor"; // Changed to /vendor
+          window.location.href = "/vendor";
         } else if (accountType === 'admin') {
           window.location.href = "/admin/dashboard";
+        } else if (accountType === 'planner') {
+          window.location.href = "/planner/dashboard";
         } else {
-          window.location.href = "/dashboard";
+          window.location.href = "/";
         }
       } else {
-        // Default fallback
-        window.location.href = "/dashboard";
+        window.location.href = "/";
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -91,7 +90,7 @@ export default function LoginPage() {
     try {
       setIsGoogleLoading(true);
       await signIn('google', { 
-        callbackUrl: redirectUrl || '/dashboard', 
+        callbackUrl: redirectUrl || '/', 
       });
       setIsGoogleLoading(false);
     } catch (error) {
@@ -111,7 +110,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col-reverse lg:flex-row">
-      {/* Left Column (Login Form) */}
       <div className="flex w-full flex-col justify-center bg-neutrals-01 p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <h1 className="mb-2 text-4xl font-bold text-shades-black">
@@ -202,7 +200,7 @@ export default function LoginPage() {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
                   <Image 
-                    src="/google.svg" // Corrected path for SVG in /public
+                    src="/google.svg"
                     alt="Google" 
                     width={20} 
                     height={20} 
@@ -222,7 +220,7 @@ export default function LoginPage() {
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
                   <Image 
-                    src="/apple.svg" // Corrected path for SVG in /public
+                    src="/apple.svg"
                     alt="Apple" 
                     width={20} 
                     height={20} 
@@ -246,9 +244,7 @@ export default function LoginPage() {
         </div>
       </div>
       
-      {/* Right Column (Image Display) - Reinstated with corrected usage for Next/Image fill prop */}
       <div className="relative hidden lg:block lg:w-1/2">
-        {/* CRITICAL: Replace "background-image.jpg" with the exact file name you put in your /public directory */}
         <Image 
           src="/login.jpg" 
           alt="Event venue" 

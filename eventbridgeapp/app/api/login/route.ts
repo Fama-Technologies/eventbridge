@@ -100,10 +100,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * Redirect users based on account type
- * Vendor dashboard is strictly /vendor
- */
 function getRedirectPath(accountType: string): string {
   switch (accountType.toUpperCase()) {
     case 'VENDOR':
@@ -113,7 +109,7 @@ function getRedirectPath(accountType: string): string {
       return '/admin/dashboard';
 
     case 'CUSTOMER':
-      return '/dashboard';
+      return '/';
 
     case 'PLANNER':
       return '/planner/dashboard';
