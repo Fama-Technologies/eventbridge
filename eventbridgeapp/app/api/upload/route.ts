@@ -1,45 +1,118 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { put } from '@vercel/blob';
+import { getAuthUser } from '@/lib/auth';
 
-export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
-
+export async function POST(req: NextRequest) {
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async (pathname) => {
-        // Generate a client token for the browser to upload the file
-        return {
-          allowedContentTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'],
-          maximumSizeInBytes: 10 * 1024 * 1024, // 10MB
-          tokenPayload: JSON.stringify({
-            // optional, sent to your server on upload completion
-            userId: 'optional-user-id',
-          }),
-        };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // Get notified of client upload completion
-        // ⚠️ This will not run on your local machine
-        
-        console.log('Upload completed:', blob.url);
+    // Check authentication
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-        try {
-          // Run any logic after the file upload completed
-          // const { userId } = JSON.parse(tokenPayload);
-          // await db.update({ avatar: blob.url, userId });
-        } catch (error) {
-          throw new Error('Could not update user');
-        }
-      },
+    // Get the file and type from form data
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    const type = (formData.get('type') as string) || 'uploads';
+
+    if (!file) {
+      return NextResponse.json(
+        { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type based on upload type
+    let allowedTypes: string[];
+    let maxSize: number;
+
+    if (type === 'document') {
+      allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      maxSize = 10 * 1024 * 1024; // 10MB for documents
+    } else {
+      allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      maxSize = 5 * 1024 * 1024; // 5MB for images
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: `Invalid file type for ${type}. Allowed: ${allowedTypes.join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB.` },
+        { status: 400 }
+      );
+    }
+
+    // Determine folder based on type
+    let folder = 'uploads';
+    if (type === 'profile') folder = 'profiles';
+    if (type === 'gallery') folder = 'gallery';
+    if (type === 'document') folder = 'documents';
+
+    // Create unique filename
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(7);
+    const fileExtension = file.name.split('.').pop();
+    const filename = `${folder}/vendor-${user.id}/${timestamp}-${randomString}.${fileExtension}`;
+
+    // Upload to Vercel Blob
+    const blob = await put(filename, file, {
+      access: 'public',
+      addRandomSuffix: false,
     });
 
-    return NextResponse.json(jsonResponse);
+    return NextResponse.json({
+      success: true,
+      url: blob.url,
+      filename: filename,
+    });
   } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 400 }
+      { error: 'Failed to upload file' },
+      { status: 500 }
+    );
+  }
+}
+
+// Optional: Delete endpoint
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const url = searchParams.get('url');
+
+    if (!url) {
+      return NextResponse.json(
+        { error: 'No URL provided' },
+        { status: 400 }
+      );
+    }
+
+    const { del } = await import('@vercel/blob');
+    await del(url);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete file' },
+      { status: 500 }
     );
   }
 }
