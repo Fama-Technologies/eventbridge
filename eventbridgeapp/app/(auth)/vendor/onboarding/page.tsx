@@ -8,40 +8,48 @@ export default function VendorOnboardingPage() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [userData, setUserData] = useState<{ userId?: number; email?: string } | null>(null);
+  const [userData, setUserData] = useState<{ userId?: number; email?: string; accountType?: string } | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated and is a vendor
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/users/me');
         
         if (!response.ok) {
-          // Not authenticated, redirect to signup
           router.push('/signup?type=vendor');
           return;
         }
 
         const user = await response.json();
 
+        setUserData({ 
+          userId: user.id, 
+          email: user.email, 
+          accountType: user.accountType 
+        });
+
         if (user.accountType !== 'VENDOR') {
-          // Not a vendor, redirect to home
-          router.push('/');
+          if (user.accountType === 'CUSTOMER') {
+            router.push('/');
+          } else {
+            router.push('/');
+          }
           return;
         }
 
-        // Check if already completed onboarding
-        const profileResponse = await fetch('/api/vendor/profile');
-        if (profileResponse.ok) {
-          const profile = await profileResponse.json();
-          if (profile && profile.businessName) {
-            // Already onboarded, redirect to dashboard
-            router.push('/vendor');
-            return;
+        try {
+          const profileResponse = await fetch('/api/vendor/profile');
+          if (profileResponse.ok) {
+            const profile = await profileResponse.json();
+            if (profile && profile.businessName) {
+              router.push('/vendor');
+              return;
+            }
           }
+        } catch (profileError) {
+          console.error('Profile check error:', profileError);
         }
 
-        setUserData({ userId: user.id, email: user.email });
         setIsAuthorized(true);
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -53,6 +61,10 @@ export default function VendorOnboardingPage() {
 
     checkAuth();
   }, [router]);
+
+  const handleOnboardingComplete = () => {
+    router.push('/vendor');
+  };
 
   if (isLoading) {
     return (
@@ -66,8 +78,14 @@ export default function VendorOnboardingPage() {
   }
 
   if (!isAuthorized) {
-    return null; // Will redirect
+    return null;
   }
 
-  return <Onboarding userId={userData?.userId} userEmail={userData?.email} />;
+  return (
+    <Onboarding 
+      userId={userData?.userId} 
+      userEmail={userData?.email} 
+      onComplete={handleOnboardingComplete}
+    />
+  );
 }
