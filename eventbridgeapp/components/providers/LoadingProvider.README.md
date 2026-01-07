@@ -87,7 +87,7 @@ const handleLogin = async (formData: FormData) => {
     });
     
     if (response.ok) {
-      router.push('/dashboard');
+      router.push('/vendor');
     }
   } catch (error) {
     console.error(error);

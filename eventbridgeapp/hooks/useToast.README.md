@@ -244,7 +244,7 @@ const handleLogin = async (credentials) => {
     await login(credentials);
     dismissToast(id);
     showSuccess('Welcome back!');
-    router.push('/dashboard');
+    router.push('/vendor');
   } catch (error) {
     dismissToast(id);
     showError('Login failed', 'Check your credentials');

@@ -324,7 +324,7 @@ function SignupForm({
         router.push('/vendor/onboarding');
       } else {
         console.log('Redirecting customer to dashboard');
-        router.push('/dashboard');
+        router.push('/vendor');
       }
     } catch (err) {
       console.error('Signup error:', err);
