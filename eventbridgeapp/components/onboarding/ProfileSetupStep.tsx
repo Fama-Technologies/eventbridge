@@ -18,26 +18,8 @@ export default function ProfileSetupStep({
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const uploadPhotoToBlob = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', 'profile');
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
-    }
-
-    const data = await response.json();
-    return data.url;
-  };
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Only preview; no upload in this step
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -48,40 +30,20 @@ export default function ProfileSetupStep({
       reader.onloadend = () => {
         updateData({
           profilePhotoPreview: reader.result as string,
+          profilePhoto: file,            // Store file for final submit
+          profilePhotoUrl: null,         // Reset url until submit uploads it
         });
       };
       reader.readAsDataURL(file);
-
-      const url = await uploadPhotoToBlob(file);
-
-      updateData({
-        profilePhoto: file,
-        profilePhotoUrl: url,
-      });
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload photo. Please try again.');
-      updateData({
-        profilePhoto: null,
-        profilePhotoPreview: '',
-        profilePhotoUrl: null,
-      });
+      console.error('Photo load failed:', error);
+      alert('Failed to load photo.');
     } finally {
       setUploadingPhoto(false);
     }
   };
 
-  const removePhoto = async () => {
-    if (data.profilePhotoUrl) {
-      try {
-        await fetch(`/api/upload?url=${encodeURIComponent(data.profilePhotoUrl)}`, {
-          method: 'DELETE',
-        });
-      } catch (error) {
-        console.error('Failed to delete photo:', error);
-      }
-    }
-
+  const removePhoto = () => {
     updateData({
       profilePhoto: null,
       profilePhotoPreview: '',
@@ -135,6 +97,7 @@ export default function ProfileSetupStep({
         </p>
       </div>
 
+      {/* Profile Photo */}
       <div className="flex items-center gap-6 mb-8">
         <div className="relative">
           <div
@@ -158,6 +121,7 @@ export default function ProfileSetupStep({
               </>
             )}
           </div>
+
           {data.profilePhotoPreview && !uploadingPhoto && (
             <button
               type="button"
@@ -168,6 +132,7 @@ export default function ProfileSetupStep({
             </button>
           )}
         </div>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -176,16 +141,17 @@ export default function ProfileSetupStep({
           className="hidden"
           disabled={uploadingPhoto}
         />
+
         <div>
           <h3 className="font-semibold text-shades-black mb-1">Profile Photo</h3>
           <p className="text-sm text-neutrals-07 max-w-ls">
-            Upload your business logo or a professional photo of yourself. <br />
-            This will be the first thing organizers see.
+            Upload your business logo or a professional photo of yourself.
           </p>
           <p className="text-xs text-neutrals-06 mt-1">Supported: JPG, PNG. Max 5MB.</p>
         </div>
       </div>
 
+      {/* Business Name */}
       <div className="mb-8">
         <label className="block text-sm font-semibold text-shades-black mb-2">
           Business Name
@@ -199,6 +165,7 @@ export default function ProfileSetupStep({
         />
       </div>
 
+      {/* Service Categories */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-semibold text-shades-black">Service Categories</label>
@@ -210,6 +177,7 @@ export default function ProfileSetupStep({
             {showAllCategories ? 'Show less' : 'View all'}
           </button>
         </div>
+
         <div className="flex flex-wrap gap-2">
           {displayedCategories.map((category) => {
             const isSelected = data.serviceCategories.includes(category);
@@ -218,10 +186,11 @@ export default function ProfileSetupStep({
                 key={category}
                 type="button"
                 onClick={() => toggleCategory(category)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${isSelected
-                  ? 'bg-primary-01 text-white'
-                  : 'bg-neutrals-03 dark:bg-neutrals-02 text-shades-black hover:bg-neutrals-04'
-                  }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  isSelected
+                    ? 'bg-primary-01 text-white'
+                    : 'bg-neutrals-03 dark:bg-neutrals-02 text-shades-black hover:bg-neutrals-04'
+                }`}
               >
                 {isSelected && <Check className="w-4 h-4" />}
                 {category}
@@ -288,6 +257,7 @@ export default function ProfileSetupStep({
         </div>
       </div>
 
+      {/* Primary Location */}
       <div className="mb-10">
         <label className="block text-sm font-semibold text-shades-black mb-2">
           Primary Location
@@ -309,6 +279,7 @@ export default function ProfileSetupStep({
 
       <div className="border-t border-neutrals-04 mb-6" />
 
+      {/* Footer Buttons */}
       <div className="flex items-center justify-between">
         <div />
         <div className="flex items-center gap-4">
@@ -320,11 +291,12 @@ export default function ProfileSetupStep({
           >
             Save Draft
           </button>
+
           <button
             type="button"
             onClick={onNext}
             disabled={!isValid || isLoading || uploadingPhoto}
-            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50"
           >
             Next Step
             <ArrowRight className="w-4 h-4" />

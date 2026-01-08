@@ -72,9 +72,10 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
     if (index > 0) setCurrentStep(stepOrder[index - 1]);
   };
 
-  /* ----------------------------------
-     UPLOAD VIA API ROUTE (CORRECT)
-  -----------------------------------*/
+  /* ------------------------------------------------------------------
+     FIXED UPLOAD FUNCTION: SAFE JSON PARSING TO PREVENT 413 ERRORS
+  -------------------------------------------------------------------*/
+
   const uploadToBlob = async (
     file: File,
     type: 'profile' | 'gallery' | 'document'
@@ -88,7 +89,15 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       body: formData,
     });
 
-    const result = await response.json();
+    // Read response as text first
+    const text = await response.text();
+
+    let result: any;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      throw new Error('Upload failed: server returned a non JSON response');
+    }
 
     if (!response.ok) {
       throw new Error(result.error || 'Upload failed');
