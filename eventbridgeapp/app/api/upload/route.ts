@@ -1,10 +1,10 @@
-export const config = {
-  runtime: 'nodejs',
-};
-
+// app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { put } from '@vercel/blob';
 import { getAuthUser } from '@/lib/auth';
+
+// Correct Next.js 14 syntax
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,58 +13,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = (await req.json()) as HandleUploadBody;
-
-    try {
-      const jsonResponse = await handleUpload({
-        body,
-        request: req,
-        onBeforeGenerateToken: async (pathname) => {
-          // Validate file type based on pathname
-          const ext = pathname.split('.').pop()?.toLowerCase();
-          
-          const allowedImageExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
-          const allowedDocExts = ['pdf', ...allowedImageExts];
-          
-          if (!ext || !allowedDocExts.includes(ext)) {
-            throw new Error('Invalid file type');
-          }
-
-          return {
-            allowedContentTypes: [
-              'image/jpeg',
-              'image/jpg',
-              'image/png',
-              'image/webp',
-              'image/heic',
-              'image/heif',
-              'application/pdf',
-            ],
-            tokenPayload: JSON.stringify({
-              userId: user.id,
-            }),
-          };
-        },
-        onUploadCompleted: async ({ blob, tokenPayload }) => {
-          console.log('Upload completed:', blob.url);
-          
-          // You can save the blob info to your database here if needed
-          // const payload = JSON.parse(tokenPayload || '{}');
-        },
-      });
-
-      return NextResponse.json(jsonResponse);
-    } catch (error) {
-      console.error('Upload error:', error);
-      return NextResponse.json(
-        { error: (error as Error).message },
-        { status: 400 }
-      );
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
+
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+      'application/pdf',
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: 'File too large' }, { status: 400 });
+    }
+
+    // Generate unique filename
+    const ext = file.name.split('.').pop();
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const pathname = `uploads/user-${user.id}/${filename}`;
+
+    // Upload to Vercel Blob
+    const blob = await put(pathname, file, {
+      access: 'public',
+    });
+
+    return NextResponse.json({
+      url: blob.url,
+      pathname: blob.pathname,
+    });
   } catch (error) {
-    console.error('Upload init error:', error);
+    console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Failed to initialize upload' },
+      { error: 'Failed to upload file' },
       { status: 500 }
     );
   }
