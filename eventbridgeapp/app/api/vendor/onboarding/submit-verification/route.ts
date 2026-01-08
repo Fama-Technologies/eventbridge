@@ -1,211 +1,146 @@
+// app/api/vendor/onboarding/submit/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { db } from '@/lib/db';
-import {
-  users,
-  vendorProfiles,
-  vendorPackages,
-  vendorPortfolio,
-  cancellationPolicies,
-  verificationDocuments,
-} from '@/drizzle/schema';
+import { vendorProfiles, onboardingProgress } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getAuthUser } from '@/lib/auth';
 
-// Mark this route as dynamic to prevent static generation
-export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  const user = await getAuthUser(req);
-
-  // Auth check
-  if (!user) {
-    return NextResponse.json(
-      { success: false, message: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-
-  // Vendor-only
-  if (user.accountType !== 'VENDOR') {
-    return NextResponse.json(
-      { success: false, message: 'Only vendors can submit verification.' },
-      { status: 403 }
-    );
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (session.user.accountType !== 'VENDOR') {
+      return NextResponse.json({ error: 'Only vendors can submit onboarding' }, { status: 403 });
+    }
+
     const body = await req.json();
+    const userId = parseInt(session.user.id);
+
+    // Extract all the onboarding data
     const {
+      // Profile data
       businessName,
-      serviceDescription,
-      primaryLocation,
+      description,
       phone,
       website,
-      profilePhotoUrl,
-      pricingStructure,
-      galleryImageUrls,
-      documentUrls,
-    } = body;
-
-    const now = new Date();
-
-    // Check existing vendor profile
-    const [existingProfile] = await db
-      .select()
-      .from(vendorProfiles)
-      .where(eq(vendorProfiles.userId, user.id))
-      .limit(1);
-
-    // Already approved → block
-    if (existingProfile?.verificationStatus === 'approved') {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Your account is already verified.',
-        },
-        { status: 400 }
-      );
-    }
-
-    const locationParts = primaryLocation?.split(',').map((p: string) => p.trim()) || [];
-    const city = locationParts[0] || null;
-    const state = locationParts[1] || null;
-
-    let vendorProfileId: number;
-
-    const profileData = {
-      businessName: businessName?.trim(),
-      description: serviceDescription?.trim(),
+      address,
       city,
       state,
-      phone: phone || null,
-      website: website || null,
-      profileImage: profilePhotoUrl || null,
-      verificationStatus: 'under_review',
-      verificationSubmittedAt: now,
-      verificationReviewedAt: null,
-      verificationNotes: null,
-      canAccessDashboard: false,
-      isVerified: false,
-      updatedAt: now,
-    };
+      zipCode,
+      serviceRadius,
+      yearsExperience,
+      hourlyRate,
+      
+      // Services data
+      serviceDescription,
+      pricingStructure,
+      priceRange,
+      generalAvailability,
+      experience,
+      serviceGallery,
+      
+      // Verification documents
+      verificationDocumentUrls,
+      
+      // Profile images
+      profileImage,
+      coverImage,
+    } = body;
 
-    // Update or Insert Profile
+    // Check if vendor profile exists
+    const existingProfile = await db.query.vendorProfiles.findFirst({
+      where: eq(vendorProfiles.userId, userId),
+    });
+
     if (existingProfile) {
+      // Update existing profile
       await db
         .update(vendorProfiles)
-        .set(profileData)
-        .where(eq(vendorProfiles.userId, user.id));
-      vendorProfileId = existingProfile.id;
-    } else {
-      const [newProfile] = await db
-        .insert(vendorProfiles)
-        .values({
-          userId: user.id,
-          ...profileData,
-          createdAt: now,
+        .set({
+          businessName: businessName || null,
+          description: description || serviceDescription || null,
+          phone: phone || null,
+          website: website || null,
+          address: address || null,
+          city: city || null,
+          state: state || null,
+          zipCode: zipCode || null,
+          serviceRadius: serviceRadius || null,
+          yearsExperience: parseInt(experience) || null,
+          hourlyRate: hourlyRate || null,
+          profileImage: profileImage || null,
+          coverImage: coverImage || null,
+          verificationStatus: verificationDocumentUrls?.length > 0 ? 'pending' : 'not_submitted',
+          verificationSubmittedAt: verificationDocumentUrls?.length > 0 ? new Date() : null,
+          updatedAt: new Date(),
         })
-        .returning();
-      vendorProfileId = newProfile.id;
-    }
-
-    // Save Packages
-    if (pricingStructure && pricingStructure.length > 0) {
-      await db
-        .delete(vendorPackages)
-        .where(eq(vendorPackages.vendorId, vendorProfileId));
-
-      const packages = pricingStructure.map((item: string, index: number) => ({
-        vendorId: vendorProfileId,
-        name: item,
-        description: `${item} package`,
-        price: 0,
-        features: [],
-        isPopular: false,
-        isActive: true,
-        displayOrder: index,
-      }));
-
-      await db.insert(vendorPackages).values(packages);
-    }
-
-    // Save Portfolio
-    if (galleryImageUrls && galleryImageUrls.length > 0) {
-      await db
-        .delete(vendorPortfolio)
-        .where(eq(vendorPortfolio.vendorId, vendorProfileId));
-
-      const portfolioItems = galleryImageUrls.map((url: string, index: number) => ({
-        vendorId: vendorProfileId,
-        imageUrl: url,
-        title: `Gallery Image ${index + 1}`,
-        displayOrder: index,
-      }));
-
-      await db.insert(vendorPortfolio).values(portfolioItems);
-    }
-
-    // Save Documents
-    if (documentUrls && documentUrls.length > 0) {
-      await db
-        .delete(verificationDocuments)
-        .where(eq(verificationDocuments.vendorId, vendorProfileId));
-
-      const documents = documentUrls.map((url: string, index: number) => ({
-        vendorId: vendorProfileId,
-        documentType: 'business_license',
-        documentUrl: url,
-        documentName: `Document ${index + 1}`,
-        status: 'pending',
-      }));
-
-      await db.insert(verificationDocuments).values(documents);
-    }
-
-    // Ensure Cancellation Policy Exists
-    const [existingPolicy] = await db
-      .select()
-      .from(cancellationPolicies)
-      .where(eq(cancellationPolicies.vendorId, vendorProfileId))
-      .limit(1);
-
-    if (!existingPolicy) {
-      const defaultPolicy = 'Standard cancellation policy: Full refund if cancelled 7 days before event. 50% refund if cancelled 3-7 days before. No refund if cancelled less than 3 days before event.';
-      await db.insert(cancellationPolicies).values({
-        vendorId: vendorProfileId,
-        policyText: defaultPolicy,
+        .where(eq(vendorProfiles.userId, userId));
+    } else {
+      // Create new vendor profile
+      await db.insert(vendorProfiles).values({
+        userId: userId,
+        businessName: businessName || null,
+        description: description || serviceDescription || null,
+        phone: phone || null,
+        website: website || null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        zipCode: zipCode || null,
+        serviceRadius: serviceRadius || null,
+        yearsExperience: parseInt(experience) || null,
+        hourlyRate: hourlyRate || null,
+        profileImage: profileImage || null,
+        coverImage: coverImage || null,
+        verificationStatus: verificationDocumentUrls?.length > 0 ? 'pending' : 'not_submitted',
+        verificationSubmittedAt: verificationDocumentUrls?.length > 0 ? new Date() : null,
       });
     }
 
-    // Sync to Users Table (Account Type & Image)
-    const userUpdate: { accountType?: 'VENDOR' | 'CUSTOMER' | 'ADMIN' | 'PLANNER'; image?: string } = {};
+    // Update onboarding progress
+    const existingProgress = await db.query.onboardingProgress.findFirst({
+      where: eq(onboardingProgress.userId, userId),
+    });
 
-    // We already checked user is VENDOR at top of function
-
-    if (profilePhotoUrl) {
-      userUpdate.image = profilePhotoUrl;
-    }
-
-    if (Object.keys(userUpdate).length > 0) {
+    if (existingProgress) {
       await db
-        .update(users)
-        .set(userUpdate)
-        .where(eq(users.id, user.id));
+        .update(onboardingProgress)
+        .set({
+          isComplete: true,
+          currentStep: 4,
+          completedSteps: [1, 2, 3, 4],
+          formData: body,
+          updatedAt: new Date(),
+        })
+        .where(eq(onboardingProgress.userId, userId));
+    } else {
+      await db.insert(onboardingProgress).values({
+        userId: userId,
+        isComplete: true,
+        currentStep: 4,
+        completedSteps: [1, 2, 3, 4],
+        formData: body,
+      });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Verification submitted successfully. Our team will review your documents.',
-      verificationStatus: 'under_review',
-      canAccessDashboard: false,
+      message: 'Onboarding submitted successfully',
+      redirectTo: '/vendor',
     });
   } catch (error) {
-    console.error('Submit verification error:', error);
-
+    console.error('Onboarding submission error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to submit verification. Please try again.',
+      { 
+        error: 'Failed to submit onboarding',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
