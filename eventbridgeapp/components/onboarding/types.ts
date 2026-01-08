@@ -24,7 +24,7 @@ export interface OnboardingData {
   priceRange: string;
   generalAvailability: string;
   experience: string;
-  serviceGallery: File[];
+  serviceGallery: string[];
   serviceGalleryPreviews: string[];
 
   // Step 4: Verification

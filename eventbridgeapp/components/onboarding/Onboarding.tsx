@@ -73,7 +73,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   };
 
   /* ------------------------------------------------------------------
-     FIXED UPLOAD FUNCTION: SAFE JSON PARSING TO PREVENT 413 ERRORS
+     UPLOAD FUNCTION (unchanged, still used by steps)
   -------------------------------------------------------------------*/
 
   const uploadToBlob = async (
@@ -89,7 +89,6 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       body: formData,
     });
 
-    // Read response as text first
     const text = await response.text();
 
     let result: any;
@@ -107,27 +106,19 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
   };
 
   /* ----------------------------------
-     FINAL SUBMIT
+     FINAL SUBMIT (FIXED)
   -----------------------------------*/
   const handleSubmit = async () => {
     setIsLoading(true);
 
     try {
       let profilePhotoUrl = data.profilePhotoUrl;
-      let galleryImageUrls = [...data.galleryImageUrls];
+      let galleryImageUrls = data.galleryImageUrls;
       let documentUrls = [...data.verificationDocumentUrls];
 
       if (data.profilePhoto) {
         toast.info('Uploading profile photo...');
         profilePhotoUrl = await uploadToBlob(data.profilePhoto, 'profile');
-      }
-
-      if (data.serviceGallery.length > 0) {
-        toast.info('Uploading gallery images...');
-        const urls = await Promise.all(
-          data.serviceGallery.map((file) => uploadToBlob(file, 'gallery'))
-        );
-        galleryImageUrls.push(...urls);
       }
 
       if (data.verificationDocuments.length > 0) {
@@ -204,7 +195,10 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
 
   return (
     <div className="min-h-screen bg-neutrals-01 dark:bg-shades-black">
-      <OnboardingSidebar currentStep={currentStep} completedSteps={completedSteps} />
+      <OnboardingSidebar
+        currentStep={currentStep}
+        completedSteps={completedSteps}
+      />
 
       <main className="ml-64 min-h-screen p-8 lg:p-12 bg-shades-white dark:bg-neutrals-02">
         <div className="max-w-3xl mx-auto py-8">{renderStep()}</div>
