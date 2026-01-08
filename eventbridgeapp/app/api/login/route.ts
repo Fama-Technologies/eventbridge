@@ -109,7 +109,7 @@ function getRedirectPath(accountType: string): string {
       return '/admin/dashboard';
 
     case 'CUSTOMER':
-      return '/';
+      return '/customer';
 
     case 'PLANNER':
       return '/planner/dashboard';

@@ -61,42 +61,48 @@ export default function LoginPage() {
         sessionStorage.setItem('pendingUser', JSON.stringify(data.user));
       }
       
-      // Small delay to ensure token is set before redirect
-      setTimeout(() => {
-        setIsLoading(false);
-        
-        let targetUrl = '/';
-        
-        if (data.redirectTo) {
-          targetUrl = data.redirectTo;
-        } else if (redirectUrl) {
-          targetUrl = redirectUrl;
-        } else if (data.user?.accountType) {
-          const accountType = data.user.accountType.toLowerCase();
-          if (accountType === 'vendor') {
+      // Determine redirect URL with priority: API response > query param > account type
+      let targetUrl = '/';
+      
+      if (data.redirectTo) {
+        targetUrl = data.redirectTo;
+      } else if (redirectUrl) {
+        targetUrl = redirectUrl;
+      } else if (data.user?.accountType) {
+        const accountType = data.user.accountType.toLowerCase();
+        switch (accountType) {
+          case 'vendor':
             targetUrl = "/vendor";
-          } else if (accountType === 'admin') {
+            break;
+          case 'admin':
             targetUrl = "/admin/dashboard";
-          } else if (accountType === 'planner') {
+            break;
+          case 'customer':
+            targetUrl = "/customer";
+            break;
+          case 'planner':
             targetUrl = "/planner/dashboard";
-          } else {
+            break;
+          default:
             targetUrl = "/";
-          }
         }
-        
-        console.log('Redirecting to:', targetUrl);
-        
-        // Use router.push for better navigation
-        router.push(targetUrl);
-        
-        // Fallback to window.location if router fails
-        setTimeout(() => {
-          if (window.location.pathname === '/login') {
-            console.log('Router redirect failed, using window.location');
-            window.location.href = targetUrl;
-          }
-        }, 1000);
-      }, 500);
+      }
+      
+      console.log('User account type:', data.user?.accountType);
+      console.log('Redirecting to:', targetUrl);
+      
+      setIsLoading(false);
+      
+      // Immediate redirect
+      router.push(targetUrl);
+      
+      // Force redirect if router push fails
+      setTimeout(() => {
+        if (window.location.pathname === '/login') {
+          console.log('Router redirect failed, forcing redirect');
+          window.location.href = targetUrl;
+        }
+      }, 100);
     } catch (error) {
       console.error("Login error:", error);
       

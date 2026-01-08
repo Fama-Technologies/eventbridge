@@ -1,38 +1,37 @@
-'use client';
+'use client'
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import ProfileStrengthCard from "@/components/vendor/dashboard/ProfileStrengthCard";
-import CardSection from "@/components/vendor/dashboard/cardsection";
-import EventSection from "@/components/vendor/dashboard/eventsection";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import ProfileStrengthCard from "@/components/vendor/dashboard/ProfileStrengthCard"
+import CardSection from "@/components/vendor/dashboard/cardsection"
+import EventSection from "@/components/vendor/dashboard/eventsection"
 
 export default function VendorPage() {
-    const { data: session, status } = useSession();
-    const router = useRouter();
-    const [user, setUser] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const { data: session, status } = useSession()
+    const router = useRouter()
+    const [user, setUser] = useState<any>(null)
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (status === 'loading') return;
+            if (status === 'loading') return
             
             // Check for stored user data from login
-            const pendingUser = sessionStorage.getItem('pendingUser');
+            const pendingUser = sessionStorage.getItem('pendingUser')
             if (pendingUser) {
                 try {
-                    const userData = JSON.parse(pendingUser);
+                    const userData = JSON.parse(pendingUser)
                     if (userData.accountType?.toUpperCase() === 'VENDOR') {
-                        setUser(userData);
-                        setIsLoading(false);
-                        sessionStorage.removeItem('pendingUser');
-                        return;
+                        setUser(userData)
+                        setIsLoading(false)
+                        sessionStorage.removeItem('pendingUser')
+                        return
                     }
                 } catch (error) {
-                    console.error('Error parsing stored user data:', error);
+                    console.error('Error parsing stored user data:', error)
                 }
-                sessionStorage.removeItem('pendingUser');
+                sessionStorage.removeItem('pendingUser')
             }
             
             if (status === 'unauthenticated' || !session) {
@@ -40,80 +39,89 @@ export default function VendorPage() {
                 try {
                     const response = await fetch('/api/auth/me', {
                         credentials: 'include'
-                    });
+                    })
                     if (response.ok) {
-                        const data = await response.json();
+                        const data = await response.json()
                         if (data.success && data.user) {
-                            const accountType = data.user.accountType?.toUpperCase();
+                            const accountType = data.user.accountType?.toUpperCase()
                             if (accountType === 'VENDOR') {
-                                setUser(data.user);
-                                setIsLoading(false);
-                                return;
+                                setUser(data.user)
+                                setIsLoading(false)
+                                return
                             } else if (accountType === 'ADMIN') {
-                                router.push('/admin/dashboard');
-                                return;
+                                router.push('/admin/dashboard')
+                                return
+                            } else if (accountType === 'CUSTOMER') {
+                                router.push('/customer')
+                                return
                             } else {
-                                router.push('/');
-                                return;
+                                router.push('/')
+                                return
                             }
                         }
                     }
                 } catch (error) {
-                    console.error('Error checking auth:', error);
+                    console.error('Error checking auth:', error)
                 }
                 
-                router.push('/login');
-                return;
+                router.push('/login')
+                return
             }
             
             // Get user data from session or API
-            let userData = session.user;
+            let userData = session.user
             
             // If session doesn't have accountType, fetch from API
             if (!userData || !(userData as any).accountType) {
                 try {
                     const response = await fetch('/api/auth/me', {
                         credentials: 'include'
-                    });
+                    })
                     if (response.ok) {
-                        const data = await response.json();
+                        const data = await response.json()
                         if (data.success) {
-                            userData = data.user;
+                            userData = data.user
                         }
                     }
                 } catch (error) {
-                    console.error('Error fetching user data:', error);
+                    console.error('Error fetching user data:', error)
                 }
             }
             
             if (!userData) {
-                router.push('/login');
-                return;
+                router.push('/login')
+                return
             }
             
-            const accountType = (userData as any).accountType?.toUpperCase();
+            const accountType = (userData as any).accountType?.toUpperCase()
             if (accountType !== 'VENDOR') {
                 if (accountType === 'ADMIN') {
-                    router.push('/admin/dashboard');
+                    router.push('/admin/dashboard')
+                } else if (accountType === 'CUSTOMER') {
+                    router.push('/customer')
                 } else {
-                    router.push('/');
+                    router.push('/')
                 }
-                return;
+                return
             }
             
-            setUser(userData);
-            setIsLoading(false);
-        };
+            setUser(userData)
+            setIsLoading(false)
+        }
         
-        checkAuth();
-    }, [session, status, router]);
+        checkAuth()
+    }, [session, status, router])
     
     if (isLoading || status === 'loading') {
-        return <LoadingSpinner message="Loading vendor dashboard..." />;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-lg">Loading vendor dashboard...</div>
+            </div>
+        )
     }
     
     if (!user) {
-        return null;
+        return null
     }
 
     return (
@@ -136,5 +144,5 @@ export default function VendorPage() {
                 <EventSection />
             </div>
         </div>
-    );
+    )
 }
