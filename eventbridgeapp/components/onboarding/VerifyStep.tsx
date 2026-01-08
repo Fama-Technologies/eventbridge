@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { Shield, Clock, FileText, ArrowRight, X, Upload } from 'lucide-react';
+import { Shield, Clock, FileText, ArrowRight, X, Upload, Loader2 } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
 import Image from 'next/image';
 import PDFPreview from './PDFPreview';
@@ -26,6 +26,8 @@ export default function VerifyStep({
   const [tinDocumentPreviews, setTinDocumentPreviews] = useState<string[]>([]);
   const [locationProofPreviews, setLocationProofPreviews] = useState<string[]>([]);
 
+  const [uploadingDocs, setUploadingDocs] = useState<boolean>(false);
+
   const [dragActive, setDragActive] = useState<{
     businessLicense: boolean;
     tinDocument: boolean;
@@ -36,6 +38,25 @@ export default function VerifyStep({
     locationProof: false,
   });
 
+  const uploadDocumentToBlob = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'document');
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
   const createPreviewUrl = (file: File): string | null => {
     if (file.type.startsWith('image/')) {
       return URL.createObjectURL(file);
@@ -43,49 +64,137 @@ export default function VerifyStep({
     return null;
   };
 
-  const updateAllDocuments = (
-    business: File[],
-    tin: File[],
-    location: File[]
+  const handleFileUpload = async (
+    files: FileList | null,
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
   ) => {
-    const allFiles = [...business, ...tin, ...location];
+    if (!files || files.length === 0) return;
+
+    setUploadingDocs(true);
+    const newFiles = Array.from(files);
+    const uploadedUrls: string[] = [];
+    const newPreviews: string[] = [];
+
+    try {
+      for (const file of newFiles) {
+        const url = await uploadDocumentToBlob(file);
+        uploadedUrls.push(url);
+        const preview = createPreviewUrl(file) || url;
+        newPreviews.push(preview);
+      }
+
+      if (fileType === 'businessLicense') {
+        const updatedFiles = [...businessLicenseFiles, ...newFiles];
+        const updatedPreviews = [...businessLicensePreviews, ...newPreviews];
+        setBusinessLicenseFiles(updatedFiles);
+        setBusinessLicensePreviews(updatedPreviews);
+        updateAllDocuments(
+          [...data.verificationDocumentUrls, ...uploadedUrls],
+          updatedFiles
+        );
+      } else if (fileType === 'tinDocument') {
+        const updatedFiles = [...tinDocumentFiles, ...newFiles];
+        const updatedPreviews = [...tinDocumentPreviews, ...newPreviews];
+        setTinDocumentFiles(updatedFiles);
+        setTinDocumentPreviews(updatedPreviews);
+        updateAllDocuments(
+          [...data.verificationDocumentUrls, ...uploadedUrls],
+          updatedFiles
+        );
+      } else if (fileType === 'locationProof') {
+        const updatedFiles = [...locationProofFiles, ...newFiles];
+        const updatedPreviews = [...locationProofPreviews, ...newPreviews];
+        setLocationProofFiles(updatedFiles);
+        setLocationProofPreviews(updatedPreviews);
+        updateAllDocuments(
+          [...data.verificationDocumentUrls, ...uploadedUrls],
+          updatedFiles
+        );
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload documents. Please try again.');
+    } finally {
+      setUploadingDocs(false);
+    }
+  };
+
+  const updateAllDocuments = (urls: string[], files: File[]) => {
     updateData({
+      verificationDocumentUrls: urls,
+      verificationDocuments: files,
+    });
+  };
+
+  const removeFile = async (
+    fileType: 'businessLicense' | 'tinDocument' | 'locationProof',
+    index: number
+  ) => {
+    let urlToDelete: string | null = null;
+    let allFiles = [...businessLicenseFiles, ...tinDocumentFiles, ...locationProofFiles];
+    let totalIndex = index;
+
+    if (fileType === 'businessLicense') {
+      urlToDelete = data.verificationDocumentUrls[index];
+      const previewUrl = businessLicensePreviews[index];
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      const updatedFiles = businessLicenseFiles.filter((_, i) => i !== index);
+      const updatedPreviews = businessLicensePreviews.filter((_, i) => i !== index);
+      setBusinessLicenseFiles(updatedFiles);
+      setBusinessLicensePreviews(updatedPreviews);
+    } else if (fileType === 'tinDocument') {
+      totalIndex = businessLicenseFiles.length + index;
+      urlToDelete = data.verificationDocumentUrls[totalIndex];
+      const previewUrl = tinDocumentPreviews[index];
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      const updatedFiles = tinDocumentFiles.filter((_, i) => i !== index);
+      const updatedPreviews = tinDocumentPreviews.filter((_, i) => i !== index);
+      setTinDocumentFiles(updatedFiles);
+      setTinDocumentPreviews(updatedPreviews);
+    } else if (fileType === 'locationProof') {
+      totalIndex = businessLicenseFiles.length + tinDocumentFiles.length + index;
+      urlToDelete = data.verificationDocumentUrls[totalIndex];
+      const previewUrl = locationProofPreviews[index];
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      const updatedFiles = locationProofFiles.filter((_, i) => i !== index);
+      const updatedPreviews = locationProofPreviews.filter((_, i) => i !== index);
+      setLocationProofFiles(updatedFiles);
+      setLocationProofPreviews(updatedPreviews);
+    }
+
+    if (urlToDelete) {
+      try {
+        await fetch(`/api/upload?url=${encodeURIComponent(urlToDelete)}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Failed to delete document:', error);
+      }
+    }
+
+    const updatedUrls = data.verificationDocumentUrls.filter((_, i) => i !== totalIndex);
+    allFiles = allFiles.filter((_, i) => i !== totalIndex);
+    
+    updateData({
+      verificationDocumentUrls: updatedUrls,
       verificationDocuments: allFiles,
     });
   };
 
-  const handleFileUpload = (
-    files: FileList | null,
-    fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
-  ) => {
-    if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      const newPreviews = newFiles.map(file => createPreviewUrl(file) || '');
-
-      if (fileType === 'businessLicense') {
-        const updatedFiles = [...businessLicenseFiles, ...newFiles];
-        setBusinessLicenseFiles(updatedFiles);
-        setBusinessLicensePreviews([...businessLicensePreviews, ...newPreviews]);
-        updateAllDocuments(updatedFiles, tinDocumentFiles, locationProofFiles);
-      } else if (fileType === 'tinDocument') {
-        const updatedFiles = [...tinDocumentFiles, ...newFiles];
-        setTinDocumentFiles(updatedFiles);
-        setTinDocumentPreviews([...tinDocumentPreviews, ...newPreviews]);
-        updateAllDocuments(businessLicenseFiles, updatedFiles, locationProofFiles);
-      } else if (fileType === 'locationProof') {
-        const updatedFiles = [...locationProofFiles, ...newFiles];
-        setLocationProofFiles(updatedFiles);
-        setLocationProofPreviews([...locationProofPreviews, ...newPreviews]);
-        updateAllDocuments(businessLicenseFiles, tinDocumentFiles, updatedFiles);
-      }
-    }
-  };
-
   useEffect(() => {
     return () => {
-      businessLicensePreviews.forEach(url => url && URL.revokeObjectURL(url));
-      tinDocumentPreviews.forEach(url => url && URL.revokeObjectURL(url));
-      locationProofPreviews.forEach(url => url && URL.revokeObjectURL(url));
+      businessLicensePreviews.forEach(url => url && url.startsWith('blob:') && URL.revokeObjectURL(url));
+      tinDocumentPreviews.forEach(url => url && url.startsWith('blob:') && URL.revokeObjectURL(url));
+      locationProofPreviews.forEach(url => url && url.startsWith('blob:') && URL.revokeObjectURL(url));
     };
   }, [businessLicensePreviews, tinDocumentPreviews, locationProofPreviews]);
 
@@ -117,46 +226,14 @@ export default function VerifyStep({
   const handleBoxClick = (
     fileType: 'businessLicense' | 'tinDocument' | 'locationProof'
   ) => {
+    if (uploadingDocs) return;
+    
     if (fileType === 'businessLicense') {
       businessLicenseRef.current?.click();
     } else if (fileType === 'tinDocument') {
       tinDocumentRef.current?.click();
     } else if (fileType === 'locationProof') {
       locationProofRef.current?.click();
-    }
-  };
-
-  const removeFile = (
-    fileType: 'businessLicense' | 'tinDocument' | 'locationProof',
-    index: number
-  ) => {
-    if (fileType === 'businessLicense') {
-      const previewUrl = businessLicensePreviews[index];
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-
-      const updatedFiles = businessLicenseFiles.filter((_, i) => i !== index);
-      const updatedPreviews = businessLicensePreviews.filter((_, i) => i !== index);
-      setBusinessLicenseFiles(updatedFiles);
-      setBusinessLicensePreviews(updatedPreviews);
-      updateAllDocuments(updatedFiles, tinDocumentFiles, locationProofFiles);
-    } else if (fileType === 'tinDocument') {
-      const previewUrl = tinDocumentPreviews[index];
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-
-      const updatedFiles = tinDocumentFiles.filter((_, i) => i !== index);
-      const updatedPreviews = tinDocumentPreviews.filter((_, i) => i !== index);
-      setTinDocumentFiles(updatedFiles);
-      setTinDocumentPreviews(updatedPreviews);
-      updateAllDocuments(businessLicenseFiles, updatedFiles, locationProofFiles);
-    } else if (fileType === 'locationProof') {
-      const previewUrl = locationProofPreviews[index];
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-
-      const updatedFiles = locationProofFiles.filter((_, i) => i !== index);
-      const updatedPreviews = locationProofPreviews.filter((_, i) => i !== index);
-      setLocationProofFiles(updatedFiles);
-      setLocationProofPreviews(updatedPreviews);
-      updateAllDocuments(businessLicenseFiles, tinDocumentFiles, updatedFiles);
     }
   };
 
@@ -189,7 +266,7 @@ export default function VerifyStep({
         <button
           type="button"
           onClick={onNext}
-          disabled={isLoading}
+          disabled={isLoading || uploadingDocs}
           className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-primary-01 transition-colors disabled:opacity-50"
         >
           Skip
@@ -210,13 +287,24 @@ export default function VerifyStep({
         </div>
       </div>
 
+      {uploadingDocs && (
+        <div className="flex items-center justify-center gap-2 p-4 bg-primary-01/10 rounded-lg mb-6">
+          <Loader2 className="w-5 h-5 text-primary-01 animate-spin" />
+          <span className="text-sm text-primary-01 font-medium">Uploading documents...</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {/* Business License */}
         <div className="space-y-3">
           <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.businessLicense
-              ? 'border-primary-01 bg-primary-01/5'
-              : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
-              }`}
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+              uploadingDocs ? 'cursor-wait opacity-50' : 'cursor-pointer'
+            } ${
+              dragActive.businessLicense
+                ? 'border-primary-01 bg-primary-01/5'
+                : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
+            }`}
             onClick={() => handleBoxClick('businessLicense')}
             onDragEnter={(e) => handleDrag(e, 'businessLicense')}
             onDragLeave={(e) => handleDrag(e, 'businessLicense')}
@@ -228,7 +316,7 @@ export default function VerifyStep({
             </div>
             <h3 className="text-base font-semibold text-shades-black mb-2">Business License</h3>
             <p className="text-xs text-neutrals-07 mb-4">
-              {dragActive.businessLicense
+              {uploadingDocs ? 'Uploading...' : dragActive.businessLicense
                 ? 'Drop files here...'
                 : 'Click to upload or drag and drop'}
             </p>
@@ -240,6 +328,7 @@ export default function VerifyStep({
               multiple
               onChange={(e) => handleFileUpload(e.target.files, 'businessLicense')}
               className="hidden"
+              disabled={uploadingDocs}
             />
           </div>
           {businessLicenseFiles.length > 0 && (
@@ -276,12 +365,16 @@ export default function VerifyStep({
           )}
         </div>
 
+        {/* TIN Document - Same pattern */}
         <div className="space-y-3">
           <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.tinDocument
-              ? 'border-primary-01 bg-primary-01/5'
-              : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
-              }`}
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+              uploadingDocs ? 'cursor-wait opacity-50' : 'cursor-pointer'
+            } ${
+              dragActive.tinDocument
+                ? 'border-primary-01 bg-primary-01/5'
+                : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
+            }`}
             onClick={() => handleBoxClick('tinDocument')}
             onDragEnter={(e) => handleDrag(e, 'tinDocument')}
             onDragLeave={(e) => handleDrag(e, 'tinDocument')}
@@ -293,7 +386,7 @@ export default function VerifyStep({
             </div>
             <h3 className="text-base font-semibold text-shades-black mb-2">TIN Document</h3>
             <p className="text-xs text-neutrals-07 mb-4">
-              {dragActive.tinDocument
+              {uploadingDocs ? 'Uploading...' : dragActive.tinDocument
                 ? 'Drop files here...'
                 : 'Click to upload or drag and drop'}
             </p>
@@ -305,6 +398,7 @@ export default function VerifyStep({
               multiple
               onChange={(e) => handleFileUpload(e.target.files, 'tinDocument')}
               className="hidden"
+              disabled={uploadingDocs}
             />
           </div>
           {tinDocumentFiles.length > 0 && (
@@ -341,12 +435,16 @@ export default function VerifyStep({
           )}
         </div>
 
+        {/* Location Proof - Same pattern */}
         <div className="space-y-3">
           <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${dragActive.locationProof
-              ? 'border-primary-01 bg-primary-01/5'
-              : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
-              }`}
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+              uploadingDocs ? 'cursor-wait opacity-50' : 'cursor-pointer'
+            } ${
+              dragActive.locationProof
+                ? 'border-primary-01 bg-primary-01/5'
+                : 'border-neutrals-04 hover:border-primary-01 hover:bg-neutrals-02/50'
+            }`}
             onClick={() => handleBoxClick('locationProof')}
             onDragEnter={(e) => handleDrag(e, 'locationProof')}
             onDragLeave={(e) => handleDrag(e, 'locationProof')}
@@ -358,7 +456,7 @@ export default function VerifyStep({
             </div>
             <h3 className="text-base font-semibold text-shades-black mb-2">Location Proof</h3>
             <p className="text-xs text-neutrals-07 mb-4">
-              {dragActive.locationProof
+              {uploadingDocs ? 'Uploading...' : dragActive.locationProof
                 ? 'Drop files here...'
                 : 'Click to upload or drag and drop'}
             </p>
@@ -370,6 +468,7 @@ export default function VerifyStep({
               multiple
               onChange={(e) => handleFileUpload(e.target.files, 'locationProof')}
               className="hidden"
+              disabled={uploadingDocs}
             />
           </div>
           {locationProofFiles.length > 0 && (
@@ -418,7 +517,7 @@ export default function VerifyStep({
           <button
             type="button"
             onClick={onNext}
-            disabled={isLoading}
+            disabled={isLoading || uploadingDocs}
             className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
           >
             Skip & Finish
@@ -426,10 +525,10 @@ export default function VerifyStep({
           <button
             type="button"
             onClick={onNext}
-            disabled={isLoading}
+            disabled={isLoading || uploadingDocs}
             className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Submitting...' : 'Submit for Review'}
+            {isLoading || uploadingDocs ? 'Submitting...' : 'Submit for Review'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, MapPin, Plus, X, Check, ArrowRight } from 'lucide-react';
+import { Camera, MapPin, Plus, X, Check, ArrowRight, Loader2 } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
 import { SERVICE_CATEGORIES } from './types';
 
@@ -16,19 +16,77 @@ export default function ProfileSetupStep({
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadPhotoToBlob = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'profile');
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    setUploadingPhoto(true);
+
+    try {
       const reader = new FileReader();
       reader.onloadend = () => {
         updateData({
-          profilePhoto: file,
           profilePhotoPreview: reader.result as string,
         });
       };
       reader.readAsDataURL(file);
+
+      const url = await uploadPhotoToBlob(file);
+
+      updateData({
+        profilePhoto: file,
+        profilePhotoUrl: url,
+      });
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload photo. Please try again.');
+      updateData({
+        profilePhoto: null,
+        profilePhotoPreview: '',
+        profilePhotoUrl: null,
+      });
+    } finally {
+      setUploadingPhoto(false);
     }
+  };
+
+  const removePhoto = async () => {
+    if (data.profilePhotoUrl) {
+      try {
+        await fetch(`/api/upload?url=${encodeURIComponent(data.profilePhotoUrl)}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Failed to delete photo:', error);
+      }
+    }
+
+    updateData({
+      profilePhoto: null,
+      profilePhotoPreview: '',
+      profilePhotoUrl: null,
+    });
   };
 
   const toggleCategory = (category: string) => {
@@ -66,7 +124,6 @@ export default function ProfileSetupStep({
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header */}
       <div className="mb-10">
         <h1 className="text-4xl font-bold text-shades-black mb-3">
           Welcome! Set up your service
@@ -78,23 +135,37 @@ export default function ProfileSetupStep({
         </p>
       </div>
 
-      {/* Profile Photo */}
       <div className="flex items-center gap-6 mb-8">
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="w-28 h-28 rounded-full border-2 border-dashed border-neutrals-05 flex flex-col items-center justify-center cursor-pointer hover:border-primary-01 transition-colors overflow-hidden bg-neutrals-02 dark:bg-neutrals-03"
-        >
-          {data.profilePhotoPreview ? (
-            <img
-              src={data.profilePhotoPreview}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <>
-              <Camera className="w-6 h-6 text-neutrals-06 mb-1" />
-              <span className="text-xs text-neutrals-06">Upload</span>
-            </>
+        <div className="relative">
+          <div
+            onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+            className={`w-28 h-28 rounded-full border-2 border-dashed border-neutrals-05 flex flex-col items-center justify-center ${
+              uploadingPhoto ? 'cursor-wait opacity-50' : 'cursor-pointer hover:border-primary-01'
+            } transition-colors overflow-hidden bg-neutrals-02 dark:bg-neutrals-03`}
+          >
+            {uploadingPhoto ? (
+              <Loader2 className="w-6 h-6 text-neutrals-06 animate-spin" />
+            ) : data.profilePhotoPreview ? (
+              <img
+                src={data.profilePhotoPreview}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <>
+                <Camera className="w-6 h-6 text-neutrals-06 mb-1" />
+                <span className="text-xs text-neutrals-06">Upload</span>
+              </>
+            )}
+          </div>
+          {data.profilePhotoPreview && !uploadingPhoto && (
+            <button
+              type="button"
+              onClick={removePhoto}
+              className="absolute -top-1 -right-1 p-1.5 rounded-full bg-red-500 text-white hover:bg-red-600"
+            >
+              <X className="w-3 h-3" />
+            </button>
           )}
         </div>
         <input
@@ -103,19 +174,18 @@ export default function ProfileSetupStep({
           accept="image/jpeg,image/png"
           onChange={handlePhotoUpload}
           className="hidden"
+          disabled={uploadingPhoto}
         />
         <div>
           <h3 className="font-semibold text-shades-black mb-1">Profile Photo</h3>
           <p className="text-sm text-neutrals-07 max-w-ls">
             Upload your business logo or a professional photo of yourself. <br />
-            This will be the first
-            thing organizers see.
+            This will be the first thing organizers see.
           </p>
           <p className="text-xs text-neutrals-06 mt-1">Supported: JPG, PNG. Max 5MB.</p>
         </div>
       </div>
 
-      {/* Business Name */}
       <div className="mb-8">
         <label className="block text-sm font-semibold text-shades-black mb-2">
           Business Name
@@ -129,7 +199,6 @@ export default function ProfileSetupStep({
         />
       </div>
 
-      {/* Service Categories */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-semibold text-shades-black">Service Categories</label>
@@ -160,7 +229,6 @@ export default function ProfileSetupStep({
             );
           })}
 
-          {/* Custom categories */}
           {data.customCategories.map((category) => (
             <div
               key={category}
@@ -178,7 +246,6 @@ export default function ProfileSetupStep({
             </div>
           ))}
 
-          {/* Add Custom Button */}
           {showCustomInput ? (
             <div className="flex items-center gap-2">
               <input
@@ -221,7 +288,6 @@ export default function ProfileSetupStep({
         </div>
       </div>
 
-      {/* Primary Location */}
       <div className="mb-10">
         <label className="block text-sm font-semibold text-shades-black mb-2">
           Primary Location
@@ -241,17 +307,15 @@ export default function ProfileSetupStep({
         </p>
       </div>
 
-      {/* Divider */}
       <div className="border-t border-neutrals-04 mb-6" />
 
-      {/* Actions */}
       <div className="flex items-center justify-between">
-        <div /> {/* Spacer */}
+        <div />
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={onSaveDraft}
-            disabled={isLoading}
+            disabled={isLoading || uploadingPhoto}
             className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
           >
             Save Draft
@@ -259,7 +323,7 @@ export default function ProfileSetupStep({
           <button
             type="button"
             onClick={onNext}
-            disabled={!isValid || isLoading}
+            disabled={!isValid || isLoading || uploadingPhoto}
             className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step

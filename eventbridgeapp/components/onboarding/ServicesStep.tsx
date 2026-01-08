@@ -16,8 +16,28 @@ export default function ServicesStep({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [customPricingInput, setCustomPricingInput] = useState('');
   const [showCustomPricingInput, setShowCustomPricingInput] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState<boolean>(false);
 
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadImageToBlob = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'gallery');
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const currentCount = data.serviceGallery.length;
@@ -28,31 +48,51 @@ export default function ServicesStep({
         return;
       }
 
+      setUploadingImages(true);
       const newFiles = Array.from(files);
-      const newPreviews: string[] = [];
+      const uploadedUrls: string[] = [];
 
-      newFiles.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string);
-          if (newPreviews.length === newFiles.length) {
-            updateData({
-              serviceGallery: [...data.serviceGallery, ...newFiles],
-              serviceGalleryPreviews: [...data.serviceGalleryPreviews, ...newPreviews],
-            });
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      try {
+        for (const file of newFiles) {
+          const url = await uploadImageToBlob(file);
+          uploadedUrls.push(url);
+        }
+
+        updateData({
+          serviceGallery: [...data.serviceGallery, ...newFiles],
+          serviceGalleryPreviews: [...data.serviceGalleryPreviews, ...uploadedUrls],
+          galleryImageUrls: [...data.galleryImageUrls, ...uploadedUrls],
+        });
+      } catch (error) {
+        console.error('Upload failed:', error);
+        alert('Failed to upload images. Please try again.');
+      } finally {
+        setUploadingImages(false);
+      }
     }
   };
 
-  const removeGalleryImage = (index: number) => {
+  const removeGalleryImage = async (index: number) => {
+    const urlToDelete = data.galleryImageUrls[index];
+    
+    if (urlToDelete) {
+      try {
+        await fetch(`/api/upload?url=${encodeURIComponent(urlToDelete)}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Failed to delete image:', error);
+      }
+    }
+
     const newFiles = data.serviceGallery.filter((_, i) => i !== index);
     const newPreviews = data.serviceGalleryPreviews.filter((_, i) => i !== index);
+    const newUrls = data.galleryImageUrls.filter((_, i) => i !== index);
+    
     updateData({
       serviceGallery: newFiles,
       serviceGalleryPreviews: newPreviews,
+      galleryImageUrls: newUrls,
     });
   };
 
@@ -88,7 +128,6 @@ export default function ServicesStep({
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header */}
       <div className="mb-10 flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-bold text-shades-black mb-3">Tell us about your services</h1>
@@ -108,7 +147,6 @@ export default function ServicesStep({
         </button>
       </div>
 
-      {/* Service Description */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-semibold text-shades-black">Service Description</label>
@@ -138,9 +176,7 @@ export default function ServicesStep({
         </p>
       </div>
 
-      {/* Pricing Structure & Price Range Row */}
       <div className="grid grid-cols-2 gap-6 mb-8">
-        {/* Pricing Structure */}
         <div>
           <label className="block text-sm font-semibold text-shades-black mb-2">
             Pricing Structure
@@ -163,7 +199,6 @@ export default function ServicesStep({
               );
             })}
 
-            {/* Custom pricing structures */}
             {data.customPricingStructure.map((structure) => (
               <div
                 key={structure}
@@ -181,7 +216,6 @@ export default function ServicesStep({
             ))}
           </div>
 
-          {/* Add Custom Button */}
           <div className="mt-2">
             {showCustomPricingInput ? (
               <div className="flex items-center gap-2">
@@ -225,7 +259,6 @@ export default function ServicesStep({
           </div>
         </div>
 
-        {/* Price Range */}
         <div>
           <label className="block text-sm font-semibold text-shades-black mb-2">Price Range</label>
           <div className="relative">
@@ -243,7 +276,6 @@ export default function ServicesStep({
         </div>
       </div>
 
-      {/* General Availability */}
       <div className='grid grid-cols-3 gap-6 mb-8'>
         <div className="col-span-2">
           <label className="block text-sm font-semibold text-shades-black mb-2">
@@ -258,7 +290,6 @@ export default function ServicesStep({
               placeholder="e.g. Weekends, Mon-Fri after 5pm, or Specific Dates"
               className="w-full pl-12 pr-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
             />
-
           </div>
         </div>
         <div className="col-span-1">
@@ -273,23 +304,23 @@ export default function ServicesStep({
               placeholder="e.g. 5 years"
               className="w-full px-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
             />
-
           </div>
         </div>
-
       </div>
 
-      {/* Service Gallery */}
       <div className="mb-10">
         <label className="block text-sm font-semibold text-shades-black mb-2">Service Gallery</label>
 
-        {/* Upload Zone */}
         <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-neutrals-05 rounded-lg p-8 text-center cursor-pointer hover:border-primary-01 transition-colors bg-neutrals-02/50 dark:bg-neutrals-03/50 mb-4"
+          onClick={() => !uploadingImages && fileInputRef.current?.click()}
+          className={`border-2 border-dashed border-neutrals-05 rounded-lg p-8 text-center ${
+            uploadingImages ? 'cursor-wait opacity-50' : 'cursor-pointer hover:border-primary-01'
+          } transition-colors bg-neutrals-02/50 dark:bg-neutrals-03/50 mb-4`}
         >
           <CloudUpload className="w-10 h-10 text-neutrals-06 mx-auto mb-3" />
-          <p className="text-sm text-shades-black font-medium">Click to upload or drag and drop</p>
+          <p className="text-sm text-shades-black font-medium">
+            {uploadingImages ? 'Uploading...' : 'Click to upload or drag and drop'}
+          </p>
           <p className="text-xs text-neutrals-06 mt-1">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
         </div>
         <input
@@ -299,9 +330,9 @@ export default function ServicesStep({
           multiple
           onChange={handleGalleryUpload}
           className="hidden"
+          disabled={uploadingImages}
         />
 
-        {/* Gallery Preview */}
         {data.serviceGalleryPreviews.length > 0 && (
           <div className="flex flex-wrap gap-4">
             {data.serviceGalleryPreviews.map((preview, index) => (
@@ -323,10 +354,8 @@ export default function ServicesStep({
         )}
       </div>
 
-      {/* Divider */}
       <div className="border-t border-neutrals-04 mb-6" />
 
-      {/* Actions */}
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -348,7 +377,7 @@ export default function ServicesStep({
           <button
             type="button"
             onClick={onNext}
-            disabled={!isValid || isLoading}
+            disabled={!isValid || isLoading || uploadingImages}
             className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step
