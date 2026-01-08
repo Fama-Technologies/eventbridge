@@ -14,7 +14,7 @@ export default function BookingUI() {
     };
 
     return (
-        <div className="p-6 min-h-screen bg-neutrals-01">
+        <div className=" min-h-screen bg-neutrals-01">
             {/* Header Section */}
             <div className="mb-6">
                 <h1 className="text-shades-black font-bold text-3xl mb-2">

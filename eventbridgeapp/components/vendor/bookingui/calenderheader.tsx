@@ -27,7 +27,7 @@ export default function CalendarHeader({
     const handleAddBooking = () => onAddBooking?.()
 
     return (
-        <div className="flex items-center justify-between py-6 border-b border-neutrals-02">
+        <div className="flex items-center justify-between py-3 border-b border-neutrals-02">
             {/* Left Section - Date Navigation */}
             <div className="flex items-center gap-4">
                 <h1 className="text-shades-black text-2xl font-bold tracking-tight">
