@@ -44,6 +44,13 @@ export async function GET(req: NextRequest) {
       try {
         const decoded = await verifyToken(authToken);
         
+        if (!decoded || !decoded.userId) {
+          return NextResponse.json(
+            { success: false, message: 'Invalid token' },
+            { status: 401 }
+          );
+        }
+
         const [user] = await db
           .select({
             id: users.id,

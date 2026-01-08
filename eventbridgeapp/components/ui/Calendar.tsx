@@ -136,9 +136,9 @@ export default function Calendar({
         // Add empty cells for days from next month to complete the grid
         const totalCells = Math.ceil(days.length / 7) * 7;
         for (let i = days.length; i < totalCells; i++) {
-            const nextDate = new Date(year, month + 1, i - days.length + 1);
+            const nextMonthDate: Date = new Date(year, month + 1, i - days.length + 1);
             days.push({
-                date: nextDate,
+                date: nextMonthDate,
                 isCurrentMonth: false,
             });
         }

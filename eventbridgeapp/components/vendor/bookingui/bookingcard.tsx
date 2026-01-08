@@ -8,6 +8,8 @@ interface BookingCardProps {
     guestCount: number;    
     budget: number;
     status: "confirmed" | "pending";
+    onMessageClick?: () => void;
+    onReceiptClick?: () => void;
 }
 
 export default function BookingCard({ 
@@ -17,7 +19,9 @@ export default function BookingCard({
     initials, 
     guestCount, 
     budget, 
-    status 
+    status,
+    onMessageClick,
+    onReceiptClick
 }: BookingCardProps) {
     
     const statusStyles = {
@@ -77,10 +81,22 @@ export default function BookingCard({
                 
                 {status === 'confirmed' ? (
                     <div className="flex items-center gap-1">
-                        <button className="p-2 hover:bg-neutrals-02 rounded-lg transition-colors text-neutrals-06 hover:text-shades-black">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onMessageClick?.();
+                            }}
+                            className="p-2 hover:bg-neutrals-02 rounded-lg transition-colors text-neutrals-06 hover:text-shades-black"
+                        >
                             <MessageSquare size={18} />
                         </button>
-                        <button className="p-2 hover:bg-neutrals-02 rounded-lg transition-colors text-neutrals-06 hover:text-shades-black">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onReceiptClick?.();
+                            }}
+                            className="p-2 hover:bg-neutrals-02 rounded-lg transition-colors text-neutrals-06 hover:text-shades-black"
+                        >
                             <FileText size={18} />
                         </button>
                     </div>
