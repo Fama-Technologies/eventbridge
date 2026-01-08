@@ -12,6 +12,7 @@ export function middleware(request: NextRequest) {
     '/forgot-password',
     '/api/login',
     '/api/signup',
+    '/api/auth',
     '/api/uploadthing', // If you're using uploadthing
   ];
 
@@ -20,7 +21,8 @@ export function middleware(request: NextRequest) {
     pathname === path || 
     pathname.startsWith(`${path}/`) ||
     pathname.startsWith('/_next/') || 
-    pathname.startsWith('/api/_next/') || 
+    pathname.startsWith('/api/_next/') ||
+    pathname.startsWith('/api/auth/') || // NextAuth routes
     pathname.includes('.')
   );
 

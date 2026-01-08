@@ -116,7 +116,7 @@ function getRedirectPath(accountType: string): string {
 
     default:
       console.warn('Unknown account type:', accountType);
-      return '/vendor';
+      return '/';
   }
 }
 

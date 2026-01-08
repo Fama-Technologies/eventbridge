@@ -4,13 +4,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
+  const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -54,25 +55,48 @@ export default function LoginPage() {
       }
 
       toast.success("Login successful!");
-
-      if (data.redirectTo) {
-        window.location.href = data.redirectTo;
-      } else if (redirectUrl) {
-        window.location.href = redirectUrl;
-      } else if (data.user?.accountType) {
-        const accountType = data.user.accountType.toLowerCase();
-        if (accountType === 'vendor') {
-          window.location.href = "/vendor";
-        } else if (accountType === 'admin') {
-          window.location.href = "/admin/dashboard";
-        } else if (accountType === 'planner') {
-          window.location.href = "/planner/dashboard";
-        } else {
-          window.location.href = "/";
-        }
-      } else {
-        window.location.href = "/";
+      
+      // Store user data in sessionStorage for immediate access
+      if (data.user) {
+        sessionStorage.setItem('pendingUser', JSON.stringify(data.user));
       }
+      
+      // Small delay to ensure token is set before redirect
+      setTimeout(() => {
+        setIsLoading(false);
+        
+        let targetUrl = '/';
+        
+        if (data.redirectTo) {
+          targetUrl = data.redirectTo;
+        } else if (redirectUrl) {
+          targetUrl = redirectUrl;
+        } else if (data.user?.accountType) {
+          const accountType = data.user.accountType.toLowerCase();
+          if (accountType === 'vendor') {
+            targetUrl = "/vendor";
+          } else if (accountType === 'admin') {
+            targetUrl = "/admin/dashboard";
+          } else if (accountType === 'planner') {
+            targetUrl = "/planner/dashboard";
+          } else {
+            targetUrl = "/";
+          }
+        }
+        
+        console.log('Redirecting to:', targetUrl);
+        
+        // Use router.push for better navigation
+        router.push(targetUrl);
+        
+        // Fallback to window.location if router fails
+        setTimeout(() => {
+          if (window.location.pathname === '/login') {
+            console.log('Router redirect failed, using window.location');
+            window.location.href = targetUrl;
+          }
+        }, 1000);
+      }, 500);
     } catch (error) {
       console.error("Login error:", error);
       
