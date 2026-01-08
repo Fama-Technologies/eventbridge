@@ -3,8 +3,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { Shield, Clock, FileText, ArrowRight, X, Upload, Loader2 } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
-import Image from 'next/image';
 import PDFPreview from './PDFPreview';
+import { toast } from 'sonner';
 
 export default function VerifyStep({
   data,
@@ -49,8 +49,17 @@ export default function VerifyStep({
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
+      const errorText = await response.text();
+      let errorMessage = 'Upload failed';
+      
+      try {
+        const error = JSON.parse(errorText);
+        errorMessage = error.error || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -77,6 +86,7 @@ export default function VerifyStep({
 
     try {
       for (const file of newFiles) {
+        toast.info(`Uploading ${file.name}...`);
         const url = await uploadDocumentToBlob(file);
         uploadedUrls.push(url);
         const preview = createPreviewUrl(file) || url;
@@ -89,7 +99,7 @@ export default function VerifyStep({
         setBusinessLicenseFiles(updatedFiles);
         setBusinessLicensePreviews(updatedPreviews);
         updateAllDocuments(
-          [...data.verificationDocumentUrls, ...uploadedUrls],
+          [...(data.verificationDocumentUrls || []), ...uploadedUrls],
           updatedFiles
         );
       } else if (fileType === 'tinDocument') {
@@ -98,7 +108,7 @@ export default function VerifyStep({
         setTinDocumentFiles(updatedFiles);
         setTinDocumentPreviews(updatedPreviews);
         updateAllDocuments(
-          [...data.verificationDocumentUrls, ...uploadedUrls],
+          [...(data.verificationDocumentUrls || []), ...uploadedUrls],
           updatedFiles
         );
       } else if (fileType === 'locationProof') {
@@ -107,13 +117,15 @@ export default function VerifyStep({
         setLocationProofFiles(updatedFiles);
         setLocationProofPreviews(updatedPreviews);
         updateAllDocuments(
-          [...data.verificationDocumentUrls, ...uploadedUrls],
+          [...(data.verificationDocumentUrls || []), ...uploadedUrls],
           updatedFiles
         );
       }
+
+      toast.success(`${newFiles.length} document(s) uploaded successfully`);
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to upload documents. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload documents');
     } finally {
       setUploadingDocs(false);
     }
@@ -135,7 +147,7 @@ export default function VerifyStep({
     let totalIndex = index;
 
     if (fileType === 'businessLicense') {
-      urlToDelete = data.verificationDocumentUrls[index];
+      urlToDelete = (data.verificationDocumentUrls || [])[index];
       const previewUrl = businessLicensePreviews[index];
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
@@ -147,7 +159,7 @@ export default function VerifyStep({
       setBusinessLicensePreviews(updatedPreviews);
     } else if (fileType === 'tinDocument') {
       totalIndex = businessLicenseFiles.length + index;
-      urlToDelete = data.verificationDocumentUrls[totalIndex];
+      urlToDelete = (data.verificationDocumentUrls || [])[totalIndex];
       const previewUrl = tinDocumentPreviews[index];
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
@@ -159,7 +171,7 @@ export default function VerifyStep({
       setTinDocumentPreviews(updatedPreviews);
     } else if (fileType === 'locationProof') {
       totalIndex = businessLicenseFiles.length + tinDocumentFiles.length + index;
-      urlToDelete = data.verificationDocumentUrls[totalIndex];
+      urlToDelete = (data.verificationDocumentUrls || [])[totalIndex];
       const previewUrl = locationProofPreviews[index];
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
@@ -181,7 +193,7 @@ export default function VerifyStep({
       }
     }
 
-    const updatedUrls = data.verificationDocumentUrls.filter((_, i) => i !== totalIndex);
+    const updatedUrls = (data.verificationDocumentUrls || []).filter((_, i) => i !== totalIndex);
     allFiles = allFiles.filter((_, i) => i !== totalIndex);
     
     updateData({
@@ -275,7 +287,7 @@ export default function VerifyStep({
       </div>
 
       <div className="flex items-start gap-3 p-4 bg-accents-peach/30 dark:bg-accents-peach/10 rounded-lg mb-8 border border-primary-01/20">
-        <Image src="/icons/vector.svg" alt="Clock" width={20} height={20} className="flex-shrink-0 mt-0.5" />
+        <Clock className="w-5 h-5 text-primary-01 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-shades-black">
             Review Process: 24-48 Hours
@@ -320,11 +332,11 @@ export default function VerifyStep({
                 ? 'Drop files here...'
                 : 'Click to upload or drag and drop'}
             </p>
-            <p className="text-xs text-neutrals-06">PDF or JPG (max. 10MB each)</p>
+            <p className="text-xs text-neutrals-06">PDF or JPG</p>
             <input
               ref={businessLicenseRef}
               type="file"
-              accept=".pdf,.jpg,.jpeg"
+              accept=".pdf,.jpg,.jpeg,.png"
               multiple
               onChange={(e) => handleFileUpload(e.target.files, 'businessLicense')}
               className="hidden"
@@ -365,7 +377,7 @@ export default function VerifyStep({
           )}
         </div>
 
-        {/* TIN Document - Same pattern */}
+        {/* TIN Document */}
         <div className="space-y-3">
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
@@ -390,11 +402,11 @@ export default function VerifyStep({
                 ? 'Drop files here...'
                 : 'Click to upload or drag and drop'}
             </p>
-            <p className="text-xs text-neutrals-06">PDF or JPG (max. 10MB each)</p>
+            <p className="text-xs text-neutrals-06">PDF or JPG</p>
             <input
               ref={tinDocumentRef}
               type="file"
-              accept=".pdf,.jpg,.jpeg"
+              accept=".pdf,.jpg,.jpeg,.png"
               multiple
               onChange={(e) => handleFileUpload(e.target.files, 'tinDocument')}
               className="hidden"
@@ -435,7 +447,7 @@ export default function VerifyStep({
           )}
         </div>
 
-        {/* Location Proof - Same pattern */}
+        {/* Location Proof */}
         <div className="space-y-3">
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
@@ -460,11 +472,11 @@ export default function VerifyStep({
                 ? 'Drop files here...'
                 : 'Click to upload or drag and drop'}
             </p>
-            <p className="text-xs text-neutrals-06">PDF or JPG (max. 10MB each)</p>
+            <p className="text-xs text-neutrals-06">PDF or JPG</p>
             <input
               ref={locationProofRef}
               type="file"
-              accept=".pdf,.jpg,.jpeg"
+              accept=".pdf,.jpg,.jpeg,.png"
               multiple
               onChange={(e) => handleFileUpload(e.target.files, 'locationProof')}
               className="hidden"
@@ -509,10 +521,14 @@ export default function VerifyStep({
       <div className="border-t border-neutrals-04 mb-6" />
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-neutrals-07">
-          <Clock className="w-4 h-4 text-accents-discount" />
-          <span>Approval in 24-48 hours</span>
-        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={isLoading || uploadingDocs}
+          className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
+        >
+          Back
+        </button>
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -528,8 +544,17 @@ export default function VerifyStep({
             disabled={isLoading || uploadingDocs}
             className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading || uploadingDocs ? 'Submitting...' : 'Submit for Review'}
-            <ArrowRight className="w-4 h-4" />
+            {isLoading || uploadingDocs ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                Submit for Review
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </div>
