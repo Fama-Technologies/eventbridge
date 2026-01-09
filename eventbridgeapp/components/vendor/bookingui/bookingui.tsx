@@ -3,14 +3,23 @@ import { useState } from "react"
 import CalendarHeader from "./calenderheader";
 import Calender from "./calender";
 import BookingSidebar from "./sidebar";
+import BookingModal from "../BookingModal";
 
 export default function BookingUI() {
     const [confirmedBookings, setConfirmedBookings] = useState(3);
     const [currentDate, setCurrentDate] = useState(new Date(2023, 9, 1)); // October 2023 to match image
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
     const handleAddBooking = () => {
-        // TODO: Implement add booking functionality
-        console.log('Add booking clicked');
+        setIsBookingModalOpen(true);
+    };
+
+    const handleBookingSubmit = (bookingData: any) => {
+        console.log('Booking created:', bookingData);
+        // TODO: Send booking data to API
+        setIsBookingModalOpen(false);
+        // Optionally update confirmed bookings count
+        setConfirmedBookings(prev => prev + 1);
     };
 
     return (
@@ -44,6 +53,13 @@ export default function BookingUI() {
                     <BookingSidebar />
                 </div>
             </div>
+
+            {/* Booking Modal */}
+            <BookingModal
+                isOpen={isBookingModalOpen}
+                onClose={() => setIsBookingModalOpen(false)}
+                onSubmit={handleBookingSubmit}
+            />
         </div>
     )
 }
