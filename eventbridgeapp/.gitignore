@@ -57,3 +57,5 @@ drizzle-kit.config.ts.timestamp-*
 *.swp
 *.swo
 *~
+
+.vercel
