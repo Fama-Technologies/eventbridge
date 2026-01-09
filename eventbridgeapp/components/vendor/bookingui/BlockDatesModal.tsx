@@ -172,14 +172,14 @@ export default function BlockDatesModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-4">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+            <div className="fixed inset-0 bg-black/50" onClick={onClose} />
             
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl w-full max-w-3xl mx-4 shadow-xl">
+            <div className="relative bg-white rounded-2xl w-full max-w-3xl mx-4 shadow-xl max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-neutrals-03">
+                <div className="flex items-center justify-between p-6 border-b border-neutrals-03 flex-shrink-0">
                     <h2 className="text-xl font-bold text-shades-black">Block Dates</h2>
                     <button 
                         onClick={onClose}
@@ -189,8 +189,8 @@ export default function BlockDatesModal({
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6">
+                {/* Content - Scrollable */}
+                <div className="p-6 overflow-y-auto flex-1">
                     {/* Legend */}
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-base font-semibold text-shades-black">Select dates to block</h3>
@@ -264,7 +264,7 @@ export default function BlockDatesModal({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-neutrals-03">
+                <div className="flex items-center justify-between p-6 border-t border-neutrals-03 flex-shrink-0">
                     <button 
                         onClick={onClose}
                         className="text-shades-black font-semibold hover:underline"
