@@ -11,30 +11,20 @@ import {
   isToday,
   isSameDay,
 } from "date-fns";
-
-interface Booking {
-  id: string;
-  title: string;
-  date: Date;
-  status: "confirmed" | "pending" | "blocked";
-}
+import type { Booking } from "./data";
 
 interface CalendarUIProps {
   currentDate?: Date;
   bookings?: Booking[];
+  onSelectBooking?: (booking: Booking) => void;
 }
 
-const mockBookings: Booking[] = [
-  { id: "1", title: "Sarah's Wedding", date: new Date(2023, 9, 24), status: "confirmed" },
-  { id: "2", title: "Tech Corp", date: new Date(2023, 9, 12), status: "pending" },
-  { id: "3", title: "Blocked: Personal", date: new Date(2023, 9, 5), status: "blocked" },
-];
-
-export default function CalendarUI({ 
-  currentDate = new Date(2023, 9, 1), 
-  bookings = mockBookings 
+export default function CalendarUI({
+  currentDate = new Date(2023, 9, 1),
+  bookings = [],
+  onSelectBooking
 }: CalendarUIProps) {
-  
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = startOfWeek(monthStart);
@@ -43,18 +33,18 @@ export default function CalendarUI({
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const dayHeaders = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-  const getBookingsForDate = (date: Date) => 
+  const getBookingsForDate = (date: Date) =>
     bookings.filter((b) => isSameDay(new Date(b.date), date));
 
   // Updated styles to match your specific hex requirements
   const getStatusStyles = (status: Booking["status"]) => {
     switch (status) {
       case "confirmed":
-        return "text-accents-discount border-accents-discount bg-[#D1FAE533] border-l-4";
+        return "text-accents-discount border-accents-discount bg-accents-discount/20 border-l-4";
       case "pending":
         return "text-[#F59E0B] border-[#F59E0B] bg-[#FEF3C733] border-l-4";
       case "blocked":
-        return "text-primary-01 border-primary-01 bg-[#FF5C611A] border-l-4";
+        return "text-errors-main border-errors-main bg-errors-main/10 border-l-4";
       default:
         return "bg-gray-100 text-gray-600 border-l-4 border-gray-400";
     }
@@ -101,8 +91,12 @@ export default function CalendarUI({
                   {dayBookings.map((booking) => (
                     <div
                       key={booking.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectBooking?.(booking);
+                      }}
                       className={`
-                        text-[10px] px-2 py-1 rounded-sm font-medium
+                        text-[10px] px-2 py-1 rounded-sm font-medium cursor-pointer hover:opacity-80 transition-opacity
                         ${getStatusStyles(booking.status)}
                       `}
                       style={{

@@ -5,37 +5,47 @@ interface BookingCardProps {
     date: string;
     avatarUrl?: string;
     initials: string;
-    guestCount: number;    
-    budget: number;
-    status: "confirmed" | "pending";
+    guestCount: number;
+    totalAmount: number;
+    status: "confirmed" | "pending" | "blocked";
     onMessageClick?: () => void;
     onReceiptClick?: () => void;
 }
 
-export default function BookingCard({ 
-    title, 
-    date, 
-    avatarUrl, 
-    initials, 
-    guestCount, 
-    budget, 
+export default function BookingCard({
+    title,
+    date,
+    avatarUrl,
+    initials,
+    guestCount,
+    totalAmount,
     status,
     onMessageClick,
     onReceiptClick
 }: BookingCardProps) {
-    
+
     const statusStyles = {
         confirmed: {
-            badge: "bg-[#D1FAE510] text-accents-discount",
+            badge: "bg-accents-discount/10 text-accents-discount",
             dot: "bg-accents-discount"
         },
         pending: {
-            badge: "bg-[#FEF3C720] text-[#F59E0B]",
+            badge: "bg-[#F59E0B]/10 text-[#F59E0B]",
             dot: "bg-[#F59E0B]"
+        },
+        blocked: {
+            badge: "bg-errors-main/10 text-errors-main",
+            dot: "bg-errors-main"
         }
     };
 
-    const currentStatus = statusStyles[status];
+    const currentStatus = statusStyles[status] || statusStyles.pending;
+
+    const getStatusLabel = (s: string) => {
+        if (s === 'confirmed') return 'Confirmed';
+        if (s === 'blocked') return 'Blocked';
+        return 'Pending Quote';
+    };
 
     return (
         <div className="bg-shades-white border border-neutrals-03 rounded-2xl overflow-hidden mb-4">
@@ -43,7 +53,7 @@ export default function BookingCard({
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${currentStatus.badge}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${currentStatus.dot}`}></span>
-                    {status === 'confirmed' ? 'Confirmed' : 'Pending Quote'}
+                    {getStatusLabel(status)}
                 </span>
                 <span className="text-xs text-neutrals-06">{date}</span>
             </div>
@@ -76,12 +86,12 @@ export default function BookingCard({
             {/* Footer: Budget + Actions */}
             <div className="flex items-center justify-between px-4 pb-4 pt-2 border-t border-neutrals-02">
                 <div className="font-bold text-shades-black text-base">
-                    UGX {budget.toLocaleString()}
+                    UGX {totalAmount.toLocaleString()}
                 </div>
-                
+
                 {status === 'confirmed' ? (
                     <div className="flex items-center gap-1">
-                        <button 
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onMessageClick?.();
@@ -90,7 +100,7 @@ export default function BookingCard({
                         >
                             <MessageSquare size={18} />
                         </button>
-                        <button 
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onReceiptClick?.();

@@ -54,13 +54,7 @@ export default function Header() {
           >
             Become a Planner
           </Link>
-          {/* Login Button */}
-          <Link
-            href="/login"
-            className="text-shades-black transition-colors duration-200 hover:text-primary-01"
-          >
-            Login
-          </Link>
+
         </nav>
 
         {/* Right Section */}
@@ -98,26 +92,24 @@ export default function Header() {
               <div className="relative w-5 h-5">
                 <Sun
                   size={20}
-                  className={`absolute inset-0 transition-all duration-500 ${
-                    resolvedTheme === 'dark'
+                  className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'dark'
                       ? 'rotate-0 scale-100 opacity-100'
                       : 'rotate-90 scale-0 opacity-0'
-                  }`}
+                    }`}
                 />
                 <Image src="/icons/moon.svg"
                   alt="Moon"
                   width={20}
                   height={20}
-                  className={`absolute inset-0 transition-all duration-500 ${
-                    resolvedTheme === 'light'
+                  className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'light'
                       ? 'rotate-0 scale-100 opacity-100'
                       : '-rotate-90 scale-0 opacity-0'
-                  }`}
+                    }`}
                 />
               </div>
             )}
           </button>
-          
+
           {/* Burger Menu with Dropdown */}
           <div className="relative">
             <BurgerMenu variant="light" />

@@ -5,12 +5,14 @@ interface CalendarHeaderProps {
     currentDate: Date
     setCurrentDate: (date: Date) => void
     onAddBooking?: () => void
+    onBlockDates?: () => void
 }
 
-export default function CalendarHeader({ 
-    currentDate, 
-    setCurrentDate, 
-    onAddBooking 
+export default function CalendarHeader({
+    currentDate,
+    setCurrentDate,
+    onAddBooking,
+    onBlockDates
 }: CalendarHeaderProps) {
     // Safety check for undefined currentDate
     if (!currentDate) {
@@ -33,17 +35,17 @@ export default function CalendarHeader({
                 <h1 className="text-shades-black text-2xl font-bold tracking-tight">
                     {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
                 </h1>
-                
+
                 {/* Navigation Controls */}
                 <div className="flex items-center bg-neutrals-02 rounded-lg p-1">
-                    <button 
+                    <button
                         onClick={goToPreviousMonth}
                         className="p-2 hover:bg-neutrals-03 rounded-md transition-colors"
                         aria-label="Previous month"
                     >
                         <ChevronLeft size={18} className="text-neutrals-08" />
                     </button>
-                    <button 
+                    <button
                         onClick={goToNextMonth}
                         className="p-2 hover:bg-neutrals-03 rounded-md transition-colors"
                         aria-label="Next month"
@@ -53,7 +55,7 @@ export default function CalendarHeader({
                 </div>
 
                 {/* Today Button */}
-                <button 
+                <button
                     onClick={goToToday}
                     className="px-4 py-2 border border-neutrals-03 rounded-lg text-neutrals-08 text-sm font-medium hover:bg-neutrals-02 transition-colors"
                 >
@@ -69,7 +71,7 @@ export default function CalendarHeader({
                         <div className="w-3 h-3 rounded-full bg-accents-discount"></div>
                         <span className="text-neutrals-06 text-sm font-medium">Confirmed</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 rounded-full bg-amber-400"></div>
                         <span className="text-neutrals-06 text-sm font-medium">Pending</span>
@@ -85,7 +87,7 @@ export default function CalendarHeader({
                 <div className="w-px h-6 bg-neutrals-03"></div>
 
                 {/* Add Booking Button */}
-                <button 
+                <button
                     onClick={handleAddBooking}
                     className="flex items-center gap-2 bg-primary-01 hover:bg-primary-02 text-shades-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
                 >
