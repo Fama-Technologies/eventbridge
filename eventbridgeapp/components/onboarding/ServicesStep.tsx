@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react';
 import {
-  Calendar,
   CloudUpload,
   Plus,
   X,
@@ -14,7 +13,6 @@ import {
 import type { OnboardingStepProps } from './types';
 import { PRICING_STRUCTURES } from './types';
 import { toast } from 'sonner';
-import { upload } from '@vercel/blob/client';
 
 export default function ServicesStep({
   data,
@@ -64,17 +62,22 @@ export default function ServicesStep({
 
     try {
       const uploadPromises = validFiles.map(async (file) => {
-        const blob = await upload(
-          `service-gallery/${Date.now()}-${file.name}`,
-          file,
-          {
-            access: 'public',
-            contentType: file.type,
-            handleUploadUrl: ''
-          }
-        );
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'gallery');
 
-        return blob.url;
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Upload failed');
+        }
+
+        const result = await response.json();
+        return result.url;
       });
 
       const newUrls = await Promise.all(uploadPromises);
@@ -139,8 +142,8 @@ export default function ServicesStep({
   };
 
   const isValid =
-    (data.serviceDescription || '').trim().length >= 10 &&
-    (data.pricingStructure || []).length > 0;
+    (data.pricingStructure || []).length > 0 &&
+    (data.workingDays || []).length > 0;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -175,7 +178,7 @@ export default function ServicesStep({
               updateData({ serviceDescription: e.target.value });
             }
           }}
-          placeholder="Describe what you do..."
+          placeholder="Describe what you do... (optional)"
           rows={5}
           className="w-full px-4 py-3 rounded-lg bg-neutrals-02 border border-neutrals-04"
         />
@@ -196,8 +199,8 @@ export default function ServicesStep({
                   onClick={() => togglePricingStructure(structure)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     isSelected
-                      ? 'bg-primary-01 text-white'
-                      : 'bg-neutrals-03 text-shades-black border border-neutrals-04'
+                      ? 'bg-primary-01 text-shades-white'
+                      : 'bg-neutrals-03 text-shades-black border border-neutrals-07'
                   }`}
                 >
                   {structure}
@@ -282,30 +285,50 @@ export default function ServicesStep({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="col-span-2">
+      <div className="grid grid-cols-10 gap-6 mb-8">
+        <div className="col-span-7">
           <label className="block text-sm font-semibold text-shades-black mb-2">
-            General Availability
+            Working Hours
           </label>
-          <div className="relative">
-            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutrals-06" />
-            <input
-              type="text"
-              value={data.generalAvailability}
-              onChange={(e) => updateData({ generalAvailability: e.target.value })}
-              placeholder="Weekends, evenings, specific dates"
-              className="w-full pl-12 pr-4 py-3 rounded-lg bg-neutrals-02 border border-neutrals-04"
-            />
+          <div className="flex gap-2 flex-wrap">
+            {['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun'].map((day) => {
+              const isSelected = (data.workingDays || []).includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    const currentDays = data.workingDays || [];
+                    if (isSelected) {
+                      updateData({ 
+                        workingDays: currentDays.filter((d) => d !== day) 
+                      });
+                    } else {
+                      updateData({ 
+                        workingDays: [...currentDays, day] 
+                      });
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all  ${
+                    isSelected
+                      ? 'bg-primary-01 text-shades-white'
+                      : 'bg-neutrals-03 text-shades-black hover:bg-neutrals-04 border border-neutrals-07'
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="col-span-1">
+        <div className="col-span-3">
           <label className="block text-sm font-semibold text-shades-black mb-2">Experience</label>
           <input
             type="text"
             value={data.experience}
             onChange={(e) => updateData({ experience: e.target.value })}
-            placeholder="e.g. 5 years"
+            placeholder="e.g 5 years"
             className="w-full px-4 py-3 rounded-lg bg-neutrals-02 border border-neutrals-04"
           />
         </div>
@@ -385,6 +408,9 @@ export default function ServicesStep({
             onClick={onNext}
             disabled={!isValid || isLoading || uploadingImages}
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-primary-01 text-white font-medium hover:bg-primary-02 disabled:opacity-50"
+            style={{
+              boxShadow: '0px 4px 6px -4px var(--primary012), 0px 10px 15px -3px var(--primary012)'
+            }}
           >
             Next Step
             <ArrowRight className="w-4 h-4" />

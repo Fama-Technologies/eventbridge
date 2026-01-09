@@ -14,7 +14,7 @@ export async function uploadToBlob(
     {
         access: 'public',
         contentType: file.type,
-        handleUploadUrl: ''
+        handleUploadUrl: '/api/upload'
     }
   );
 

@@ -257,20 +257,42 @@ export default function ProfileSetupStep({
         </div>
       </div>
 
-      {/* Primary Location */}
+      {/* Primary Location & Country */}
       <div className="mb-10">
-        <label className="block text-sm font-semibold text-shades-black mb-2">
-          Primary Location
-        </label>
-        <div className="relative">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutrals-06" />
-          <input
-            type="text"
-            value={data.primaryLocation}
-            onChange={(e) => updateData({ primaryLocation: e.target.value })}
-            placeholder="Start typing city, state or zip..."
-            className="w-full pl-12 pr-4 py-3 rounded-lg bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          {/* Country */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-shades-black mb-2">
+              Country
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutrals-06" />
+              <input
+                type="text"
+                value={(data as any).country || ''}
+                onChange={(e) => updateData({ country: e.target.value } as any)}
+                placeholder="Enter Country"
+                className="w-full pl-12 pr-4 py-3 rounded-[34px] bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Primary Location */}
+          <div className="md:col-span-4">
+            <label className="block text-sm font-semibold text-shades-black mb-2">
+              Primary Location
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutrals-06" />
+              <input
+                type="text"
+                value={data.primaryLocation}
+                onChange={(e) => updateData({ primaryLocation: e.target.value })}
+                placeholder="Start typing city, state or zip..."
+                className="w-full pl-12 pr-4 py-3 rounded-[34px] bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
         </div>
         <p className="text-xs text-neutrals-06 mt-2">
           We'll use this to match you with local events.
@@ -296,7 +318,10 @@ export default function ProfileSetupStep({
             type="button"
             onClick={onNext}
             disabled={!isValid || isLoading || uploadingPhoto}
-            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-shades-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50"
+            style={{
+              boxShadow: '0px 4px 6px -4px var(--primary012), 0px 10px 15px -3px var(--primary012)'
+            }}
           >
             Next Step
             <ArrowRight className="w-4 h-4" />

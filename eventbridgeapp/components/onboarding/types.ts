@@ -23,6 +23,7 @@ export interface OnboardingData {
   customPricingStructure: string[];
   priceRange: string;
   generalAvailability: string;
+  workingDays: string[];
   experience: string;
   serviceGallery: string[];
   serviceGalleryPreviews: string[];
@@ -41,7 +42,7 @@ export interface OnboardingStepProps {
   isLoading: boolean;
 }
 
-export type OnboardingStep = 'profile' | 'services' | 'pricing' | 'verify';
+export type OnboardingStep = 'profile' | 'services' | 'verify';
 
 export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   // Uploaded URLs (must exist to satisfy type)
@@ -66,6 +67,7 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   customPricingStructure: [],
   priceRange: '',
   generalAvailability: '',
+  workingDays: [],
   experience: '',
   serviceGallery: [],
   serviceGalleryPreviews: [],

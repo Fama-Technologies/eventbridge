@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import OnboardingSidebar from './OnboardingSidebar';
 import ProfileSetupStep from './ProfileSetupStep';
 import ServicesStep from './ServicesStep';
-import PricingStep from './PricingStep';
 import VerifyStep from './VerifyStep';
 
 import type { OnboardingData, OnboardingStep } from './types';
@@ -52,7 +51,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
     alert('Draft saved!');
   };
 
-  const stepOrder: OnboardingStep[] = ['profile', 'services', 'pricing', 'verify'];
+  const stepOrder: OnboardingStep[] = ['profile', 'services', 'verify'];
 
   const handleNext = () => {
     if (!completedSteps.includes(currentStep)) {
@@ -136,6 +135,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
       const response = await fetch('/api/vendor/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           businessName: data.businessName,
           serviceCategories: data.serviceCategories,
@@ -145,7 +145,7 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
           pricingStructure: data.pricingStructure,
           customPricingStructure: data.customPricingStructure,
           priceRange: data.priceRange,
-          generalAvailability: data.generalAvailability,
+          workingDays: data.workingDays,
           experience: data.experience,
           phone: data.phone || '',
           website: data.website || '',
@@ -184,8 +184,6 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
         return <ProfileSetupStep {...stepProps} />;
       case 'services':
         return <ServicesStep {...stepProps} />;
-      case 'pricing':
-        return <PricingStep {...stepProps} />;
       case 'verify':
         return <VerifyStep {...stepProps} />;
       default:

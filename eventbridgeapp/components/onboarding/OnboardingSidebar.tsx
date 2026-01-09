@@ -12,8 +12,7 @@ interface OnboardingSidebarProps {
 const steps: { id: OnboardingStep; label: string; number: number }[] = [
   { id: 'profile', label: 'Profile Setup', number: 1 },
   { id: 'services', label: 'Services', number: 2 },
-  { id: 'pricing', label: 'Pricing', number: 3 },
-  { id: 'verify', label: 'Verify', number: 4 },
+  { id: 'verify', label: 'Verify', number: 3 },
 ];
 
 export default function OnboardingSidebar({ currentStep, completedSteps }: OnboardingSidebarProps) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { db } from '@/lib/db';
 import {
   users,
@@ -14,7 +15,6 @@ import {
   userUploads,
 } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { verifyToken } from '@/lib/jwt';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,49 +30,19 @@ function getUserIdNumber(user: any): number {
 }
 
 async function getCurrentUser() {
-  try {
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get('auth-token')?.value;
-    const sessionToken = cookieStore.get('session')?.value;
-
-    if (authToken) {
-      try {
-        const payload = await verifyToken(authToken);
-        if (payload && payload.userId) {
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, Number(payload.userId)))
-            .limit(1);
-          return user;
-        }
-      } catch (error) {
-        console.error('Token verification failed:', error);
-      }
-    }
-
-    if (sessionToken) {
-      const [session] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.token, sessionToken))
-        .limit(1);
-
-      if (session && new Date(session.expiresAt) >= new Date()) {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, Number(session.userId)))
-          .limit(1);
-        return user;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error('getCurrentUser error:', error);
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id) {
     return null;
   }
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, Number(session.user.id)))
+    .limit(1);
+    
+  return user || null;
 }
 
 function canUserBeVendor(user: any): { allowed: boolean; reason?: string } {
@@ -159,7 +129,7 @@ export async function POST(request: NextRequest) {
       serviceDescription,
       pricingStructure,
       priceRange,
-      generalAvailability,
+      workingDays,
       phone,
       website,
       profilePhotoUrl,
@@ -187,15 +157,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!serviceDescription || serviceDescription.trim().length < 50) {
-      return NextResponse.json(
-        { 
-          error: 'Service description must be at least 50 characters',
-          receivedLength: serviceDescription?.length || 0 
-        },
-        { status: 400 }
-      );
-    }
+    // Service description is now optional
+    // if (!serviceDescription || serviceDescription.trim().length < 50) {
+    //   return NextResponse.json(
+    //     { 
+    //       error: 'Service description must be at least 50 characters',
+    //       receivedLength: serviceDescription?.length || 0 
+    //     },
+    //     { status: 400 }
+    //   );
+    // }
 
     //  ENFORCE UPLOAD CAPS
     if (galleryImageUrls && galleryImageUrls.length > 10) {
@@ -234,7 +205,7 @@ export async function POST(request: NextRequest) {
 
     const profileData = {
       businessName: businessName.trim(),
-      description: serviceDescription.trim(),
+      description: serviceDescription.trim() + (workingDays && workingDays.length > 0 ? `\n\nWorking Days: ${workingDays.join(', ')}` : ''),
       city,
       state,
       phone: phone || null,
