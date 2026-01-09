@@ -48,9 +48,9 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
             
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 shadow-xl">
+            <div className="relative bg-shades-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 shadow-xl">
                 {/* Header */}
-                <div className="sticky top-0 bg-white p-6 pb-4 border-b border-neutrals-03">
+                <div className="sticky top-0 bg-shades-white p-6 pb-4 border-b border-neutrals-03">
                     <div className="flex items-start justify-between">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
@@ -89,28 +89,28 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
                                 <h3 className="font-semibold text-shades-black">{booking.client.name}</h3>
                                 <p className="text-sm text-neutrals-06">Client</p>
                                 <div className="flex items-center gap-1 mt-1">
-                                    <Star size={14} className="text-amber-400 fill-amber-400" />
-                                    <span className="text-sm font-medium">{booking.client.rating}</span>
-                                    <span className="text-sm text-neutrals-06">({booking.client.reviews} reviews)</span>
+                                    <Star size={14} className="text-primary-01 fill-primary-01" />
+                                    <span className="text-sm text-shades-black font-medium">{booking.client.rating}</span>
+                                    <span className="text-sm text-shades-black">({booking.client.reviews} reviews)</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Event Details */}
                         <div className="flex-1 space-y-3">
-                            <div className="flex items-center gap-3 text-neutrals-07">
+                            <div className="flex items-center gap-3 text-shades-black">
                                 <Calendar size={18} className="text-neutrals-05" />
                                 <span>{booking.dateRange}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-neutrals-07">
+                            <div className="flex items-center gap-3 text-shades-black">
                                 <Clock size={18} className="text-neutrals-05" />
                                 <span>{booking.timeRange}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-neutrals-07">
+                            <div className="flex items-center gap-3 text-shades-black">
                                 <Users size={18} className="text-neutrals-05" />
                                 <span>{booking.guests} Guests</span>
                             </div>
-                            <div className="flex items-center gap-3 text-neutrals-07">
+                            <div className="flex items-center gap-3 text-shades-black">
                                 <MapPin size={18} className="text-neutrals-05" />
                                 <span>{booking.venue}</span>
                             </div>
@@ -127,7 +127,7 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
                             </div>
                         </div>
 
-                        <div className="border border-neutrals-03 rounded-xl overflow-hidden">
+                        <div className="border border-neutrals-0    3 rounded-xl overflow-hidden">
                             {/* Status Row */}
                             <div className="flex items-center justify-between px-4 py-3 bg-neutrals-01 border-b border-neutrals-03">
                                 <span className="text-neutrals-07">Status</span>
@@ -207,7 +207,7 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
                 </div>
 
                 {/* Footer Actions */}
-                <div className="sticky bottom-0 bg-white border-t border-neutrals-03 p-4 flex items-center gap-3">
+                <div className="sticky bottom-0 bg-shades-white  border-t border-neutrals-03 p-4 flex items-center gap-3">
                     <button className="flex-1 flex items-center justify-center gap-2 bg-primary-01 hover:bg-primary-02 text-white font-medium py-3 px-6 rounded-xl transition-colors">
                         <MessageSquare size={18} />
                         Message {booking.client.name.split(' ')[0]}

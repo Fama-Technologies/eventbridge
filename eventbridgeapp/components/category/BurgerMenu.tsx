@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, Sheet, X } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/providers/theme-provider';
 import HowItWorksModal from './HowItWorksModal';
@@ -43,7 +43,7 @@ export default function BurgerMenu({ className, variant }: BurgerMenuProps) {
         } ${className}`}
         aria-label="Menu"
       >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
+        {isOpen ? <X size={20} /> : <Sheet size={20} />}
       </button>
 
       {/* Dropdown Menu */}

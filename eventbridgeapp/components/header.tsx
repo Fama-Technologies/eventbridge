@@ -54,6 +54,13 @@ export default function Header() {
           >
             Become a Planner
           </Link>
+          {/* Login Button */}
+          <Link
+            href="/login"
+            className="text-shades-black transition-colors duration-200 hover:text-primary-01"
+          >
+            Login
+          </Link>
         </nav>
 
         {/* Right Section */}
@@ -64,6 +71,13 @@ export default function Header() {
             className="hidden sm:block px-4 py-2 rounded font-semibold text-primary-01 transition-opacity duration-200 hover:opacity-90"
           >
             Become a Vendor
+          </Link>
+          {/* Login Button (Right Section, visible on desktop) */}
+          <Link
+            href="/login"
+            className="hidden sm:block px-4 py-2 rounded font-semibold text-primary-01 border border-primary-01 transition-opacity duration-200 hover:opacity-90"
+          >
+            Login
           </Link>
 
           {/* Language Icon */}
@@ -149,6 +163,13 @@ export default function Header() {
             className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
           >
             Become a Vendor
+          </Link>
+          {/* Login Button (Mobile) */}
+          <Link
+            href="/login"
+            className="block py-2 px-4 rounded-lg font-semibold text-center border border-primary-01 text-primary-01 transition-opacity hover:opacity-90"
+          >
+            Login
           </Link>
         </nav>
       )}
