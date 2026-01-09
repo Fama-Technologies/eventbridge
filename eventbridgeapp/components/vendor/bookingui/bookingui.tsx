@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { format, eachDayOfInterval } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/components/ui/toast";
 import CalendarHeader from "./calenderheader";
 import Calender from "./calender";
@@ -20,7 +20,8 @@ export default function BookingUI() {
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isBlockDatesModalOpen, setIsBlockDatesModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+
+    // Removed sidebarOpen state as requested to always show sidebar
 
     const handleAddBooking = () => {
         setIsBookingModalOpen(true);
@@ -108,26 +109,6 @@ export default function BookingUI() {
         setSelectedBooking(booking);
     };
 
-    // Helper to get all occupied dates from confirmed bookings
-    const getOccupiedDates = (): Date[] => {
-        let occupied: Date[] = [];
-        bookings.forEach(b => {
-            if (b.status === 'confirmed' || b.status === 'blocked') {
-                // Always expand the range
-                try {
-                    const range = eachDayOfInterval({ start: b.startDate, end: b.endDate });
-                    occupied = [...occupied, ...range];
-                } catch (e) {
-                    // Fallback if range is invalid
-                    occupied.push(b.date);
-                }
-            }
-        });
-        return occupied;
-    };
-
-    const occupiedDates = getOccupiedDates();
-
     return (
         <div className="min-h-screen bg-neutrals-01">
             {/* Header Section */}
@@ -159,11 +140,8 @@ export default function BookingUI() {
                     />
                 </div>
 
-                {/* Sidebar - Hidden on mobile, shown on lg+ */}
-                <div className={`
-                    w-full lg:w-80 flex-shrink-0
-                    ${sidebarOpen ? 'block' : 'hidden lg:block'}
-                `}>
+                {/* Sidebar - Always visible (below calendar on mobile, right side on desktop) */}
+                <div className="w-full lg:w-80 flex-shrink-0">
                     <BookingSidebar
                         bookings={bookings}
                         blockedDates={blockedDates}
@@ -172,14 +150,6 @@ export default function BookingUI() {
                     />
                 </div>
             </div>
-
-            {/* Mobile Sidebar Toggle */}
-            <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden fixed bottom-4 right-4 bg-primary-01 text-white p-4 rounded-full shadow-lg z-40"
-            >
-                {sidebarOpen ? 'Hide' : 'Show'} Sidebar
-            </button>
 
             {/* Booking Modal */}
             <BookingModal
