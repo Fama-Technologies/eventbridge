@@ -21,9 +21,17 @@ export default function VendorOnboardingPage() {
         }
 
         const user = await response.json();
+        
+        // Ensure userId is a number
+        const userId = Number(user.id);
+        if (isNaN(userId)) {
+          console.error('Invalid user ID:', user.id);
+          router.push('/signup?type=vendor');
+          return;
+        }
 
         setUserData({ 
-          userId: user.id, 
+          userId: userId, 
           email: user.email, 
           accountType: user.accountType 
         });

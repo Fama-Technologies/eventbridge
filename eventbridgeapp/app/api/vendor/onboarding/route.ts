@@ -19,6 +19,16 @@ import { verifyToken } from '@/lib/jwt';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Helper to convert userId to number safely
+function getUserIdNumber(user: any): number {
+  const userId = Number(user.id);
+  if (isNaN(userId)) {
+    console.error('Invalid user.id:', user.id);
+    throw new Error('Invalid user ID');
+  }
+  return userId;
+}
+
 async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
@@ -32,7 +42,7 @@ async function getCurrentUser() {
           const [user] = await db
             .select()
             .from(users)
-            .where(eq(users.id, payload.userId as number))
+            .where(eq(users.id, Number(payload.userId)))
             .limit(1);
           return user;
         }
@@ -52,7 +62,7 @@ async function getCurrentUser() {
         const [user] = await db
           .select()
           .from(users)
-          .where(eq(users.id, session.userId))
+          .where(eq(users.id, Number(session.userId)))
           .limit(1);
         return user;
       }
@@ -88,17 +98,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: vendorCheck.reason }, { status: 403 });
     }
 
+    const userId = getUserIdNumber(user);
+    
     const [progress] = await db
       .select()
       .from(onboardingProgress)
-      .where(eq(onboardingProgress.userId, user.id))
+      .where(eq(onboardingProgress.userId, userId))
       .limit(1);
 
     if (!progress) {
       const [newProgress] = await db
         .insert(onboardingProgress)
         .values({
-          userId: user.id,
+          userId: userId,
           currentStep: 1,
           completedSteps: [],
           formData: {},
@@ -137,6 +149,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: vendorCheck.reason }, { status: 403 });
     }
 
+    const userId = getUserIdNumber(user);
     const body = await request.json();
 
     const {
@@ -158,6 +171,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Received onboarding data:', {
       businessName,
+      serviceDescriptionLength: serviceDescription?.length || 0,
       hasProfilePhoto: !!profilePhotoUrl,
       hasCoverImage: !!coverImageUrl,
       galleryCount: galleryImageUrls?.length || 0,
@@ -175,12 +189,15 @@ export async function POST(request: NextRequest) {
 
     if (!serviceDescription || serviceDescription.trim().length < 50) {
       return NextResponse.json(
-        { error: 'Service description must be at least 50 characters' },
+        { 
+          error: 'Service description must be at least 50 characters',
+          receivedLength: serviceDescription?.length || 0 
+        },
         { status: 400 }
       );
     }
 
-    // ✅ ENFORCE UPLOAD CAPS
+    //  ENFORCE UPLOAD CAPS
     if (galleryImageUrls && galleryImageUrls.length > 10) {
       return NextResponse.json(
         { error: 'Maximum 10 gallery images allowed' },
@@ -210,7 +227,7 @@ export async function POST(request: NextRequest) {
     const [existingProfile] = await db
       .select()
       .from(vendorProfiles)
-      .where(eq(vendorProfiles.userId, user.id))
+      .where(eq(vendorProfiles.userId, userId))
       .limit(1);
 
     let vendorProfileId: number;
@@ -241,7 +258,7 @@ export async function POST(request: NextRequest) {
       const [newProfile] = await db
         .insert(vendorProfiles)
         .values({
-          userId: user.id,
+          userId: userId,
           ...profileData,
           isVerified: false,
         })
@@ -287,13 +304,13 @@ export async function POST(request: NextRequest) {
       await db.insert(vendorPortfolio).values(portfolioItems);
       console.log('Saved portfolio items:', portfolioItems.length);
 
-      // ✅ Link gallery uploads to vendor profile
+      //  Link gallery uploads to vendor profile
       await db
         .update(userUploads)
         .set({ vendorId: vendorProfileId })
         .where(
           and(
-            eq(userUploads.userId, user.id),
+            eq(userUploads.userId, userId),
             eq(userUploads.uploadType, 'gallery')
           )
         );
@@ -315,13 +332,13 @@ export async function POST(request: NextRequest) {
       await db.insert(vendorVideos).values(videoItems);
       console.log('Saved videos:', videoItems.length);
 
-      // ✅ Link video uploads to vendor profile
+      //  Link video uploads to vendor profile
       await db
         .update(userUploads)
         .set({ vendorId: vendorProfileId })
         .where(
           and(
-            eq(userUploads.userId, user.id),
+            eq(userUploads.userId, userId),
             eq(userUploads.uploadType, 'video')
           )
         );
@@ -370,13 +387,13 @@ export async function POST(request: NextRequest) {
       await db.insert(verificationDocuments).values(documents);
       console.log('Saved verification documents:', documents.length);
 
-      // ✅ Link document uploads to vendor profile
+      //  Link document uploads to vendor profile
       await db
         .update(userUploads)
         .set({ vendorId: vendorProfileId })
         .where(
           and(
-            eq(userUploads.userId, user.id),
+            eq(userUploads.userId, userId),
             eq(userUploads.uploadType, 'document')
           )
         );
@@ -395,13 +412,13 @@ export async function POST(request: NextRequest) {
     if (profilePhotoUrl) {
       userUpdate.image = profilePhotoUrl;
 
-      // ✅ Link profile photo to vendor
+      //  Link profile photo to vendor
       await db
         .update(userUploads)
         .set({ vendorId: vendorProfileId })
         .where(
           and(
-            eq(userUploads.userId, user.id),
+            eq(userUploads.userId, userId),
             eq(userUploads.uploadType, 'profile')
           )
         );
@@ -414,14 +431,14 @@ export async function POST(request: NextRequest) {
         .set({ vendorId: vendorProfileId })
         .where(
           and(
-            eq(userUploads.userId, user.id),
+            eq(userUploads.userId, userId),
             eq(userUploads.uploadType, 'cover')
           )
         );
     }
 
     if (Object.keys(userUpdate).length > 0) {
-      await db.update(users).set(userUpdate).where(eq(users.id, user.id));
+      await db.update(users).set(userUpdate).where(eq(users.id, userId));
       console.log('Updated user profile:', userUpdate);
     }
 
@@ -429,7 +446,7 @@ export async function POST(request: NextRequest) {
     const [progress] = await db
       .select()
       .from(onboardingProgress)
-      .where(eq(onboardingProgress.userId, user.id))
+      .where(eq(onboardingProgress.userId, userId))
       .limit(1);
 
     if (progress) {
@@ -442,7 +459,7 @@ export async function POST(request: NextRequest) {
         .where(eq(onboardingProgress.id, progress.id));
     } else {
       await db.insert(onboardingProgress).values({
-        userId: user.id,
+        userId: userId,
         currentStep: 4,
         completedSteps: [1, 2, 3, 4],
         formData: {},
