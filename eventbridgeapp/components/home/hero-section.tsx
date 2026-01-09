@@ -14,7 +14,7 @@ export default function HeroSection() {
   const [where, setWhere] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Dropdown visibility states
+  // Dropdown visibility states ok
   const [showEventDropdown, setShowEventDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);

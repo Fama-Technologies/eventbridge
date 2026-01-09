@@ -16,9 +16,9 @@ export default function SettingsContainer() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        <div className="max-w-5xl mx-auto px-4 pb-6 md:py-12">
             <h1 className="text-3xl font-bold text-shades-black mb-2">Settings</h1>
-            <p className="text-neutrals-06 mb-8 text-right text-xs">v1.2.4-stable</p>
+            <p className="text-neutrals-06 mb-8 text-right text-xs"></p>
 
             <div className="space-y-4">
                 {/* 1. Profile Editor Accordion */}
