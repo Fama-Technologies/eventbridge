@@ -16,7 +16,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Grid3X3
+  Grid3X3,
+  BadgeCheck,
+  LayoutGrid
 } from 'lucide-react';
 import { CategoryHeader, PlanningEventCTA, CategoryFooter } from '@/components/category';
 
@@ -153,12 +155,103 @@ function formatCurrency(amount: number): string {
 // Tab type
 type TabType = 'overview' | 'packages' | 'reviews' | 'portfolio';
 
+// FloatingHearts component for Instagram-style animation
+function FloatingHearts({ show }: { show: boolean }) {
+  const [hearts, setHearts] = useState<Array<{ id: number; left: number; delay: number; size: number }>>([]);
+
+  useEffect(() => {
+    if (show) {
+      const newHearts = Array.from({ length: 5 }, (_, i) => ({
+        id: Date.now() + i,
+        left: 20 + Math.random() * 60, // Random position between 20% and 80%
+        delay: i * 80, // Stagger the animation
+        size: 14 + Math.random() * 8 // Random size between 14-22px
+      }));
+      setHearts(newHearts);
+      
+      // Clear hearts after animation
+      const timer = setTimeout(() => {
+        setHearts([]);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [show]);
+
+  if (!show || hearts.length === 0) return null;
+
+  return (
+    <>
+      <style>{`
+        .ig-hearts-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          overflow: visible;
+          z-index: 1000;
+        }
+        .ig-heart {
+          position: absolute;
+          bottom: 50%;
+          color: #e91e63;
+          animation: igFloat 1.8s ease-out forwards;
+        }
+        @keyframes igFloat {
+          0% {
+            transform: translateY(0) translateX(-50%) scale(0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            transform: translateY(-8px) translateX(-50%) scale(1.3) rotate(-5deg);
+            opacity: 1;
+          }
+          20% {
+            transform: translateY(-16px) translateX(-45%) scale(1.1) rotate(5deg);
+            opacity: 0.9;
+          }
+          40% {
+            transform: translateY(-35px) translateX(-55%) scale(0.9) rotate(-3deg);
+            opacity: 0.7;
+          }
+          70% {
+            transform: translateY(-60px) translateX(-50%) scale(0.6) rotate(2deg);
+            opacity: 0.4;
+          }
+          100% {
+            transform: translateY(-90px) translateX(-50%) scale(0.2) rotate(0deg);
+            opacity: 0;
+          }
+        }
+      `}</style>
+      <div className="ig-hearts-container">
+        {hearts.map((heart) => (
+          <div
+            key={heart.id}
+            className="ig-heart"
+            style={{
+              left: `${heart.left}%`,
+              animationDelay: `${heart.delay}ms`,
+              fontSize: `${heart.size}px`
+            }}
+          >
+            ❤️
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function VendorProfilePage() {
   const params = useParams();
   const [vendor, setVendor] = useState<VendorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('packages');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showFloatingHearts, setShowFloatingHearts] = useState(false);
   const [packageScrollIndex, setPackageScrollIndex] = useState(0);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
 
@@ -239,21 +332,28 @@ export default function VendorProfilePage() {
             {/* Verified Badge */}
             <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
               {vendor.isVerified && (
-                <span className="bg-[#008a05] text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                  <Check size={12} />
+                <span className="bg-shades-white text-shades-black  px-4 py-2 rounded-4xl flex items-center gap-1">
+                  <BadgeCheck size={24} className='text-primary-01' />
                   VERIFIED
                 </span>
               )}
-              <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                  isFavorite
-                    ? 'bg-primary-01 text-white'
-                    : 'bg-white/90 text-neutrals-07 hover:bg-white'
-                }`}
-              >
-                <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsFavorite(!isFavorite);
+                    setShowFloatingHearts(false); // Reset first
+                    setTimeout(() => setShowFloatingHearts(true), 50); // Then trigger
+                  }}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    isFavorite
+                      ? 'bg-primary-01 text-white'
+                      : 'bg-shades-white text-neutrals-07 hover:bg-white'
+                  }`}
+                >
+                  <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                </button>
+                <FloatingHearts show={showFloatingHearts} />
+              </div>
             </div>
             <Image
               src={vendor.images[2] || vendor.images[0]}
@@ -282,9 +382,9 @@ export default function VendorProfilePage() {
             {/* Show All Photos Button */}
             <button 
               onClick={() => setShowAllPhotos(true)}
-              className="absolute bottom-3 right-3 bg-shades-black/80 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm hover:bg-shades-black transition-colors"
+              className="absolute bottom-3 right-3  bg-shades-white text-shades-black px-3 py-1.5 font-semibold rounded-4xl flex items-center gap-2 text-sm transition-colors"
             >
-              <Grid3X3 size={14} />
+              <LayoutGrid size={14} />
               Show all photos
             </button>
           </div>
