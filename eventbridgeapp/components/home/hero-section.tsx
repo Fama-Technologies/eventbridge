@@ -13,7 +13,7 @@ export default function HeroSection() {
   const [what, setWhat] = useState('');
   const [where, setWhere] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
+
   // Dropdown visibility states
   const [showEventDropdown, setShowEventDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -39,11 +39,11 @@ export default function HeroSection() {
   useEffect(() => {
     // Update rects when dropdowns open
     updateRects();
-    
+
     // Listen to scroll and resize
     window.addEventListener('scroll', updateRects, true);
     window.addEventListener('resize', updateRects);
-    
+
     return () => {
       window.removeEventListener('scroll', updateRects, true);
       window.removeEventListener('resize', updateRects);
@@ -75,9 +75,10 @@ export default function HeroSection() {
 
   const popularCategories = ['Photographers', 'Catering', 'Venues'];
   const vendorMedia: MediaItem[] = [
-    { type: 'image', src: '/categories/Corporate.jpg', alt: 'Vendor 1' },
-    { type: 'video', src: 'https://youtube.com/shorts/vu0SLhpnS2M?si=ucveake9dcj8uRCY', alt: 'Cinematic Wedding' },
-    { type: 'video', src: 'https://youtu.be/3wbaX4DXnrA?si=30kgAxRom_VHAJUF', alt: 'Event Highlight video' },
+    { type: 'video', src: '/vids/vid1.mp4', alt: 'Event Video 1' },
+    { type: 'video', src: '/vids/vid2.mp4', alt: 'Event Video 2' },
+    { type: 'video', src: '/vids/vid3.mp4', alt: 'Event Video 3' },
+    { type: 'video', src: '/vids/vid4.mp4', alt: 'Event Video 4' },
   ];
 
   return (
@@ -204,23 +205,23 @@ export default function HeroSection() {
 
       {/* Dropdowns - using portaled fixed positioning */}
       {showEventDropdown && what && (
-        <EventTypeDropdown 
-          onSelect={handleEventSelect} 
-          searchValue={what} 
+        <EventTypeDropdown
+          onSelect={handleEventSelect}
+          searchValue={what}
           onClose={() => setShowEventDropdown(false)}
           anchorRect={whatRect}
         />
       )}
-      
+
       {showLocationDropdown && where && (
-        <LocationDropdown 
-          onSelect={handleLocationSelect} 
+        <LocationDropdown
+          onSelect={handleLocationSelect}
           searchValue={where}
           onClose={() => setShowLocationDropdown(false)}
           anchorRect={whereRect}
         />
       )}
-      
+
       {showDatePicker && (
         <DualMonthCalendar
           onDateSelect={handleDateSelect}
