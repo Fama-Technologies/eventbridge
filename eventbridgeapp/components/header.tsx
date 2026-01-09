@@ -23,7 +23,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-shades-white px-6 py-4 shadow-lg">
+    <header className="sticky top-0 z-50 bg-shades-white px-6 py-4 shadow-lg">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
@@ -93,8 +93,8 @@ export default function Header() {
                 <Sun
                   size={20}
                   className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'dark'
-                      ? 'rotate-0 scale-100 opacity-100'
-                      : 'rotate-90 scale-0 opacity-0'
+                    ? 'rotate-0 scale-100 opacity-100'
+                    : 'rotate-90 scale-0 opacity-0'
                     }`}
                 />
                 <Image src="/icons/moon.svg"
@@ -102,8 +102,8 @@ export default function Header() {
                   width={20}
                   height={20}
                   className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'light'
-                      ? 'rotate-0 scale-100 opacity-100'
-                      : '-rotate-90 scale-0 opacity-0'
+                    ? 'rotate-0 scale-100 opacity-100'
+                    : '-rotate-90 scale-0 opacity-0'
                     }`}
                 />
               </div>
