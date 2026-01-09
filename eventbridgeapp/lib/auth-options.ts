@@ -219,6 +219,17 @@ export const authOptions: NextAuthOptions = {
       console.log('URL:', url);
       console.log('Base URL:', baseUrl);
 
+      // Allow specific vendor paths like onboarding
+      if (url.includes('/vendor/onboarding')) {
+        return `${baseUrl}/vendor/onboarding`;
+      }
+
+      // For signup redirect to vendor onboarding
+      if (url.includes('signup?type=vendor')) {
+        return `${baseUrl}/vendor/onboarding`;
+      }
+
+      // For other vendor URLs, go to dashboard
       if (url.includes('vendor') || url.includes('accountType=VENDOR')) {
         return `${baseUrl}/vendor/dashboard`;
       }
