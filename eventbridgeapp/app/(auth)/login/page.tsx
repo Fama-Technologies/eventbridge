@@ -274,14 +274,33 @@ export default function LoginPage() {
         </div>
       </div>
       
-      <div className="relative hidden lg:block lg:w-1/2">
-        <Image 
-          src="/login.jpg" 
-          alt="Event venue" 
-          fill={true} 
-          style={{ objectFit: 'cover' }} 
-        />
-        <div className="absolute inset-0 bg-black opacity-40"></div>
+      <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="Event Bridge Logo"
+              width={32}
+              height={32}
+            />
+            <span className="text-xl font-semibold text-white">Event Bridge</span>
+          </div>
+          <Link
+            href="/"
+            className="rounded-full bg-black/30 backdrop-blur-sm px-4 py-2 text-sm text-white hover:bg-black/50"
+          >
+            Back to Website
+          </Link>
+        </div>
+        <div className="relative h-full w-full">
+          <Image
+            src="/login.jpg"
+            alt="Event venue"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black opacity-40"></div>
+        </div>
       </div>
     </div>
   );
