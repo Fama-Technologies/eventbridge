@@ -12,14 +12,16 @@ import {
     subMonths,
     isWithinInterval,
     isBefore,
-    isAfter
+    isAfter,
+    startOfDay,
+    endOfDay
 } from "date-fns";
+import type { Booking } from "./data";
 
 interface BlockDatesModalProps {
     isOpen: boolean;
     onClose: () => void;
-    bookedDates?: Date[];
-    blockedDates?: Date[];
+    bookings?: Booking[];
     onBlockDates?: (dates: Date[], reason: string, note: string, recurring: boolean) => void;
 }
 
@@ -33,8 +35,7 @@ const BLOCK_REASONS = [
 export default function BlockDatesModal({
     isOpen,
     onClose,
-    bookedDates = [],
-    blockedDates = [],
+    bookings = [],
     onBlockDates
 }: BlockDatesModalProps) {
     const [leftMonth, setLeftMonth] = useState(new Date(2023, 9, 1)); // October 2023
@@ -61,37 +62,58 @@ export default function BlockDatesModal({
         return [...paddedDays, ...days];
     };
 
-    const isBooked = (date: Date) => bookedDates.some(d => isSameDay(d, date));
-    const isBlocked = (date: Date) => blockedDates.some(d => isSameDay(d, date));
+    const getExistingBooking = (date: Date) => {
+        return bookings.find(b =>
+            isWithinInterval(date, { start: startOfDay(b.startDate), end: endOfDay(b.endDate) })
+        );
+    };
 
     const isRangeStart = (date: Date) => rangeStart && isSameDay(date, rangeStart);
     const isRangeEnd = (date: Date) => rangeEnd && isSameDay(date, rangeEnd);
-
     const isInRange = (date: Date) => {
         if (!rangeStart) return false;
         if (!rangeEnd) return isSameDay(date, rangeStart);
         return isWithinInterval(date, { start: rangeStart, end: rangeEnd });
     };
-
     const isRangeMiddle = (date: Date) => {
         if (!rangeStart || !rangeEnd) return false;
         return isAfter(date, rangeStart) && isBefore(date, rangeEnd);
     };
 
     const handleDateClick = (date: Date) => {
-        if (isBooked(date) || isBlocked(date)) return;
+        if (getExistingBooking(date)) return;
 
         if (!rangeStart || (rangeStart && rangeEnd)) {
             // Start new selection
             setRangeStart(date);
             setRangeEnd(null);
         } else {
-            // Complete the range
+            // Check for overlaps before completing selection
             if (isBefore(date, rangeStart)) {
-                setRangeEnd(rangeStart);
-                setRangeStart(date);
+                // Selecting backwards
+                const hasOverlap = bookings.some(b =>
+                    isWithinInterval(b.startDate, { start: date, end: rangeStart }) ||
+                    isWithinInterval(b.endDate, { start: date, end: rangeStart })
+                );
+                if (hasOverlap) {
+                    setRangeStart(date);
+                    setRangeEnd(null);
+                } else {
+                    setRangeEnd(rangeStart);
+                    setRangeStart(date);
+                }
             } else {
-                setRangeEnd(date);
+                // Selecting forwards
+                const hasOverlap = bookings.some(b =>
+                    isWithinInterval(b.startDate, { start: rangeStart, end: date }) ||
+                    isWithinInterval(b.endDate, { start: rangeStart, end: date })
+                );
+                if (hasOverlap) {
+                    setRangeStart(date); // Restart selection at new date or just ignore? User logic usually implies restarting.
+                    setRangeEnd(null);
+                } else {
+                    setRangeEnd(date);
+                }
             }
         }
     };
@@ -169,8 +191,7 @@ export default function BlockDatesModal({
                         }
 
                         const inMonth = isSameMonth(day, month);
-                        const booked = isBooked(day);
-                        const blocked = isBlocked(day);
+                        const existingBooking = getExistingBooking(day);
                         const inRange = isInRange(day);
                         const isStart = isRangeStart(day);
                         const isEnd = isRangeEnd(day);
@@ -179,12 +200,34 @@ export default function BlockDatesModal({
                         // Determine wrapper classes for range background
                         let wrapperClasses = 'relative h-9 flex items-center justify-center';
 
-                        if (isMiddle) {
-                            wrapperClasses += ' bg-[#FFEBE8]';
-                        } else if (isStart && rangeEnd) {
-                            wrapperClasses += ' bg-gradient-to-r from-transparent to-[#FFEBE8]';
-                        } else if (isEnd) {
-                            wrapperClasses += ' bg-gradient-to-l from-transparent to-[#FFEBE8]';
+                        // Selection range logic (Orange)
+                        if (inRange) {
+                            if (isMiddle) {
+                                wrapperClasses += ' bg-primary-01/30';
+                            } else if (isStart && rangeEnd) {
+                                wrapperClasses += ' bg-gradient-to-r from-transparent via-primary-01/30 to-primary-01/30';
+                            } else if (isEnd) {
+                                wrapperClasses += ' bg-gradient-to-r from-primary-01/30 via-primary-01/30 to-transparent';
+                            }
+                        }
+                        // Existing booking range logic
+                        else if (existingBooking) {
+                            const isBookedStart = isSameDay(day, existingBooking.startDate);
+                            const isBookedEnd = isSameDay(day, existingBooking.endDate);
+                            const isBookedMiddle = !isBookedStart && !isBookedEnd;
+                            const isBlocked = existingBooking.status === 'blocked';
+
+                            const bgClass = isBlocked ? 'bg-errors-main/20' : 'bg-accents-discount/20';
+
+                            if (isBookedMiddle) {
+                                wrapperClasses += ` ${bgClass}`;
+                            } else if (isBookedStart && !isSameDay(existingBooking.startDate, existingBooking.endDate)) {
+                                if (isBlocked) wrapperClasses += ' bg-gradient-to-r from-transparent via-errors-main/20 to-errors-main/20';
+                                else wrapperClasses += ' bg-gradient-to-r from-transparent via-accents-discount/20 to-accents-discount/20';
+                            } else if (isBookedEnd && !isSameDay(existingBooking.startDate, existingBooking.endDate)) {
+                                if (isBlocked) wrapperClasses += ' bg-gradient-to-r from-errors-main/20 via-errors-main/20 to-transparent';
+                                else wrapperClasses += ' bg-gradient-to-r from-accents-discount/20 via-accents-discount/20 to-transparent';
+                            }
                         }
 
                         // Determine button classes
@@ -198,12 +241,19 @@ export default function BlockDatesModal({
                         } else if (inRange) {
                             // Middle of range
                             buttonClasses += 'text-primary-01 font-medium';
-                        } else if (blocked) {
-                            // Blocked dates - red
-                            buttonClasses += 'bg-errors-main text-white';
-                        } else if (booked) {
-                            // Confirmed/booked dates - green with light bg
-                            buttonClasses += 'bg-accents-discount/10 text-accents-discount border border-accents-discount';
+                        } else if (existingBooking) {
+                            const isBookedStart = isSameDay(day, existingBooking.startDate);
+                            const isBookedEnd = isSameDay(day, existingBooking.endDate);
+                            const isBlocked = existingBooking.status === 'blocked';
+                            const solidBgClass = isBlocked ? 'bg-errors-main' : 'bg-accents-discount';
+                            const textClass = isBlocked ? 'text-errors-main' : 'text-accents-discount';
+
+                            if (isBookedStart || isBookedEnd) {
+                                buttonClasses += `${solidBgClass} text-white`;
+                            } else {
+                                buttonClasses += `${textClass} font-medium border border-${isBlocked ? 'errors-main' : 'accents-discount'} border-opacity-30`;
+                                // Added light border to match prev style if desired, or simplified
+                            }
                         } else {
                             // Normal dates
                             buttonClasses += 'text-shades-black hover:bg-neutrals-02';

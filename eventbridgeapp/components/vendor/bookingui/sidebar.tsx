@@ -130,7 +130,7 @@ export default function BookingSidebar({
             <BlockDatesModal
                 isOpen={showBlockModal}
                 onClose={() => setShowBlockModal(false)}
-                bookedDates={bookings.map(b => b.date)}
+                bookings={bookings}
                 onBlockDates={handleBlockDates}
             />
         </div>

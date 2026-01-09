@@ -10,6 +10,9 @@ import {
   isSameMonth,
   isToday,
   isSameDay,
+  isWithinInterval,
+  startOfDay,
+  endOfDay
 } from "date-fns";
 import type { Booking } from "./data";
 
@@ -34,7 +37,12 @@ export default function CalendarUI({
   const dayHeaders = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   const getBookingsForDate = (date: Date) =>
-    bookings.filter((b) => isSameDay(new Date(b.date), date));
+    bookings.filter((b) => {
+      // Handle potential missing startDate/endDate by falling back to date
+      const start = b.startDate ? startOfDay(b.startDate) : startOfDay(b.date);
+      const end = b.endDate ? endOfDay(b.endDate) : endOfDay(b.date);
+      return isWithinInterval(date, { start, end });
+    });
 
   // Updated styles to match your specific hex requirements
   const getStatusStyles = (status: Booking["status"]) => {

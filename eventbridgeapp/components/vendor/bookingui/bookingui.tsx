@@ -186,8 +186,7 @@ export default function BookingUI() {
                 isOpen={isBookingModalOpen}
                 onClose={() => setIsBookingModalOpen(false)}
                 onSubmit={handleBookingSubmit}
-                blockedDates={blockedDates}
-                bookedDates={occupiedDates}
+                bookings={bookings}
             />
 
             {/* Block Dates Modal */}
@@ -195,7 +194,7 @@ export default function BookingUI() {
                 isOpen={isBlockDatesModalOpen}
                 onClose={() => setIsBlockDatesModalOpen(false)}
                 onBlockDates={handleBlockDatesSubmit}
-                bookedDates={occupiedDates}
+                bookings={bookings}
             />
 
             {/* Booking Details Modal */}
