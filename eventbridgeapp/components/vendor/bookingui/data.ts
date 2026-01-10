@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 export interface Booking {
     id: string; // Internal ID
     bookingId: string; // Display ID e.g. BK-9281-2023
@@ -41,18 +42,22 @@ export interface Booking {
     };
 }
 
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = today.getMonth();
+
 export const bookingsData: Booking[] = [
     {
         id: "1",
-        bookingId: "BK-9281-2023",
+        bookingId: `BK-9281-${currentYear}`,
         title: "Sarah's Wedding",
         status: 'confirmed',
-        date: new Date(2023, 9, 24), // Oct 24
-        startDate: new Date(2023, 9, 24),
-        endDate: new Date(2023, 9, 26),
+        date: new Date(currentYear, currentMonth, 24),
+        startDate: new Date(currentYear, currentMonth, 24),
+        endDate: new Date(currentYear, currentMonth, 26),
         initials: "SJ",
         avatarUrl: "/avatars/sarah.png",
-        dateDisplay: "Oct 24-26",
+        dateDisplay: format(new Date(currentYear, currentMonth, 24), "MMM d") + "-" + format(new Date(currentYear, currentMonth, 26), "d"),
         client: {
             name: "Sarah Jenkins",
             avatar: "/avatars/sarah.png",
@@ -62,7 +67,7 @@ export const bookingsData: Booking[] = [
         guestCount: 150,
         totalAmount: 4500000,
         venue: "The Grand Hall, downtown",
-        dateRange: "Oct 24 - Oct 26, 2023",
+        dateRange: format(new Date(currentYear, currentMonth, 24), "MMM d, yyyy") + " - " + format(new Date(currentYear, currentMonth, 26), "MMM d, yyyy"),
         timeRange: "10:00 AM - 11:00 PM",
         paymentStatus: "Deposit Paid",
         payments: [
@@ -70,7 +75,7 @@ export const bookingsData: Booking[] = [
             { label: "Photography Add-on (Premium)", amount: 1200000 },
             { label: "Service Fee", amount: 300000 },
             { label: "Paid on Sep 12", amount: 2250000, type: 'paid' },
-            { label: "Balance Due (Oct 24)", amount: 2250000, type: 'due' }
+            { label: "Balance Due", amount: 2250000, type: 'due' }
         ],
         latestMessage: {
             sender: "Sarah",
@@ -82,14 +87,14 @@ export const bookingsData: Booking[] = [
     },
     {
         id: "2",
-        bookingId: "BK-9282-2023",
+        bookingId: `BK-9282-${currentYear}`,
         title: "Tech Corp Mixer",
         status: 'pending',
-        date: new Date(2023, 10, 2), // Nov 2
-        startDate: new Date(2023, 10, 2),
-        endDate: new Date(2023, 10, 2),
+        date: new Date(currentYear, currentMonth + 1, 2),
+        startDate: new Date(currentYear, currentMonth + 1, 2),
+        endDate: new Date(currentYear, currentMonth + 1, 2),
         initials: "TC",
-        dateDisplay: "Nov 02",
+        dateDisplay: format(new Date(currentYear, currentMonth + 1, 2), "MMM d"),
         client: {
             name: "Tech Corp",
             rating: 4.5,
@@ -98,7 +103,7 @@ export const bookingsData: Booking[] = [
         guestCount: 50,
         totalAmount: 10000000,
         venue: "Innovation Hub",
-        dateRange: "Nov 02, 2023",
+        dateRange: format(new Date(currentYear, currentMonth + 1, 2), "MMM d, yyyy"),
         timeRange: "6:00 PM - 10:00 PM",
         paymentStatus: "Pending",
         payments: [
@@ -109,15 +114,15 @@ export const bookingsData: Booking[] = [
     },
     {
         id: "3",
-        bookingId: "BK-9283-2023",
+        bookingId: `BK-9283-${currentYear}`,
         title: "Liam's 30th",
         status: 'confirmed',
-        date: new Date(2023, 10, 15), // Nov 15
-        startDate: new Date(2023, 10, 15),
-        endDate: new Date(2023, 10, 15),
+        date: new Date(currentYear, currentMonth, 15),
+        startDate: new Date(currentYear, currentMonth, 15),
+        endDate: new Date(currentYear, currentMonth, 15),
         initials: "LW",
         avatarUrl: "/avatars/men.png",
-        dateDisplay: "Nov 15",
+        dateDisplay: format(new Date(currentYear, currentMonth, 15), "MMM d"),
         client: {
             name: "Liam Williams",
             avatar: "/avatars/men.png",
@@ -127,7 +132,7 @@ export const bookingsData: Booking[] = [
         guestCount: 40,
         totalAmount: 2800000,
         venue: "Skyline Rooftop",
-        dateRange: "Nov 15, 2023",
+        dateRange: format(new Date(currentYear, currentMonth, 15), "MMM d, yyyy"),
         timeRange: "7:00 PM - 12:00 AM",
         paymentStatus: "Fully Paid",
         payments: [
@@ -139,5 +144,5 @@ export const bookingsData: Booking[] = [
 ];
 
 export const blockedDatesData: Date[] = [
-    new Date(2023, 9, 5), // Oct 5
+    new Date(new Date().setDate(new Date().getDate() + 5)), // 5 days from now
 ];

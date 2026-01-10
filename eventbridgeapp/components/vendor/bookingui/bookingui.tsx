@@ -2,8 +2,8 @@
 import { useState } from "react"
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/toast";
-import CalendarHeader from "./calenderheader";
-import Calender from "./calender";
+import CalendarHeader from "./calendarheader";
+import Calendar from "./calendar";
 import BookingSidebar from "./sidebar";
 import BookingModal from "../BookingModal";
 import BlockDatesModal from "./BlockDatesModal";
@@ -16,7 +16,7 @@ export default function BookingUI() {
     const [bookings, setBookings] = useState<Booking[]>(bookingsData);
     const [blockedDates, setBlockedDates] = useState<Date[]>(blockedDatesData);
     const [confirmedBookings, setConfirmedBookings] = useState(3);
-    const [currentDate, setCurrentDate] = useState(new Date(2023, 9, 1)); // October 2023
+    const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to today
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isBlockDatesModalOpen, setIsBlockDatesModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -133,7 +133,7 @@ export default function BookingUI() {
             <div className="mt-6 flex flex-col lg:flex-row gap-6">
                 {/* Main Calendar */}
                 <div className="flex-1 min-w-0">
-                    <Calender
+                    <Calendar
                         currentDate={currentDate}
                         bookings={bookings}
                         onSelectBooking={handleSelectBooking}
