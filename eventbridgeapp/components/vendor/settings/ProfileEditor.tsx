@@ -130,7 +130,7 @@ export default function ProfileEditor() {
     return (
         <div className="w-full bg-shades-white rounded-xl border border-neutrals-03 shadow-sm">
             {/* Header */}
-            <div className="px-8 py-6 border-b border-neutrals-03 flex items-start justify-between">
+            <div className="px-4 md:px-8 py-4 md:py-6 border-b border-neutrals-03 flex items-start justify-between">
                 <div className="flex gap-4">
                     <div className="p-2.5 bg-neutrals-02 rounded-lg text-neutrals-07">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -146,13 +146,13 @@ export default function ProfileEditor() {
             </div>
 
             {/* Tabs Header */}
-            <div className="px-8 flex border-b border-neutrals-03 scrollbar-hide">
+            <div className="px-4 md:px-8 flex border-b border-neutrals-03 overflow-x-auto scrollbar-hide">
                 {TABS.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`
-                            py-4 mr-8 text-sm font-semibold transition-all border-b-2 whitespace-nowrap relative
+                            py-4 mr-6 md:mr-8 text-sm font-semibold transition-all border-b-2 whitespace-nowrap relative shrink-0
                             ${activeTab === tab.id
                                 ? 'border-primary-01 text-primary-01'
                                 : 'border-transparent text-neutrals-06 hover:text-neutrals-08'
@@ -171,7 +171,7 @@ export default function ProfileEditor() {
             </div>
 
             {/* Tab Content */}
-            <div className="p-8 animation-fade-in min-h-[500px]">
+            <div className="p-4 md:p-8 animation-fade-in min-h-[500px]">
                 {activeTab === "basics" && vendorProfile && (
                     <ProfileBasics
                         vendorProfile={vendorProfile}
