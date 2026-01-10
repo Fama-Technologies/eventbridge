@@ -116,105 +116,140 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
                             )}
                         </button>
 
-                        {/* Advanced Dropdown */}
+                        {/* Sheet Overlay & Panel */}
                         {showNotifications && (
-                            <div className="absolute right-0 top-14 w-[360px] bg-white border border-neutrals-03 rounded-xl shadow-xl overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                {/* Header & Tabs */}
-                                <div className="px-4 pt-4 pb-0 bg-white">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-bold text-lg text-shades-black">Notifications</h3>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleMarkAsRead()} className="text-primary-01 hover:bg-primary-01/10 p-1.5 rounded-full">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            </button>
-                                            <button className="text-neutrals-06 hover:bg-neutrals-02 p-1.5 rounded-full">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                                            </button>
+                            <>
+                                {/* Backdrop */}
+                                <div
+                                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity"
+                                    onClick={() => setShowNotifications(false)}
+                                />
+
+                                {/* Sheet from Right (Minimals Style) */}
+                                <div className="fixed top-0 right-0 bottom-0 h-screen w-full sm:w-[420px] bg-background shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col border-l border-border">
+                                    {/* Header */}
+                                    <div className="px-6 py-5 border-b border-dashed border-border flex items-center justify-between">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-foreground">Notifications</h3>
+                                            <p className="text-xs text-muted-foreground mt-0.5">You have {notifications.length} unread messages</p>
                                         </div>
+
+                                        {unreadCount > 0 && (
+                                            <button
+                                                onClick={() => handleMarkAsRead()}
+                                                className="text-primary hover:bg-primary/10 p-2 rounded-full transition-colors"
+                                                title="Mark all as read"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </button>
+                                        )}
                                     </div>
-                                    <div className="flex gap-2 border-b border-neutrals-02">
+
+                                    {/* Tabs */}
+                                    <div className="px-6 flex gap-8 border-b border-dashed border-border">
                                         {(['all', 'unread', 'archived'] as const).map((tab) => (
                                             <button
                                                 key={tab}
                                                 onClick={() => setActiveTab(tab)}
-                                                className={`pb-3 px-1 text-sm font-medium capitalize relative ${activeTab === tab
-                                                        ? 'text-shades-black after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-shades-black'
-                                                        : 'text-neutrals-06 hover:text-shades-black'
+                                                className={`py-4 text-sm font-semibold capitalize relative transition-all ${activeTab === tab
+                                                    ? 'text-foreground after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-foreground'
+                                                    : 'text-muted-foreground hover:text-foreground'
                                                     }`}
                                             >
                                                 {tab}
-                                                {tab === 'all' && <span className="ml-1.5 bg-shades-black text-white px-1.5 py-0.5 text-[10px] rounded-md">{notifications.length}</span>}
-                                                {tab === 'unread' && unreadCount > 0 && <span className="ml-1.5 bg-primary-01/10 text-primary-01 px-1.5 py-0.5 text-[10px] rounded-md">{unreadCount}</span>}
+                                                <span className={`ml-2 px-1.5 py-0.5 rounded text-[11px] font-bold ${activeTab === tab
+                                                    ? 'bg-foreground text-background'
+                                                    : 'bg-muted text-muted-foreground group-hover:bg-accent'
+                                                    }`}>
+                                                    {tab === 'all' ? notifications.length : tab === 'unread' ? unreadCount : 0}
+                                                </span>
                                             </button>
                                         ))}
                                     </div>
-                                </div>
 
-                                {/* List */}
-                                <div className="overflow-y-auto max-h-[400px] bg-[#F9FAFB]">
-                                    {filteredNotifications.length === 0 ? (
-                                        <div className="p-8 text-center">
-                                            <p className="text-neutrals-06 text-sm">No notifications found</p>
-                                        </div>
-                                    ) : (
-                                        filteredNotifications.map(notif => (
-                                            <div
-                                                key={notif.id}
-                                                className={`p-4 border-b border-neutrals-02 hover:bg-white transition-colors cursor-pointer group flex gap-3 ${!notif.isRead ? 'bg-white' : 'bg-[#F9FAFB]/50'}`}
-                                                onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
-                                            >
-                                                <div className="flex-none">
-                                                    {notif.sender?.avatar ? (
-                                                        <img src={notif.sender.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-primary-01/10 flex items-center justify-center text-primary-01">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v10zM6 17v-8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8"></path></svg>
-                                                        </div>
-                                                    )}
+                                    {/* Scrollable List */}
+                                    <div className="flex-1 overflow-y-auto">
+                                        {filteredNotifications.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4 text-muted-foreground">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v10zM6 17v-8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8"></path></svg>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm text-shades-black">
-                                                        <span className="font-semibold">{notif.sender?.name || 'System'}</span> {notif.title}
-                                                    </p>
-                                                    <p className="text-xs text-neutrals-06 mt-1">{notif.message}</p>
-
-                                                    {notif.content && (
-                                                        <div className="mt-3 p-3 bg-white border border-neutrals-02 rounded-lg text-sm text-neutrals-06">
-                                                            {notif.content}
-                                                        </div>
-                                                    )}
-
-                                                    {notif.actions && notif.actions.length > 0 && (
-                                                        <div className="flex gap-2 mt-3">
-                                                            {notif.actions.map((action: string) => (
-                                                                <button
-                                                                    key={action}
-                                                                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${action === 'Accept' || action === 'Reply'
-                                                                            ? 'bg-shades-black text-white hover:bg-shades-black/90'
-                                                                            : 'bg-white border border-neutrals-03 text-shades-black hover:bg-neutrals-02'
-                                                                        }`}
-                                                                >
-                                                                    {action}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {!notif.isRead && (
-                                                    <div className="flex-none pt-2">
-                                                        <div className="w-2.5 h-2.5 bg-primary-01 rounded-full"></div>
-                                                    </div>
-                                                )}
+                                                <h4 className="text-foreground font-semibold">No notifications</h4>
+                                                <p className="text-muted-foreground text-sm mt-1">You have no {activeTab} notifications</p>
                                             </div>
-                                        ))
-                                    )}
+                                        ) : (
+                                            <div className="divide-y divide-dashed divide-border">
+                                                {filteredNotifications.map(notif => (
+                                                    <div
+                                                        key={notif.id}
+                                                        className={`p-5 hover:bg-accent/50 transition-all cursor-pointer group flex gap-4 ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                                                        onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
+                                                    >
+                                                        <div className="flex-none pt-1">
+                                                            {notif.sender?.avatar ? (
+                                                                <img src={notif.sender.avatar} alt="" className="w-12 h-12 rounded-full object-cover shadow-sm bg-background p-0.5 border border-border" />
+                                                            ) : (
+                                                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 17a2 2 0 0 1-2 2h-2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v10zM6 17v-8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8"></path></svg>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="mb-1">
+                                                                <p className="text-sm text-foreground">
+                                                                    <span className="font-bold">{notif.sender?.name || 'System'}</span>
+                                                                    <span className="text-muted-foreground font-normal"> {notif.title}</span>
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                                {notif.message.includes('ago') ? notif.message : '2 hours ago'}
+                                                            </p>
+
+                                                            {notif.content && (
+                                                                <div className="mt-2 p-3 bg-card border border-border rounded-lg text-xs text-muted-foreground font-medium">
+                                                                    {notif.content}
+                                                                </div>
+                                                            )}
+
+                                                            {notif.actions && notif.actions.length > 0 && (
+                                                                <div className="flex gap-2 mt-3">
+                                                                    {notif.actions.map((action: string) => (
+                                                                        <button
+                                                                            key={action}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                            }}
+                                                                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${action === 'Accept' || action === 'Reply'
+                                                                                ? 'bg-foreground text-background shadow-sm hover:opacity-90'
+                                                                                : 'bg-background border border-border text-foreground hover:bg-accent'
+                                                                                }`}
+                                                                        >
+                                                                            {action}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {!notif.isRead && (
+                                                            <div className="flex-none self-center">
+                                                                <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="p-4 border-t border-dashed border-border bg-background text-center">
+                                        <Link href="/vendor/notifications" className="block w-full py-2.5 rounded-lg bg-muted text-sm font-bold text-foreground hover:bg-accent transition-colors">
+                                            View All
+                                        </Link>
+                                    </div>
                                 </div>
-                                <div className="p-3 border-t border-neutrals-02 bg-white text-center">
-                                    <button className="text-sm font-semibold text-shades-black hover:underline">
-                                        View all
-                                    </button>
-                                </div>
-                            </div>
+                            </>
                         )}
                     </div>
 
