@@ -238,7 +238,7 @@ export default function MessagesPage() {
                                         {selectedConversation.name.charAt(0)}
                                     </div>
                                 )}
-                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-shades-white"></span>
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
@@ -276,7 +276,7 @@ export default function MessagesPage() {
                                         {message.content && (
                                             <div
                                                 className={`px-4 py-3 rounded-2xl ${message.sender === 'vendor'
-                                                    ? 'bg-primary-01 text-white rounded-br-sm'
+                                                    ? 'bg-primary-01 text-shades-white rounded-br-sm'
                                                     : 'bg-shades-white text-shades-black rounded-bl-sm shadow-sm'
                                                     }`}
                                             >
@@ -303,7 +303,7 @@ export default function MessagesPage() {
                                                             </div>
                                                         )}
                                                         {attachment.type === 'file' && (
-                                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${message.sender === 'vendor' ? 'bg-primary-02 text-white' : 'bg-shades-white shadow-sm'}`}>
+                                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${message.sender === 'vendor' ? 'bg-primary-02 text-shades-white' : 'bg-shades-white shadow-sm'}`}>
                                                                 <FileText size={16} />
                                                                 <span className="text-xs truncate max-w-[150px]">{attachment.name}</span>
                                                             </div>
@@ -360,7 +360,7 @@ export default function MessagesPage() {
                                         )}
                                         <button
                                             onClick={() => removeAttachment(index)}
-                                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-shades-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
                                             <X size={12} />
                                         </button>
@@ -439,10 +439,10 @@ export default function MessagesPage() {
 
                             <button
                                 onClick={handleAudioRecord}
-                                className={`p-2 rounded-full transition-colors flex-shrink-0 ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'hover:bg-neutrals-01'}`}
+                                className={`p-2 rounded-full transition-colors flex-shrink-0 ${isRecording ? 'bg-red-500 text-shades-white animate-pulse' : 'hover:bg-neutrals-01'}`}
                                 title={isRecording ? 'Stop recording' : 'Record voice message'}
                             >
-                                <Mic size={22} className={isRecording ? 'text-white' : 'text-neutrals-06'} />
+                                <Mic size={22} className={isRecording ? 'text-shades-white' : 'text-neutrals-06'} />
                             </button>
 
                             <div className="flex-1 flex items-center bg-neutrals-01 rounded-full px-4 py-2">
@@ -461,7 +461,7 @@ export default function MessagesPage() {
                                 disabled={!messageInput.trim() && attachments.length === 0}
                                 className="p-2.5 bg-primary-01 hover:bg-primary-02 disabled:bg-neutrals-04 rounded-full transition-colors flex-shrink-0"
                             >
-                                <Send size={18} className="text-white" />
+                                <Send size={18} className="text-shades-white" />
                             </button>
                         </div>
                     </div>
@@ -534,7 +534,7 @@ export default function MessagesPage() {
                                             </div>
                                         </div>
                                         <button className="p-2 bg-primary-01 hover:bg-primary-02 rounded-full transition-colors flex-shrink-0">
-                                            <Download size={14} className="text-white" />
+                                            <Download size={14} className="text-shades-white" />
                                         </button>
                                     </div>
                                 ))}
@@ -544,7 +544,7 @@ export default function MessagesPage() {
 
                     {/* Reschedule Button - Fixed at bottom */}
                     <div className="p-6 border-t border-neutrals-02">
-                        <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-shades-black text-white rounded-xl font-medium hover:bg-neutrals-08 transition-colors">
+                        <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-shades-black text-shades-white rounded-xl font-medium hover:bg-neutrals-08 transition-colors">
                             <Calendar size={18} />
                             Reschedule Event
                         </button>
@@ -569,7 +569,7 @@ export default function MessagesPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-shades-black text-white'
+                                    ? 'bg-shades-black text-shades-white'
                                     : 'text-neutrals-07 hover:bg-neutrals-01'
                                     }`}
                             >
@@ -602,7 +602,7 @@ export default function MessagesPage() {
                                     </div>
                                 )}
                                 {conversation.unread && (
-                                    <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                                    <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-shades-white"></span>
                                 )}
                             </div>
 
