@@ -47,6 +47,7 @@ export default function ProfileBasics({
     const [isLoading, setIsLoading] = useState(!initialVendorProfile);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     
     // Local state with fallbacks
     const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(initialVendorProfile || null);
@@ -242,35 +243,104 @@ export default function ProfileBasics({
         if (!e.target.files || !e.target.files[0]) return;
 
         const file = e.target.files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('uploadType', 'profile_image');
+        
+        // Check file size (limit to 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            addToast("File size must be less than 10MB", "error");
+            return;
+        }
+
+        // Check file type - match your API's allowed types
+        const allowedTypes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp',
+        ];
+        
+        if (!allowedTypes.includes(file.type)) {
+            addToast("Please select a valid image file (JPEG, PNG, or WebP)", "error");
+            return;
+        }
+
+        const formDataToSend = new FormData();
+        formDataToSend.append('file', file);
+        formDataToSend.append('type', 'profile'); // Use 'profile' type for profile images
 
         try {
+            setIsUploading(true);
+            addToast("Uploading photo...", "info");
+            
             const response = await fetch('/api/upload', {
                 method: 'POST',
-                body: formData,
+                body: formDataToSend,
             });
 
             const data = await response.json();
             
-            if (data.success && vendorProfile) {
+            if (!response.ok) {
+                throw new Error(data.error || 'Upload failed');
+            }
+            
+            if (data.url) {
+                // First, update the local state immediately
                 const updatedProfile = {
-                    ...vendorProfile,
-                    profileImage: data.fileUrl
+                    ...vendorProfile!,
+                    profileImage: data.url
                 };
                 
                 setVendorProfile(updatedProfile);
                 
-                // Notify parent component if callback provided
-                if (onProfileUpdate) {
-                    onProfileUpdate(updatedProfile);
+                // Then update the profile in the database with the new image URL
+                try {
+                    const profileResponse = await fetch('/api/vendor/profile', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            profileImage: data.url,
+                            // Include all existing data to prevent overwriting
+                            businessName: vendorProfile?.businessName || "",
+                            description: vendorProfile?.description || "",
+                            phone: vendorProfile?.phone || "",
+                            address: vendorProfile?.address || "",
+                            city: vendorProfile?.city || "",
+                            state: vendorProfile?.state || "",
+                            zipCode: vendorProfile?.zipCode || "",
+                            website: vendorProfile?.website || "",
+                            yearsExperience: vendorProfile?.yearsExperience || 0
+                        }),
+                    });
+
+                    const profileData = await profileResponse.json();
+                    
+                    if (profileData.success) {
+                        addToast("Profile photo updated successfully", "success");
+                        
+                        // Notify parent component if callback provided
+                        if (onProfileUpdate) {
+                            onProfileUpdate(updatedProfile);
+                        }
+                    } else {
+                        console.warn('Photo uploaded but profile update failed:', profileData);
+                        addToast("Photo uploaded but failed to update profile", "warning");
+                    }
+                } catch (profileError) {
+                    console.error('Failed to update profile with image:', profileError);
+                    addToast("Photo uploaded but profile update failed", "warning");
                 }
-                
-                addToast("Profile photo updated successfully", "success");
+            } else {
+                addToast("Failed to upload photo: No URL returned", "error");
             }
         } catch (error) {
-            addToast("Failed to upload photo", "error");
+            console.error('Failed to upload photo:', error);
+            addToast(error instanceof Error ? error.message : "Failed to upload photo", "error");
+        } finally {
+            setIsUploading(false);
+            // Clear the input so the same file can be selected again
+            e.target.value = '';
         }
     };
 
@@ -382,11 +452,20 @@ export default function ProfileBasics({
                                 <input
                                     type="file"
                                     className="hidden"
-                                    accept="image/*"
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
                                     onChange={handlePhotoUpload}
+                                    disabled={isUploading}
                                 />
-                                <div className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors">
-                                    <Camera size={20} />
+                                <div className={`p-3 rounded-full shadow-lg transition-colors flex items-center justify-center ${
+                                    isUploading 
+                                        ? "bg-gray-400 cursor-not-allowed" 
+                                        : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                                }`}>
+                                    {isUploading ? (
+                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                    ) : (
+                                        <Camera size={20} className="text-white" />
+                                    )}
                                 </div>
                             </label>
                         )}
