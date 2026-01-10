@@ -9,30 +9,33 @@ import AccountSecurity from "./AccountSecurity";
 type SectionId = "profile" | "subscriptions" | "security";
 
 export default function SettingsContainer() {
-    const [expandedSection, setExpandedSection] = useState<SectionId | null>("profile");
+    const [expandedSection, setExpandedSection] = useState<SectionId | null>(null);
 
     const toggleSection = (id: SectionId) => {
         setExpandedSection(expandedSection === id ? null : id);
     };
 
     return (
-        <div className="max-w-5xl mx-auto px-4 pb-6 md:py-12">
-            <h1 className="text-3xl font-bold text-shades-black mb-2">Settings</h1>
-            <p className="text-neutrals-06 mb-8 text-right text-xs"></p>
+        <div className="max-w-3xl mx-auto px-4 pb-6 md:py-8">
+            {/* Header with version */}
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-shades-black">Settings</h1>
+                <span className="text-xs text-neutrals-06">v1.2.4-stable</span>
+            </div>
 
             <div className="space-y-4">
                 {/* 1. Profile Editor Accordion */}
                 <div className="bg-shades-white rounded-2xl border border-neutrals-03 overflow-hidden shadow-sm transition-all">
                     <button
                         onClick={() => toggleSection("profile")}
-                        className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-neutrals-01/50 transition-colors"
+                        className="w-full flex items-center justify-between p-5 md:p-6 hover:bg-neutrals-01/50 transition-colors"
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-neutrals-02 flex items-center justify-center text-neutrals-07">
                                 <User size={20} />
                             </div>
                             <div className="text-left">
-                                <h2 className="text-lg font-bold text-shades-black">Profile Editor</h2>
+                                <h2 className="text-base font-bold text-shades-black">Profile Editor</h2>
                                 <p className="text-sm text-neutrals-06">Manage your public storefront profile</p>
                             </div>
                         </div>
@@ -40,7 +43,7 @@ export default function SettingsContainer() {
                     </button>
 
                     {expandedSection === "profile" && (
-                        <div className="px-6 pb-8 md:px-8 animation-expand">
+                        <div className="px-5 pb-6 md:px-6 animation-expand">
                             <div className="pt-4 border-t border-neutrals-02">
                                 <ProfileEditor />
                             </div>
@@ -52,14 +55,14 @@ export default function SettingsContainer() {
                 <div className="bg-shades-white rounded-2xl border border-neutrals-03 overflow-hidden shadow-sm transition-all">
                     <button
                         onClick={() => toggleSection("subscriptions")}
-                        className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-neutrals-01/50 transition-colors"
+                        className="w-full flex items-center justify-between p-5 md:p-6 hover:bg-neutrals-01/50 transition-colors"
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
                                 <CreditCard size={20} />
                             </div>
                             <div className="text-left">
-                                <h2 className="text-lg font-bold text-shades-black">Subscriptions</h2>
+                                <h2 className="text-base font-bold text-shades-black">Subscriptions</h2>
                                 <p className="text-sm text-neutrals-06">Manage your plan and billing</p>
                             </div>
                         </div>
@@ -77,14 +80,14 @@ export default function SettingsContainer() {
                 <div className="bg-shades-white rounded-2xl border border-neutrals-03 overflow-hidden shadow-sm transition-all">
                     <button
                         onClick={() => toggleSection("security")}
-                        className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-neutrals-01/50 transition-colors"
+                        className="w-full flex items-center justify-between p-5 md:p-6 hover:bg-neutrals-01/50 transition-colors"
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-500">
                                 <Lock size={20} />
                             </div>
                             <div className="text-left">
-                                <h2 className="text-lg font-bold text-shades-black">Account & Security</h2>
+                                <h2 className="text-base font-bold text-shades-black">Account & Security</h2>
                                 <p className="text-sm text-neutrals-06">Passwords, MFA, and access controls</p>
                             </div>
                         </div>
@@ -100,11 +103,11 @@ export default function SettingsContainer() {
             </div>
 
             {/* Footer Links */}
-            <div className="mt-16 border-t border-neutrals-03 pt-8 flex justify-center gap-8 text-xs text-neutrals-06">
-                <a href="#" className="hover:text-neutrals-08">Terms of Service</a>
-                <a href="#" className="hover:text-neutrals-08">Privacy Policy</a>
-                <a href="#" className="hover:text-neutrals-08">Help Center</a>
-                <a href="#" className="hover:text-neutrals-08">System Status</a>
+            <div className="mt-12 border-t border-neutrals-03 pt-6 flex flex-wrap justify-center gap-6 text-xs text-neutrals-06">
+                <a href="/terms" className="hover:text-neutrals-08 transition-colors">Terms of Service</a>
+                <a href="/privacy" className="hover:text-neutrals-08 transition-colors">Privacy Policy</a>
+                <a href="#" className="hover:text-neutrals-08 transition-colors">Help Center</a>
+                <a href="#" className="hover:text-neutrals-08 transition-colors">System Status</a>
             </div>
         </div>
     );

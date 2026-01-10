@@ -9,6 +9,8 @@ import {
 } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 // GET vendor profile by ID
 export async function GET(
   request: Request,

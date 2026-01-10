@@ -3,7 +3,7 @@
 import { Calendar, Users, PartyPopper, Clock, Banknote, CircleCheckBig } from 'lucide-react';
 import Image from 'next/image';
 
-export type LeadStatus = 'new' | 'responded' | 'quote_sent' | 'booked';
+export type LeadStatus = 'new' | 'responded' | 'quote_sent' | 'invoice_sent' | 'booked' | 'declined';
 
 export interface Lead {
     id: string;
@@ -18,12 +18,17 @@ export interface Lead {
     status: LeadStatus;
     responseTime?: string;
     location?: string;
+    venue?: string;
     duration?: string;
     preferredTime?: string;
     flexibility?: string;
     specialRequirements?: string[];
     inquiryNote?: string;
     messageCount?: number;
+    // Links to other entities
+    conversationId?: string;
+    bookingId?: string;
+    invoiceId?: string;
 }
 
 interface LeadCardProps {
@@ -55,11 +60,23 @@ const statusConfig = {
         cardBorder: 'border-l-4 border-l-neutrals-06',
         border:'border-2 border-[#E2E8F0]'
     },
+    invoice_sent: {
+        label: 'INVOICE SENT',
+        bgColor: 'bg-[#FEF3C7]',
+        textColor: 'text-[#D97706]',
+        cardBorder: 'border-l-4 border-l-[#F59E0B]',
+    },
     booked: {
         label: 'BOOKED',
         bgColor: 'bg-[#D1FAE5]',
         textColor: 'text-[#047857]',
         cardBorder: 'bg-[#A7F3D0] border-1',
+    },
+    declined: {
+        label: 'DECLINED',
+        bgColor: 'bg-[#FEE2E2]',
+        textColor: 'text-[#DC2626]',
+        cardBorder: 'border-l-4 border-l-[#DC2626]',
     },
 };
 
@@ -189,6 +206,26 @@ export default function LeadCard({
                                 >
                                     Update Quote
                                 </button>
+                            </>
+                        )}
+
+                        {lead.status === 'invoice_sent' && (
+                            <>
+                                <span className="text-xs text-[#D97706] font-medium">Payment Pending</span>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => onViewDetails(lead)}
+                                        className="px-4 py-2 text-sm border border-neutrals-04 rounded-lg hover:bg-neutrals-02 transition-colors text-shades-black"
+                                    >
+                                        View Invoice
+                                    </button>
+                                    <button
+                                        onClick={() => onMessage?.(lead)}
+                                        className="px-4 py-2 text-sm bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors"
+                                    >
+                                        Send Reminder
+                                    </button>
+                                </div>
                             </>
                         )}
 

@@ -1,106 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronDown, Search } from 'lucide-react';
 import LeadCard from '@/components/vendor/leads/LeadCard';
 import LeadDetailModal from '@/components/vendor/leads/LeadDetailModal';
 import type { Lead, LeadStatus } from '@/components/vendor/leads/LeadCard';
+import {
+    MOCK_LEADS,
+    LEAD_STATUS_OPTIONS,
+    DATE_RANGE_OPTIONS,
+    BUDGET_OPTIONS,
+    SORT_OPTIONS,
+    filterLeadsByStatus,
+    filterLeadsBySearch,
+    sortLeads,
+} from '@/lib/booking-data';
 
-// Mock data for leads
-const mockLeads: Lead[] = [
-    {
-        id: '1',
-        name: 'Sarah Chen',
-        initials: 'SC',
-        avatar: '/avatars/men.png',
-        eventType: 'Corporate Retreat',
-        eventDate: 'Mar 15-17, 2025',
-        guests: 45,
-        budget: '1,200,000',
-        inquiredAt: '2 hours ago',
-        status: 'new',
-        responseTime: '1h 42m remaining',
-    },
-    {
-        id: '2',
-        name: 'Michael Rodriguez',
-        initials: 'MR',
-        avatar: '/avatars/woman.png',
-        eventType: 'Wedding Reception',
-        eventDate: 'Apr 22, 2025',
-        guests: 120,
-        budget: '18,000,000',
-        inquiredAt: '5 hours ago',
-        status: 'responded',
-    },
-    {
-        id: '3',
-        name: 'Emily Thompson',
-        initials: 'ET',
-        avatar: '/avatars/men.png',
-        eventType: 'Birthday Celebration',
-        eventDate: 'Mar 28, 2025',
-        guests: 35,
-        budget: '5,500',
-        inquiredAt: 'Yesterday',
-        status: 'quote_sent',
-    },
-    {
-        id: '4',
-        name: 'David Park',
-        initials: 'DP',
-        avatar: '/avatars/woman.png',
-        eventType: 'Product Launch',
-        eventDate: 'Apr 5, 2025',
-        guests: 80,
-        budget: '15,000',
-        inquiredAt: '3 days ago',
-        status: 'booked',
-    },
-    {
-        id: '5',
-        name: 'Jennifer Wilson',
-        initials: 'JW',
-        eventType: 'Anniversary Party',
-        eventDate: 'May 10, 2025',
-        guests: 60,
-        budget: '8,000',
-        inquiredAt: '3 hours ago',
-        status: 'new',
-        responseTime: '4h 18m remaining',
-    },
-];
-
-const statusOptions = [
-    { value: 'all', label: 'All Inquiries' },
-    { value: 'new', label: 'New Inquiries' },
-    { value: 'responded', label: 'Responded' },
-    { value: 'quote_sent', label: 'Quote Sent' },
-    { value: 'booked', label: 'Booked' },
-];
-
-const dateRangeOptions = [
-    { value: 'all', label: 'All Time' },
-    { value: '7d', label: 'Last 7 Days' },
-    { value: '30d', label: 'Last 30 Days' },
-    { value: '90d', label: 'Last 90 Days' },
-];
-
-const budgetOptions = [
-    { value: 'all', label: 'All Budgets' },
-    { value: '0-5000', label: 'Under 5,000' },
-    { value: '5000-10000', label: '5,000 - 10,000' },
-    { value: '10000-20000', label: '10,000 - 20,000' },
-    { value: '20000+', label: '20,000+' },
-];
-
-const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'oldest', label: 'Oldest First' },
-    { value: 'budget_high', label: 'Budget: High to Low' },
-    { value: 'budget_low', label: 'Budget: Low to High' },
-    { value: 'guests_high', label: 'Guests: High to Low' },
-];
+const statusOptions = LEAD_STATUS_OPTIONS;
+const dateRangeOptions = DATE_RANGE_OPTIONS;
+const budgetOptions = BUDGET_OPTIONS;
+const sortOptions = SORT_OPTIONS;
 
 interface DropdownProps {
     label: string;
@@ -151,6 +71,7 @@ function FilterDropdown({ label, icon, options, value, onChange }: DropdownProps
 }
 
 export default function LeadsPage() {
+    const router = useRouter();
     const [statusFilter, setStatusFilter] = useState('all');
     const [dateFilter, setDateFilter] = useState('all');
     const [budgetFilter, setBudgetFilter] = useState('all');
@@ -159,24 +80,16 @@ export default function LeadsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const newInquiriesCount = mockLeads.filter(lead => lead.status === 'new').length;
+    const newInquiriesCount = MOCK_LEADS.filter(lead => lead.status === 'new').length;
 
-    // Filter leads
-    const filteredLeads = mockLeads.filter(lead => {
-        if (statusFilter !== 'all' && lead.status !== statusFilter) return false;
-        
-        // Search filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            const matchesName = lead.name.toLowerCase().includes(query);
-            const matchesEventType = lead.eventType.toLowerCase().includes(query);
-            const matchesDate = lead.eventDate.toLowerCase().includes(query);
-            
-            if (!matchesName && !matchesEventType && !matchesDate) return false;
-        }
-        
-        return true;
-    });
+    // Filter and sort leads using helper functions
+    const filteredLeads = sortLeads(
+        filterLeadsBySearch(
+            filterLeadsByStatus(MOCK_LEADS as Lead[], statusFilter),
+            searchQuery
+        ),
+        sortBy
+    );
 
     const handleViewDetails = (lead: Lead) => {
         setSelectedLead(lead);
@@ -197,7 +110,13 @@ export default function LeadsPage() {
     };
 
     const handleMessage = (lead: Lead) => {
-        console.log('Message lead:', lead.id);
+        // Navigate to messages page with conversation ID
+        if (lead.conversationId) {
+            router.push(`/vendor/messages?conversation=${lead.conversationId}`);
+        } else {
+            // If no conversation exists, navigate to messages and create new
+            router.push(`/vendor/messages?newChat=${lead.id}&name=${encodeURIComponent(lead.name)}`);
+        }
     };
 
     const handleSendQuote = (lead: Lead) => {
@@ -205,7 +124,13 @@ export default function LeadsPage() {
     };
 
     const handleChat = (lead: Lead) => {
-        console.log('Chat with:', lead.id);
+        // Navigate to messages page with conversation ID
+        if (lead.conversationId) {
+            router.push(`/vendor/messages?conversation=${lead.conversationId}`);
+        } else {
+            // If no conversation exists, navigate to messages and create new
+            router.push(`/vendor/messages?newChat=${lead.id}&name=${encodeURIComponent(lead.name)}`);
+        }
     };
 
     const handleBlockDate = (lead: Lead) => {
@@ -214,6 +139,13 @@ export default function LeadsPage() {
 
     const handleForward = (lead: Lead) => {
         console.log('Forward lead:', lead.id);
+    };
+
+    const handleSendInvoice = (lead: Lead) => {
+        console.log('Send invoice to:', lead.id);
+        // TODO: Open invoice creation modal
+        // After invoice is sent, update lead status to 'invoice_sent'
+        // This will trigger calendar to show "Payment Pending"
     };
 
     return (
@@ -307,6 +239,7 @@ export default function LeadsPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSendQuote={handleSendQuote}
+                onSendInvoice={handleSendInvoice}
                 onChat={handleChat}
                 onBlockDate={handleBlockDate}
                 onForward={handleForward}

@@ -5,6 +5,9 @@ import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
+// Add this line - tells Next.js this route should not be statically generated
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Try NextAuth token first

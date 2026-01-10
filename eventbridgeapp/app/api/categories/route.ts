@@ -1,8 +1,10 @@
-// app/api/categories/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { eventCategories } from '@/drizzle/schema';
 import { asc } from 'drizzle-orm';
+
+// Add this line - tells Next.js this route should not be statically generated
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {

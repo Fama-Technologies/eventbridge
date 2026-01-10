@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Users, DollarSign, MapPin, Clock, Send, MessageSquare, Calendar, ArrowRight, Ban, Info } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, Users, DollarSign, MapPin, Clock, Send, MessageSquare, Calendar, ArrowRight, Ban, Info, FileText, Receipt } from 'lucide-react';
 import Image from 'next/image';
 import type { Lead } from './LeadCard';
 
@@ -10,6 +11,7 @@ interface LeadDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSendQuote?: (lead: Lead) => void;
+    onSendInvoice?: (lead: Lead) => void;
     onChat?: (lead: Lead) => void;
     onBlockDate?: (lead: Lead) => void;
     onForward?: (lead: Lead) => void;
@@ -21,14 +23,27 @@ export default function LeadDetailModal({
     isOpen,
     onClose,
     onSendQuote,
+    onSendInvoice,
     onChat,
     onBlockDate,
     onForward,
     onDecline,
 }: LeadDetailModalProps) {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<'details' | 'messages' | 'attachments'>('details');
 
     if (!isOpen || !lead) return null;
+
+    const handleChatClick = () => {
+        // Navigate to messages page with conversation ID
+        if (lead.conversationId) {
+            router.push(`/vendor/messages?conversation=${lead.conversationId}`);
+        } else {
+            // If no conversation exists, navigate to messages with lead info
+            router.push(`/vendor/messages?newChat=${lead.id}&name=${encodeURIComponent(lead.name)}`);
+        }
+        onClose(); // Close the modal after navigation
+    };
 
     const tabs = [
         { id: 'details', label: 'Details' },
@@ -204,8 +219,8 @@ export default function LeadDetailModal({
 
                     {/* Right Sidebar */}
                     <div className="w-full lg:w-72 p-6 bg-neutrals-01 border-t lg:border-t-0 lg:border-l border-neutrals-03">
-                        {/* Response Timer */}
-                        {lead.responseTime && (
+                        {/* Response Timer - only for new leads */}
+                        {lead.status === 'new' && lead.responseTime && (
                             <div className="text-center mb-6">
                                 <span className="text-xs font-medium text-primary-01 uppercase tracking-wider">Response Needed</span>
                                 <div className="flex items-center justify-center gap-2 mt-1">
@@ -215,18 +230,70 @@ export default function LeadDetailModal({
                             </div>
                         )}
 
-                        {/* Action Buttons */}
+                        {/* Invoice Sent Status */}
+                        {lead.status === 'invoice_sent' && (
+                            <div className="text-center mb-6 p-3 bg-[#FEF3C7] rounded-lg">
+                                <span className="text-xs font-medium text-[#D97706] uppercase tracking-wider">Payment Pending</span>
+                                <p className="text-sm text-[#D97706] mt-1">Invoice sent, awaiting payment</p>
+                            </div>
+                        )}
+
+                        {/* Booked Status */}
+                        {lead.status === 'booked' && (
+                            <div className="text-center mb-6 p-3 bg-[#D1FAE5] rounded-lg">
+                                <span className="text-xs font-medium text-[#047857] uppercase tracking-wider">Booking Confirmed</span>
+                                <p className="text-sm text-[#047857] mt-1">Payment received</p>
+                            </div>
+                        )}
+
+                        {/* Action Buttons - Dynamic based on status */}
                         <div className="space-y-3">
-                            <button
-                                onClick={() => onSendQuote?.(lead)}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-01 text-white rounded-lg hover:bg-primary-02 transition-colors font-medium"
-                            >
-                                <Send size={18} />
-                                Send Quote
-                            </button>
+                            {/* New Lead: Send Quote */}
+                            {(lead.status === 'new' || lead.status === 'responded') && (
+                                <button
+                                    onClick={() => onSendQuote?.(lead)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-01 text-white rounded-lg hover:bg-primary-02 transition-colors font-medium"
+                                >
+                                    <Send size={18} />
+                                    Send Quote
+                                </button>
+                            )}
+
+                            {/* Quote Sent: Send Invoice */}
+                            {lead.status === 'quote_sent' && (
+                                <button
+                                    onClick={() => onSendInvoice?.(lead)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-01 text-white rounded-lg hover:bg-primary-02 transition-colors font-medium"
+                                >
+                                    <FileText size={18} />
+                                    Send Invoice
+                                </button>
+                            )}
+
+                            {/* Invoice Sent: Send Reminder */}
+                            {lead.status === 'invoice_sent' && (
+                                <button
+                                    onClick={handleChatClick}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#F59E0B] text-white rounded-lg hover:bg-[#D97706] transition-colors font-medium"
+                                >
+                                    <Send size={18} />
+                                    Send Payment Reminder
+                                </button>
+                            )}
+
+                            {/* Booked: View Booking */}
+                            {lead.status === 'booked' && (
+                                <button
+                                    onClick={handleChatClick}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#047857] text-white rounded-lg hover:bg-[#065F46] transition-colors font-medium"
+                                >
+                                    <Receipt size={18} />
+                                    View Booking Details
+                                </button>
+                            )}
 
                             <button
-                                onClick={() => onChat?.(lead)}
+                                onClick={handleChatClick}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-shades-white border border-neutrals-04 text-shades-black rounded-lg hover:bg-neutrals-02 transition-colors font-medium"
                             >
                                 <MessageSquare size={18} />
@@ -236,13 +303,15 @@ export default function LeadDetailModal({
 
                         {/* Secondary Actions */}
                         <div className="mt-6 space-y-2">
-                            <button
-                                onClick={() => onBlockDate?.(lead)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutrals-07 hover:text-shades-black hover:bg-shades-white rounded-lg transition-colors"
-                            >
-                                <Calendar size={18} />
-                                Block Date Tentatively
-                            </button>
+                            {lead.status !== 'booked' && (
+                                <button
+                                    onClick={() => onBlockDate?.(lead)}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutrals-07 hover:text-shades-black hover:bg-shades-white rounded-lg transition-colors"
+                                >
+                                    <Calendar size={18} />
+                                    Block Date Tentatively
+                                </button>
+                            )}
 
                             <button
                                 onClick={() => onForward?.(lead)}
@@ -252,24 +321,39 @@ export default function LeadDetailModal({
                                 Forward to Team
                             </button>
 
-                            <button
-                                onClick={() => onDecline?.(lead)}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-errors-main hover:bg-errors-bg rounded-lg transition-colors"
-                            >
-                                <Ban size={18} />
-                                Decline Lead
-                            </button>
+                            {lead.status !== 'booked' && lead.status !== 'declined' && (
+                                <button
+                                    onClick={() => onDecline?.(lead)}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-errors-main hover:bg-errors-bg rounded-lg transition-colors"
+                                >
+                                    <Ban size={18} />
+                                    Decline Lead
+                                </button>
+                            )}
                         </div>
 
-                        {/* Pro Tip */}
-                        <div className="mt-6 p-3 bg-primary-01/10 rounded-lg">
-                            <div className="flex gap-2">
-                                <Info size={16} className="text-primary-01 shrink-0 mt-0.5" />
-                                <p className="text-xs text-primary-01">
-                                    <span className="font-semibold">Pro Tip:</span> Responding within 2 hours increases booking probability by 40%.
-                                </p>
+                        {/* Pro Tip - Dynamic based on status */}
+                        {lead.status === 'new' && (
+                            <div className="mt-6 p-3 bg-primary-01/10 rounded-lg">
+                                <div className="flex gap-2">
+                                    <Info size={16} className="text-primary-01 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-primary-01">
+                                        <span className="font-semibold">Pro Tip:</span> Responding within 2 hours increases booking probability by 40%.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {lead.status === 'invoice_sent' && (
+                            <div className="mt-6 p-3 bg-[#FEF3C7]/50 rounded-lg">
+                                <div className="flex gap-2">
+                                    <Info size={16} className="text-[#D97706] shrink-0 mt-0.5" />
+                                    <p className="text-xs text-[#D97706]">
+                                        <span className="font-semibold">Tip:</span> Follow up within 48 hours if payment is not received.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

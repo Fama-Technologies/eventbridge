@@ -1,49 +1,36 @@
 "use client";
-import { X, Calendar, Clock, Users, MapPin, Star, MessageSquare, FileText, MoreHorizontal } from "lucide-react";
-
-interface PaymentItem {
-    label: string;
-    amount: number;
-    type?: 'normal' | 'paid' | 'due';
-}
-
-interface Message {
-    sender: string;
-    avatar?: string;
-    time: string;
-    content: string;
-    attachment?: string;
-}
+import { useRouter } from "next/navigation";
+import { X, Calendar, Clock, Users, MapPin, Star, MessageSquare, FileText, MoreHorizontal, Receipt, Send } from "lucide-react";
+import type { Booking, BookingStatus } from "@/lib/booking-data";
+import { formatCurrency, getBookingStatusConfig } from "@/lib/booking-data";
 
 interface BookingDetailsProps {
     isOpen: boolean;
     onClose: () => void;
-    booking: {
-        id: string;
-        status: 'confirmed' | 'pending';
-        title: string;
-        client: {
-            name: string;
-            avatar?: string;
-            rating: number;
-            reviews: number;
-        };
-        dateRange: string;
-        timeRange: string;
-        guests: number;
-        venue: string;
-        totalAmount: number;
-        paymentStatus: string;
-        payments: PaymentItem[];
-        latestMessage?: Message;
-    };
+    booking: Booking;
+    onSendReceipt?: (booking: Booking) => void;
+    onMessage?: (booking: Booking) => void;
+    onViewInvoice?: (booking: Booking) => void;
 }
 
-export default function BookingDetailsModal({ isOpen, onClose, booking }: BookingDetailsProps) {
-    if (!isOpen) return null;
+export default function BookingDetailsModal({ isOpen, onClose, booking, onSendReceipt, onMessage, onViewInvoice }: BookingDetailsProps) {
+    const router = useRouter();
+    
+    if (!isOpen || !booking) return null;
 
-    const formatCurrency = (amount: number) => {
-        return `UGX ${amount.toLocaleString()}`;
+    const statusConfig = getBookingStatusConfig(booking.status);
+    const isPendingPayment = booking.status === 'pending_payment';
+    const isConfirmed = booking.status === 'confirmed';
+
+    const handleMessageClick = () => {
+        // Navigate to messages page with conversation ID
+        if (booking.conversationId) {
+            router.push(`/vendor/messages?conversation=${booking.conversationId}`);
+        } else {
+            // If no conversation exists, navigate to messages with booking info
+            router.push(`/vendor/messages?newChat=${booking.id}&name=${encodeURIComponent(booking.client.name)}`);
+        }
+        onClose(); // Close the modal after navigation
     };
 
     return (
@@ -58,8 +45,8 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
                     <div className="flex items-start justify-between">
                         <div>
                             <div className="flex items-center gap-3 mb-1">
-                                <span className="bg-[#D1FAE5] text-[#008a05] text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
-                                    {booking.status}
+                                <span className={`${statusConfig.bgColor} ${statusConfig.textColor} text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide`}>
+                                    {statusConfig.label}
                                 </span>
                                 <span className="text-neutrals-06 text-sm">#{booking.id}</span>
                             </div>
@@ -134,10 +121,20 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
                         <div className="border border-neutrals-03 rounded-xl overflow-hidden">
                             {/* Status Row */}
                             <div className="flex items-center justify-between px-4 py-3 bg-neutrals-01 border-b border-neutrals-03">
-                                <span className="text-neutrals-07 text-sm">Status</span>
-                                <span className="flex items-center gap-1.5 text-[#008a05] font-medium text-sm">
-                                    <span className="w-2 h-2 rounded-full bg-[#008a05]"></span>
-                                    {booking.paymentStatus}
+                                <span className="text-neutrals-07 text-sm">Payment Status</span>
+                                <span className={`flex items-center gap-1.5 font-medium text-sm ${
+                                    booking.paymentStatus === 'paid' ? 'text-[#008a05]' :
+                                    booking.paymentStatus === 'partial' ? 'text-[#D97706]' :
+                                    'text-errors-main'
+                                }`}>
+                                    <span className={`w-2 h-2 rounded-full ${
+                                        booking.paymentStatus === 'paid' ? 'bg-[#008a05]' :
+                                        booking.paymentStatus === 'partial' ? 'bg-[#F59E0B]' :
+                                        'bg-errors-main'
+                                    }`}></span>
+                                    {booking.paymentStatus === 'paid' ? 'Fully Paid' :
+                                     booking.paymentStatus === 'partial' ? 'Partial Payment' :
+                                     'Unpaid'}
                                 </span>
                             </div>
 
@@ -146,26 +143,62 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
                                 {booking.payments.map((item, index) => (
                                     <div
                                         key={index}
-                                        className={`flex items-center justify-between px-4 py-3 text-sm ${item.type === 'paid' ? 'text-[#008a05]' :
-                                                item.type === 'due' ? 'text-primary-01' :
-                                                    'text-shades-black'
-                                            }`}
+                                        className={`flex items-center justify-between px-4 py-3 text-sm ${
+                                            item.type === 'paid' ? 'text-[#008a05]' :
+                                            item.type === 'due' ? 'text-[#D97706]' :
+                                            item.type === 'discount' ? 'text-errors-main' :
+                                            'text-shades-black'
+                                        }`}
                                     >
-                                        <span className={item.type ? 'font-medium' : ''}>{item.label}</span>
+                                        <div>
+                                            <span className={item.type ? 'font-medium' : ''}>{item.label}</span>
+                                            {item.date && <span className="text-xs text-neutrals-06 ml-2">({item.date})</span>}
+                                        </div>
                                         <span className="font-medium">
-                                            {item.type === 'paid' ? '- ' : ''}{formatCurrency(item.amount)}
+                                            {item.type === 'paid' || item.type === 'discount' ? '- ' : ''}{formatCurrency(item.amount)}
                                         </span>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* View Receipt */}
-                            <div className="px-4 py-3 bg-neutrals-01 border-t border-neutrals-03 text-right">
-                                <button className="text-shades-black text-sm font-medium underline hover:no-underline">
-                                    View Receipt
-                                </button>
+                            {/* View Invoice/Receipt based on status */}
+                            <div className="px-4 py-3 bg-neutrals-01 border-t border-neutrals-03 flex justify-end gap-3">
+                                {booking.invoiceId && (
+                                    <button 
+                                        onClick={() => onViewInvoice?.(booking)}
+                                        className="text-shades-black text-sm font-medium underline hover:no-underline"
+                                    >
+                                        View Invoice
+                                    </button>
+                                )}
+                                {booking.receiptIds && booking.receiptIds.length > 0 && (
+                                    <button className="text-shades-black text-sm font-medium underline hover:no-underline">
+                                        View Receipt{booking.receiptIds.length > 1 ? 's' : ''}
+                                    </button>
+                                )}
                             </div>
                         </div>
+
+                        {/* Balance Due Alert for pending payments */}
+                        {isPendingPayment && booking.balanceAmount && booking.balanceAmount > 0 && (
+                            <div className="p-4 bg-[#FEF3C7] border border-[#F59E0B] rounded-xl">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-[#D97706]">Balance Due</p>
+                                        <p className="text-lg font-bold text-[#D97706]">{formatCurrency(booking.balanceAmount)}</p>
+                                        {booking.balanceDue && (
+                                            <p className="text-xs text-[#D97706]/80">Due by {booking.balanceDue}</p>
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={() => onMessage?.(booking)}
+                                        className="px-4 py-2 bg-[#F59E0B] text-white text-sm font-medium rounded-lg hover:bg-[#D97706] transition-colors"
+                                    >
+                                        Send Reminder
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Latest Message */}
@@ -211,13 +244,33 @@ export default function BookingDetailsModal({ isOpen, onClose, booking }: Bookin
 
                 {/* Sticky Footer Actions */}
                 <div className="sticky bottom-0 bg-shades-white border-t border-neutrals-03 p-4 flex items-center gap-3 rounded-b-2xl flex-shrink-0">
-                    <button className="flex-1 flex items-center justify-center gap-2 bg-primary-01 hover:bg-primary-02 text-white font-medium py-3 px-4 rounded-xl transition-colors text-sm">
+                    <button 
+                        onClick={handleMessageClick}
+                        className="flex-1 flex items-center justify-center gap-2 bg-primary-01 hover:bg-primary-02 text-white font-medium py-3 px-4 rounded-xl transition-colors text-sm"
+                    >
                         <MessageSquare size={16} />
                         Message {booking.client.name.split(' ')[0]}
                     </button>
-                    <button className="flex-1 flex items-center justify-center gap-2 border border-neutrals-03 hover:bg-neutrals-02 text-shades-black font-medium py-3 px-4 rounded-xl transition-colors text-sm">
-                        Send Receipt
-                    </button>
+                    
+                    {/* Show different action based on booking status */}
+                    {isPendingPayment ? (
+                        <button 
+                            onClick={handleMessageClick}
+                            className="flex-1 flex items-center justify-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] text-white font-medium py-3 px-4 rounded-xl transition-colors text-sm"
+                        >
+                            <Send size={16} />
+                            Send Reminder
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => onSendReceipt?.(booking)}
+                            className="flex-1 flex items-center justify-center gap-2 border border-neutrals-03 hover:bg-neutrals-02 text-shades-black font-medium py-3 px-4 rounded-xl transition-colors text-sm"
+                        >
+                            <Receipt size={16} />
+                            Send Receipt
+                        </button>
+                    )}
+                    
                     <button className="p-3 border border-neutrals-03 hover:bg-neutrals-02 rounded-xl transition-colors flex-shrink-0">
                         <MoreHorizontal size={18} className="text-neutrals-06" />
                     </button>
