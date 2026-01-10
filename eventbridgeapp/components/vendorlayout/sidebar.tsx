@@ -84,7 +84,7 @@ export default function Sidebar() {
                 <Image src="/logo.svg" alt="Logo" width={40} height={40} />
                 <div className="flex flex-col">
                     <h1 className='text-xl font-bold text-shades-black leading-tight'>Event Bridge</h1>
-                    <span className="text-[10px] font-semibold text-white bg-primary-01 px-2 py-0.5 rounded-full w-fit">FREE PLAN</span>
+                    <span className="text-[10px] font-semibold text-white bg-primary-01 px-2 py-0.5 rounded-full w-fit shadow-[0px_4px_30px_0px_var(--primary012)]">FREE PLAN</span>
                 </div>
             </div>
 
@@ -143,7 +143,7 @@ export default function Sidebar() {
 
                 {/* Upgrade Card */}
                 <div className="px-3 py-4">
-                    <div className="bg-primary-01 rounded-2xl p-4 text-white">
+                    <div className="bg-primary-01 rounded-2xl p-4 text-white shadow-[0px_1.79px_3.58px_-1.79px_#0000001A,0px_3.58px_5.37px_-0.9px_#0000001A]">
                         <div className="flex gap-2 items-center mb-2">
                             <Image src="/logo.svg" alt="Logo" width={28} height={28} className="brightness-0 invert" />
                             <span className="font-bold text-sm">Event Bridge</span>

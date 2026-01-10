@@ -5,54 +5,54 @@ import { MapPin, Plus, Twitter, Instagram, Trash2, Camera, Minus, Save, Edit, X,
 import { useToast } from "@/components/ui/toast";
 
 interface VendorProfile {
-  id: number;
-  businessName: string | null;
-  description: string | null;
-  phone: string | null;
-  website: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  zipCode: string | null;
-  yearsExperience: number | null;
-  isVerified: boolean;
-  rating: number;
-  reviewCount: number;
-  profileImage: string | null;
-  verificationStatus: string;
+    id: number;
+    businessName: string | null;
+    description: string | null;
+    phone: string | null;
+    website: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    yearsExperience: number | null;
+    isVerified: boolean;
+    rating: number;
+    reviewCount: number;
+    profileImage: string | null;
+    verificationStatus: string;
 }
 
 interface Service {
-  id: number;
-  name: string;
-  description: string | null;
-  price: number | null;
-  isActive: boolean;
+    id: number;
+    name: string;
+    description: string | null;
+    price: number | null;
+    isActive: boolean;
 }
 
 interface ProfileBasicsProps {
-  vendorProfile?: VendorProfile;
-  services?: Service[];
-  onProfileUpdate?: (updatedProfile: VendorProfile) => void;
-  onServicesUpdate?: (updatedServices: Service[]) => void;
+    vendorProfile?: VendorProfile;
+    services?: Service[];
+    onProfileUpdate?: (updatedProfile: VendorProfile) => void;
+    onServicesUpdate?: (updatedServices: Service[]) => void;
 }
 
-export default function ProfileBasics({ 
-  vendorProfile: initialVendorProfile, 
-  services: initialServices, 
-  onProfileUpdate, 
-  onServicesUpdate 
+export default function ProfileBasics({
+    vendorProfile: initialVendorProfile,
+    services: initialServices,
+    onProfileUpdate,
+    onServicesUpdate
 }: ProfileBasicsProps = {}) {
     const { addToast } = useToast();
     const [isLoading, setIsLoading] = useState(!initialVendorProfile);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    
+
     // Local state with fallbacks
     const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(initialVendorProfile || null);
     const [services, setServices] = useState<Service[]>(initialServices || []);
-    
+
     // Form State
     const [formData, setFormData] = useState({
         businessName: "",
@@ -85,12 +85,12 @@ export default function ProfileBasics({
             setIsLoading(true);
             const response = await fetch('/api/vendor/profile');
             const data = await response.json();
-            
+
             if (data.success) {
                 if (data.profile) {
                     setVendorProfile(data.profile);
                     setServices(data.services || []);
-                    
+
                     // Initialize form data
                     setFormData({
                         businessName: data.profile.businessName || "",
@@ -133,7 +133,7 @@ export default function ProfileBasics({
     const handleSave = async () => {
         try {
             setIsSaving(true);
-            
+
             const response = await fetch('/api/vendor/profile', {
                 method: 'PUT',
                 headers: {
@@ -154,19 +154,19 @@ export default function ProfileBasics({
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 // Create updated profile object
                 const updatedProfile: VendorProfile = data.profile;
-                
+
                 // Update local state
                 setVendorProfile(updatedProfile);
-                
+
                 // Notify parent component if callback provided
                 if (onProfileUpdate) {
                     onProfileUpdate(updatedProfile);
                 }
-                
+
                 setIsEditing(false);
                 addToast(data.message || "Profile updated successfully", "success");
             } else {
@@ -182,7 +182,7 @@ export default function ProfileBasics({
 
     const handleAddService = async () => {
         if (!newService.trim()) return;
-        
+
         try {
             const response = await fetch('/api/vendor/services', {
                 method: 'POST',
@@ -197,17 +197,17 @@ export default function ProfileBasics({
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 const updatedServices = [...services, data.service];
                 setServices(updatedServices);
                 setNewService("");
-                
+
                 // Notify parent component if callback provided
                 if (onServicesUpdate) {
                     onServicesUpdate(updatedServices);
                 }
-                
+
                 addToast("Service added successfully", "success");
             }
         } catch (error) {
@@ -222,16 +222,16 @@ export default function ProfileBasics({
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 const updatedServices = services.filter(s => s.id !== serviceId);
                 setServices(updatedServices);
-                
+
                 // Notify parent component if callback provided
                 if (onServicesUpdate) {
                     onServicesUpdate(updatedServices);
                 }
-                
+
                 addToast("Service removed successfully", "success");
             }
         } catch (error) {
@@ -243,7 +243,7 @@ export default function ProfileBasics({
         if (!e.target.files || !e.target.files[0]) return;
 
         const file = e.target.files[0];
-        
+
         // Check file size (limit to 10MB)
         if (file.size > 10 * 1024 * 1024) {
             addToast("File size must be less than 10MB", "error");
@@ -258,7 +258,7 @@ export default function ProfileBasics({
             'image/png',
             'image/webp',
         ];
-        
+
         if (!allowedTypes.includes(file.type)) {
             addToast("Please select a valid image file (JPEG, PNG, or WebP)", "error");
             return;
@@ -271,27 +271,27 @@ export default function ProfileBasics({
         try {
             setIsUploading(true);
             addToast("Uploading photo...", "info");
-            
+
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formDataToSend,
             });
 
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Upload failed');
             }
-            
+
             if (data.url) {
                 // First, update the local state immediately
                 const updatedProfile = {
                     ...vendorProfile!,
                     profileImage: data.url
                 };
-                
+
                 setVendorProfile(updatedProfile);
-                
+
                 // Then update the profile in the database with the new image URL
                 try {
                     const profileResponse = await fetch('/api/vendor/profile', {
@@ -315,10 +315,10 @@ export default function ProfileBasics({
                     });
 
                     const profileData = await profileResponse.json();
-                    
+
                     if (profileData.success) {
                         addToast("Profile photo updated successfully", "success");
-                        
+
                         // Notify parent component if callback provided
                         if (onProfileUpdate) {
                             onProfileUpdate(updatedProfile);
@@ -393,382 +393,295 @@ export default function ProfileBasics({
         );
     }
 
-    const displayLocation = vendorProfile?.city && vendorProfile?.state 
+    const displayLocation = vendorProfile?.city && vendorProfile?.state
         ? `${vendorProfile.city}, ${vendorProfile.state}`
         : vendorProfile?.address || "Location not set";
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-sm">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Business Profile</h2>
-                    <p className="text-gray-600 mt-2">Manage your business information and services</p>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                    {isEditing ? (
-                        <>
-                            <button
-                                onClick={() => setIsEditing(false)}
-                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-                            >
-                                <X size={18} /> Cancel
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                <Save size={18} />
-                                {isSaving ? 'Saving...' : 'Save Changes'}
-                            </button>
-                        </>
-                    ) : (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors flex items-center gap-2"
-                        >
-                            <Edit size={18} /> Edit Profile
-                        </button>
-                    )}
-                </div>
+        <div className="animate-fade-in relative">
+            <div className="mb-8">
+                <h2 className="text-xl font-bold text-shades-black">Profile Basics</h2>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
-                {/* Left Column - Profile Image & Stats */}
-                <div className="lg:col-span-1 space-y-6">
-                    {/* Profile Image */}
-                    <div className="relative group">
-                        <div className="w-full aspect-square max-w-64 mx-auto rounded-2xl overflow-hidden border-4 border-white shadow-lg">
+            <div className="grid lg:grid-cols-12 gap-12">
+                {/* Left Column - Profile Image */}
+                <div className="lg:col-span-3 flex flex-col items-center">
+                    <div className="relative group mb-4">
+                        <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-white shadow-lg bg-neutrals-02">
                             <img
                                 src={vendorProfile?.profileImage || "https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&q=80"}
                                 alt={vendorProfile?.businessName || "Business"}
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        {isEditing && (
-                            <label className="absolute bottom-4 right-4 cursor-pointer">
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                                    onChange={handlePhotoUpload}
-                                    disabled={isUploading}
-                                />
-                                <div className={`p-3 rounded-full shadow-lg transition-colors flex items-center justify-center ${
-                                    isUploading 
-                                        ? "bg-gray-400 cursor-not-allowed" 
-                                        : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                                }`}>
-                                    {isUploading ? (
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                                    ) : (
-                                        <Camera size={20} className="text-white" />
-                                    )}
-                                </div>
-                            </label>
-                        )}
                     </div>
 
-                    {/* Stats */}
-                    <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200">
-                        <h3 className="font-semibold text-gray-900 mb-4">Business Stats</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-sm text-gray-600">Rating</p>
-                                <div className="flex items-center gap-2">
-                                    <div className="text-2xl font-bold text-gray-900">
-                                        {vendorProfile?.rating?.toFixed(1) || "0.0"}
-                                    </div>
-                                    <div className="text-yellow-500">★★★★★</div>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {vendorProfile?.reviewCount || 0} reviews
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Verification Status</p>
-                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium mt-1 ${
-                                    vendorProfile?.isVerified 
-                                        ? "bg-green-100 text-green-800" 
-                                        : "bg-yellow-100 text-yellow-800"
-                                }`}>
-                                    {vendorProfile?.verificationStatus === 'verified' ? "✓ Verified" : 
-                                     vendorProfile?.verificationStatus === 'pending' ? "Pending Review" : 
-                                     "Not Submitted"}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {isEditing && (
+                        <label className="cursor-pointer text-sm font-semibold text-neutrals-06 hover:text-primary-01 underline underline-offset-4 transition-colors">
+                            Change Photo
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={handlePhotoUpload}
+                                disabled={isUploading}
+                            />
+                        </label>
+                    )}
                 </div>
 
                 {/* Right Column - Form */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Business Information */}
-                    <div className="space-y-6">
-                        <h3 className="text-lg font-semibold text-gray-900 border-b pb-3">Business Information</h3>
-                        
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Business Name *
-                                </label>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={formData.businessName}
-                                        onChange={(e) => setFormData({...formData, businessName: e.target.value})}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                                        required
-                                    />
-                                ) : (
-                                    <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                        {vendorProfile?.businessName || "Not set"}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <MapPin size={16} />
-                                        Location
-                                    </div>
-                                </label>
-                                {isEditing ? (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input
-                                            type="text"
-                                            placeholder="City"
-                                            value={formData.city}
-                                            onChange={(e) => setFormData({...formData, city: e.target.value})}
-                                            className="px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="State"
-                                            value={formData.state}
-                                            onChange={(e) => setFormData({...formData, state: e.target.value})}
-                                            className="px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                                        />
-                                    </div>
-                                ) : (
-                                    <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                        {displayLocation}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Phone Number
-                                </label>
-                                {isEditing ? (
-                                    <input
-                                        type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                                    />
-                                ) : (
-                                    <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                        {vendorProfile?.phone || "Not provided"}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Website
-                                </label>
-                                {isEditing ? (
-                                    <div className="relative">
-                                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                        <input
-                                            type="url"
-                                            value={formData.website}
-                                            onChange={(e) => setFormData({...formData, website: e.target.value})}
-                                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                                            placeholder="https://example.com"
-                                        />
-                                    </div>
-                                ) : (
-                                    <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                        {vendorProfile?.website || "Not provided"}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Business Description *
-                            </label>
+                <div className="lg:col-span-9 space-y-8">
+                    {/* Main Info */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-shades-black">Business Name</label>
                             {isEditing ? (
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                    rows={4}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none resize-none"
-                                    placeholder="Tell customers about your business, services, and experience..."
-                                    required
+                                <input
+                                    type="text"
+                                    value={formData.businessName}
+                                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-lg border border-neutrals-03 text-shades-black placeholder:text-neutrals-05 focus:border-primary-01 focus:ring-1 focus:ring-primary-01 outline-none transition-all"
+                                    placeholder="e.g. Catering by EventBridge"
                                 />
                             ) : (
-                                <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 whitespace-pre-line">
-                                    {vendorProfile?.description || "No description provided"}
-                                </p>
+                                <div className="px-4 py-3 bg-neutrals-01 rounded-lg border border-transparent text-shades-black font-medium">
+                                    {vendorProfile?.businessName || "Not set"}
+                                </div>
                             )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Years in Business
-                            </label>
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-shades-black">Location</label>
                             {isEditing ? (
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({...formData, yearsExperience: Math.max(0, formData.yearsExperience - 1)})}
-                                        className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                                    >
-                                        <Minus size={18} />
-                                    </button>
-                                    <span className="w-12 text-center font-semibold text-gray-900">
-                                        {formData.yearsExperience}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({...formData, yearsExperience: formData.yearsExperience + 1})}
-                                        className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                                    >
-                                        <Plus size={18} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                    {vendorProfile?.yearsExperience || 0} {vendorProfile?.yearsExperience === 1 ? 'year' : 'years'}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Services Section */}
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">Services Offered</h3>
-                            {isEditing && (
-                                <div className="text-sm text-gray-600">
-                                    {services.length} service{services.length !== 1 ? 's' : ''}
-                                </div>
-                            )}
-                        </div>
-                        
-                        <div className="space-y-4">
-                            {services.length > 0 ? (
-                                <div className="grid md:grid-cols-2 gap-3">
-                                    {services.map((service) => (
-                                        <div key={service.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div>
-                                                <p className="font-medium text-gray-900">{service.name}</p>
-                                                {service.description && (
-                                                    <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                                                )}
-                                                {service.price && (
-                                                    <p className="text-sm font-medium text-blue-600 mt-1">
-                                                        UGX {service.price.toLocaleString()}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            {isEditing && (
-                                                <button
-                                                    onClick={() => handleRemoveService(service.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors"
-                                                    type="button"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                                    <p className="text-gray-600">No services added yet</p>
-                                    <p className="text-sm text-gray-500 mt-1">Add your services to attract customers</p>
-                                </div>
-                            )}
-
-                            {isEditing && (
-                                <div className="flex gap-3">
+                                <div className="relative">
+                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutrals-06" size={18} />
                                     <input
                                         type="text"
-                                        value={newService}
-                                        onChange={(e) => setNewService(e.target.value)}
-                                        placeholder="Add a new service (e.g., Wedding Photography)"
-                                        className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                                        onKeyPress={(e) => e.key === 'Enter' && handleAddService()}
+                                        value={formData.city} // Simplified to City for 'Location' field match
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })} // Updating city as primary location
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-neutrals-03 text-shades-black placeholder:text-neutrals-05 focus:border-primary-01 focus:ring-1 focus:ring-primary-01 outline-none transition-all"
+                                        placeholder="New York, NY"
                                     />
-                                    <button
-                                        onClick={handleAddService}
-                                        className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                                        type="button"
-                                    >
-                                        <Plus size={18} /> Add
-                                    </button>
+                                </div>
+                            ) : (
+                                <div className="px-4 py-3 bg-neutrals-01 rounded-lg border border-transparent text-shades-black font-medium flex items-center gap-2">
+                                    <MapPin size={16} className="text-neutrals-06" />
+                                    {displayLocation}
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Social Links */}
-                    <div className="space-y-6">
-                        <h3 className="text-lg font-semibold text-gray-900 border-b pb-3">Social Media Links</h3>
-                        
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                                    <Twitter className="text-blue-600" size={20} />
+                    {/* Services Tags */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-shades-black">
+                            Type of Services <span className="text-neutrals-06 font-normal">(Select all that apply)</span>
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {services.map((service) => (
+                                <div key={service.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-01/10 text-primary-01 border border-primary-01/20 text-sm font-medium">
+                                    {service.name}
+                                    {isEditing && (
+                                        <button onClick={() => handleRemoveService(service.id)} className="hover:text-primary-02">
+                                            <X size={14} />
+                                        </button>
+                                    )}
                                 </div>
-                                {isEditing ? (
+                            ))}
+                            {isEditing && (
+                                <button
+                                    onClick={() => {/* Trigger add modal or inline add */ }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutrals-02 text-shades-black border border-transparent hover:bg-neutrals-03 text-sm font-semibold transition-colors"
+                                >
+                                    <Plus size={14} /> Add Service
+                                </button>
+                            )}
+                        </div>
+                        {isEditing && (
+                            <div className="flex gap-2 mt-2 w-full md:w-1/2">
+                                <input
+                                    type="text"
+                                    value={newService}
+                                    onChange={(e) => setNewService(e.target.value)}
+                                    placeholder="Type service..."
+                                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-neutrals-03 focus:border-primary-01 outline-none"
+                                    onKeyPress={(e) => e.key === 'Enter' && handleAddService()}
+                                />
+                                <button
+                                    onClick={handleAddService}
+                                    className="px-3 py-2 bg-shades-black text-white rounded-lg text-sm font-bold"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Years in Business */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-shades-black">Years in Business</label>
+                        {isEditing ? (
+                            <div className="flex items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, yearsExperience: Math.max(0, formData.yearsExperience - 1) })}
+                                    className="w-10 h-10 rounded-l-lg border border-neutrals-03 flex items-center justify-center hover:bg-neutrals-01 transition-colors text-neutrals-06"
+                                >
+                                    <Minus size={16} />
+                                </button>
+                                <div className="w-12 h-10 border-y border-neutrals-03 flex items-center justify-center font-bold text-shades-black bg-white">
+                                    {formData.yearsExperience}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, yearsExperience: formData.yearsExperience + 1 })}
+                                    className="w-10 h-10 rounded-r-lg border border-neutrals-03 flex items-center justify-center hover:bg-neutrals-01 transition-colors text-neutrals-06"
+                                >
+                                    <Plus size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="font-medium text-shades-black">
+                                {vendorProfile?.yearsExperience || 0} years
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bio / Description */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm font-bold text-shades-black">Bio / Description</label>
+                            {isEditing && (
+                                <span className="text-xs text-neutrals-06 font-medium">
+                                    {formData.description.length}/500
+                                </span>
+                            )}
+                        </div>
+                        {isEditing ? (
+                            <textarea
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                rows={5}
+                                className="w-full px-4 py-3 rounded-lg border border-neutrals-03 text-shades-black placeholder:text-neutrals-05 focus:border-primary-01 focus:ring-1 focus:ring-primary-01 outline-none resize-none"
+                                placeholder="We are a premier service..."
+                                maxLength={500}
+                            />
+                        ) : (
+                            <div className="p-4 bg-neutrals-01 rounded-lg border border-transparent text-neutrals-07 text-sm leading-relaxed">
+                                {vendorProfile?.description || "No description provided."}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Social Media Links */}
+                    <div className="space-y-4 pt-4 border-t border-dashed border-neutrals-03">
+                        <h3 className="text-sm font-bold text-shades-black">Social Media Links</h3>
+
+                        {/* Twitter/X */}
+                        <div className="flex items-center gap-3">
+                            {isEditing ? (
+                                <div className="relative flex-1">
+                                    <Twitter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-shades-black" size={18} />
                                     <input
                                         type="url"
                                         value={socialLinks.twitter}
-                                        onChange={(e) => setSocialLinks({...socialLinks, twitter: e.target.value})}
-                                        placeholder="https://twitter.com/yourbusiness"
-                                        className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        onChange={(e) => setSocialLinks({ ...socialLinks, twitter: e.target.value })}
+                                        className="w-full pl-10 pr-10 py-3 rounded-lg border border-neutrals-03 text-shades-black placeholder:text-neutrals-05 focus:border-primary-01 focus:ring-1 focus:ring-primary-01 outline-none transition-all"
+                                        placeholder="twitter.com/eventbridgecaters"
                                     />
-                                ) : (
-                                    <p className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                        {socialLinks.twitter || "Not set"}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
-                                    <Instagram className="text-pink-600" size={20} />
+                                    {socialLinks.twitter && (
+                                        <button
+                                            onClick={() => setSocialLinks({ ...socialLinks, twitter: '' })}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-05 hover:text-red-500"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
-                                {isEditing ? (
+                            ) : socialLinks.twitter && (
+                                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-shades-black hover:text-primary-01 font-medium transition-colors">
+                                    <Twitter size={18} />
+                                    <span>Twitter</span>
+                                </a>
+                            )}
+                        </div>
+
+                        {/* Instagram */}
+                        <div className="flex items-center gap-3">
+                            {isEditing ? (
+                                <div className="relative flex-1">
+                                    <Instagram className="absolute left-3.5 top-1/2 -translate-y-1/2 text-shades-black" size={18} />
                                     <input
                                         type="url"
                                         value={socialLinks.instagram}
-                                        onChange={(e) => setSocialLinks({...socialLinks, instagram: e.target.value})}
-                                        placeholder="https://instagram.com/yourbusiness"
-                                        className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        onChange={(e) => setSocialLinks({ ...socialLinks, instagram: e.target.value })}
+                                        className="w-full pl-10 pr-10 py-3 rounded-lg border border-neutrals-03 text-shades-black placeholder:text-neutrals-05 focus:border-primary-01 focus:ring-1 focus:ring-primary-01 outline-none transition-all"
+                                        placeholder="Add Instagram Link"
                                     />
-                                ) : (
-                                    <p className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                                        {socialLinks.instagram || "Not set"}
-                                    </p>
-                                )}
-                            </div>
+                                    {socialLinks.instagram && (
+                                        <button
+                                            onClick={() => setSocialLinks({ ...socialLinks, instagram: '' })}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutrals-05 hover:text-red-500"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            ) : socialLinks.instagram && (
+                                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-shades-black hover:text-primary-01 font-medium transition-colors">
+                                    <Instagram size={18} />
+                                    <span>Instagram</span>
+                                </a>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Action Bar (Only when editing) */}
+            {isEditing ? (
+                <div className="mt-8 pt-6 border-t border-neutrals-03 flex justify-end gap-3">
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            // Reset changes
+                            if (vendorProfile) {
+                                setFormData({
+                                    businessName: vendorProfile.businessName || "",
+                                    description: vendorProfile.description || "",
+                                    phone: vendorProfile.phone || "",
+                                    address: vendorProfile.address || "",
+                                    city: vendorProfile.city || "",
+                                    state: vendorProfile.state || "",
+                                    zipCode: vendorProfile.zipCode || "",
+                                    website: vendorProfile.website || "",
+                                    yearsExperience: vendorProfile.yearsExperience || 0
+                                });
+                            }
+                        }}
+                        className="px-6 py-2.5 rounded-lg border border-neutrals-04 text-shades-black font-bold hover:bg-neutrals-01 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-6 py-2.5 rounded-lg bg-primary-01 text-white font-bold hover:bg-primary-02 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
+            ) : (
+                <div className="absolute top-0 right-0">
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="text-primary-01 font-bold text-sm hover:underline"
+                    >
+                        Edit details
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
