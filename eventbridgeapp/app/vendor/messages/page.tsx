@@ -459,7 +459,7 @@ export default function MessagesPage() {
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!messageInput.trim() && attachments.length === 0}
-                                className="p-2.5 bg-primary-01 hover:bg-primary-02 disabled:bg-neutrals-04 rounded-full transition-colors flex-shrink-0"
+                                className="p-2.5 bg-primary-01 hover:bg-primary-02 disabled:bg-neutrals-04 rounded-md transition-colors flex-shrink-0"
                             >
                                 <Send size={18} className="text-shades-white" />
                             </button>
