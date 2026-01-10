@@ -16,7 +16,7 @@ export default function SettingsContainer() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto px-4 pb-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-2 pb-6 md:py-2">
             {/* Header with version */}
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-shades-black">Settings</h1>
