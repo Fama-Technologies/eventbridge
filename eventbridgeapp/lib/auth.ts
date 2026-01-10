@@ -206,26 +206,59 @@ export const authOptions: NextAuthOptions = {
    AUTH USER HELPERS
 ========================= */
 export async function getAuthUser(
-  req: NextRequest
+  req: NextRequest | any
 ): Promise<AuthUser | null> {
+  // Try NextAuth token first
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (!token || !token.userId) {
-    return null;
+  if (token && token.userId) {
+    const [firstName, ...rest] = (token.name as string)?.split(' ') ?? [];
+    return {
+      id: Number(token.userId),
+      email: token.email as string,
+      firstName: firstName ?? '',
+      lastName: rest.join(' '),
+      accountType: token.accountType as AuthUser['accountType'],
+    };
   }
 
-  const [firstName, ...rest] = (token.name as string)?.split(' ') ?? [];
+  // Fallback: Check for custom auth-token
+  // Handle different cookie types (NextRequest vs next/headers cookies)
+  let customToken: string | undefined;
 
-  return {
-    id: Number(token.userId),
-    email: token.email as string,
-    firstName: firstName ?? '',
-    lastName: rest.join(' '),
-    accountType: token.accountType as AuthUser['accountType'],
-  };
+  if (req.cookies.get && typeof req.cookies.get === 'function') {
+    // NextRequest or Map-like
+    const cookie = req.cookies.get('auth-token');
+    customToken = cookie?.value || cookie;
+  } else if (req.cookies['auth-token']) {
+    // Plain object
+    customToken = req.cookies['auth-token'];
+  } else if (Array.isArray(req.cookies)) {
+    // Array of cookies (sometimes happens in older Next.js mocks, though less likely here)
+    const cookie = req.cookies.find((c: any) => c.name === 'auth-token');
+    customToken = cookie?.value;
+  }
+
+  if (customToken) {
+    const payload = await verifyToken(customToken);
+    if (payload) {
+      const [firstName, ...rest] = (payload.name as string || '').split(' '); // jwt.ts payload might not have name, check definition
+      // validPayload has: userId, email, accountType, firstName, lastName
+
+      return {
+        id: payload.userId,
+        email: payload.email,
+        firstName: (payload as any).firstName || firstName || '',
+        lastName: (payload as any).lastName || rest.join(' ') || '',
+        accountType: payload.accountType,
+      };
+    }
+  }
+
+  return null;
 }
 
 /* =========================

@@ -17,10 +17,10 @@ export function middleware(request: NextRequest) {
   ];
 
   // Check if the path is public
-  const isPublicPath = publicPaths.some(path => 
-    pathname === path || 
+  const isPublicPath = publicPaths.some(path =>
+    pathname === path ||
     pathname.startsWith(`${path}/`) ||
-    pathname.startsWith('/_next/') || 
+    pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/_next/') ||
     pathname.startsWith('/api/auth/') || // NextAuth routes
     pathname.includes('.')
@@ -35,15 +35,20 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value;
   const sessionToken = request.cookies.get('session')?.value;
 
+  console.log(`Middleware visiting: ${pathname}`);
+  console.log(`Middleware cookies: ${request.cookies.getAll().map(c => c.name).join(', ')}`);
+  console.log(`Middleware token value: ${token ? 'Found' : 'Missing'}`);
+
   // If no token and trying to access protected route, redirect to login
   if (!token && !sessionToken) {
+    console.log(`Middleware: No token found, redirecting to login from ${pathname}`);
     const loginUrl = new URL('/login', request.url);
-    
+
     // Add redirect parameter if not already on login/signup
     if (!pathname.includes('/login') && !pathname.includes('/signup')) {
       loginUrl.searchParams.set('redirect', pathname);
     }
-    
+
     return NextResponse.redirect(loginUrl);
   }
 

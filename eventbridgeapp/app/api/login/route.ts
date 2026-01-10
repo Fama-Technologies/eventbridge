@@ -82,9 +82,13 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
 
+    console.log('Login successful for user:', user.email);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Setting auth-token cookie...');
+
     response.cookies.set('auth-token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // For debugging: force non-secure cookie
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',

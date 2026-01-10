@@ -28,7 +28,7 @@ export default function LoginPage() {
     try {
       const res = await fetch("/api/login", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
@@ -54,16 +54,16 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success("Login successful!");
-      
+      toast.success(`Login successful! Redirecting...`);
+
       // Store user data in sessionStorage for immediate access
       if (data.user) {
         sessionStorage.setItem('pendingUser', JSON.stringify(data.user));
       }
-      
+
       // Determine redirect URL with priority: API response > query param > account type
       let targetUrl = '/';
-      
+
       if (data.redirectTo) {
         targetUrl = data.redirectTo;
       } else if (redirectUrl) {
@@ -87,15 +87,18 @@ export default function LoginPage() {
             targetUrl = "/";
         }
       }
-      
+
+      console.log('Login successful. Redirect target:', targetUrl);
+      console.log('Current window location:', window.location.href);
+
       console.log('User account type:', data.user?.accountType);
       console.log('Redirecting to:', targetUrl);
-      
+
       setIsLoading(false);
-      
+
       // Immediate redirect
       router.push(targetUrl);
-      
+
       // Force redirect if router push fails
       setTimeout(() => {
         if (window.location.pathname === '/login') {
@@ -105,13 +108,13 @@ export default function LoginPage() {
       }, 100);
     } catch (error) {
       console.error("Login error:", error);
-      
+
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         toast.error("Cannot connect to server. Please check your connection.");
       } else {
         toast.error("Something went wrong. Please try again.");
       }
-      
+
       setIsLoading(false);
     }
   };
@@ -119,8 +122,8 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      await signIn('google', { 
-        callbackUrl: redirectUrl || '/', 
+      await signIn('google', {
+        callbackUrl: redirectUrl || '/',
       });
       setIsGoogleLoading(false);
     } catch (error) {
@@ -196,8 +199,8 @@ export default function LoginPage() {
                 />
                 Remember me
               </label>
-              <Link 
-                href="/forgot-password" 
+              <Link
+                href="/forgot-password"
                 className={`text-sm text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Forgot Password
@@ -229,11 +232,11 @@ export default function LoginPage() {
                 {isGoogleLoading ? (
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
-                  <Image 
+                  <Image
                     src="/google.svg"
-                    alt="Google" 
-                    width={20} 
-                    height={20} 
+                    alt="Google"
+                    width={20}
+                    height={20}
                     className="w-5 h-5"
                   />
                 )}
@@ -249,11 +252,11 @@ export default function LoginPage() {
                 {isAppleLoading ? (
                   <Loader2 className="animate-spin" size={20} />
                 ) : (
-                  <Image 
+                  <Image
                     src="/apple.svg"
-                    alt="Apple" 
-                    width={20} 
-                    height={20} 
+                    alt="Apple"
+                    width={20}
+                    height={20}
                     className="w-5 h-5"
                   />
                 )}
@@ -263,8 +266,8 @@ export default function LoginPage() {
 
             <p className="mt-4 text-center text-sm text-neutrals-07">
               Don't have an account?{' '}
-              <Link 
-                href="/signup" 
+              <Link
+                href="/signup"
                 className={`text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Sign up
@@ -273,7 +276,7 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
-      
+
       <div className="block lg:w-1/2 relative h-64 lg:h-auto w-full">
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-8">
           <div className="flex items-center gap-2">
