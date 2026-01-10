@@ -16,7 +16,7 @@
 // ============================================
 // CONFIGURATION - Change this to switch between mock and real API
 // ============================================
-export const USE_MOCK_DATA = true;
+export const USE_MOCK_DATA = false;
 export const API_BASE_URL = '/api/vendor';
 
 // ============================================
@@ -217,7 +217,7 @@ export const EMOJI_CATEGORIES = [
 export async function getConversations(): Promise<Conversation[]> {
     if (USE_MOCK_DATA) {
         // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // await new Promise(resolve => setTimeout(resolve, 300));
         return MOCK_CONVERSATIONS;
     }
 

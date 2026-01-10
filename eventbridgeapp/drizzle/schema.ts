@@ -455,7 +455,7 @@ export const userUploads = pgTable('user_uploads', {
 
   width: integer('width'),
   height: integer('height'),
-  
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => {
   return {
@@ -542,6 +542,69 @@ export const reviews = pgTable('reviews', {
     ratingIdx: index('reviews_rating_idx').on(table.rating),
     uniqueBookingReview: unique('reviews_unique_booking_review')
       .on(table.bookingId), // One review per booking
+  };
+});
+
+/* ===================== MESSAGING ===================== */
+export const conversations = pgTable('conversations', {
+  id: serial('id').primaryKey(),
+
+  // Optional link to an event
+  eventId: integer('event_id').references(() => events.id, { onDelete: 'set null' }),
+
+  lastMessageAt: timestamp('last_message_at').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const conversationParticipants = pgTable('conversation_participants', {
+  id: serial('id').primaryKey(),
+
+  conversationId: integer('conversation_id')
+    .notNull()
+    .references(() => conversations.id, { onDelete: 'cascade' }),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  lastReadAt: timestamp('last_read_at'),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    conversationIdIdx: index('conversation_participants_conversation_id_idx').on(table.conversationId),
+    userIdIdx: index('conversation_participants_user_id_idx').on(table.userId),
+    uniqueParticipant: unique('conversation_participants_unique_participant')
+      .on(table.conversationId, table.userId),
+  };
+});
+
+export const messages = pgTable('messages', {
+  id: serial('id').primaryKey(),
+
+  conversationId: integer('conversation_id')
+    .notNull()
+    .references(() => conversations.id, { onDelete: 'cascade' }),
+
+  senderId: integer('sender_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  content: text('content'),
+  attachments: jsonb('attachments').$type<{
+    type: 'image' | 'file' | 'audio';
+    url: string;
+    name?: string;
+    size?: string;
+  }[]>(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    conversationIdIdx: index('messages_conversation_id_idx').on(table.conversationId),
+    senderIdIdx: index('messages_sender_id_idx').on(table.senderId),
+    createdAtIdx: index('messages_created_at_idx').on(table.createdAt),
   };
 });
 
@@ -688,6 +751,37 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  event: one(events, {
+    fields: [conversations.eventId],
+    references: [events.id],
+  }),
+  participants: many(conversationParticipants),
+  messages: many(messages),
+}));
+
+export const conversationParticipantsRelations = relations(conversationParticipants, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationParticipants.conversationId],
+    references: [conversations.id],
+  }),
+  user: one(users, {
+    fields: [conversationParticipants.userId],
+    references: [users.id],
+  }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+  }),
+}));
+
 /* ===================== TYPES ===================== */
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -742,6 +836,15 @@ export type NewBooking = typeof bookings.$inferInsert;
 
 export type Review = typeof reviews.$inferSelect;
 export type NewReview = typeof reviews.$inferInsert;
+
+export type Conversation = typeof conversations.$inferSelect;
+export type NewConversation = typeof conversations.$inferInsert;
+
+export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+export type NewConversationParticipant = typeof conversationParticipants.$inferInsert;
+
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
 
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
 export type NewOnboardingProgress = typeof onboardingProgress.$inferInsert;
