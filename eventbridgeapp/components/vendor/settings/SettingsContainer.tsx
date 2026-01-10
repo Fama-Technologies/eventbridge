@@ -16,7 +16,7 @@ export default function SettingsContainer() {
     };
 
     return (
-        <div className="max-w-3xl mx-auto px-4 pb-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-4 pb-6 md:py-8">
             {/* Header with version */}
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-shades-black">Settings</h1>
@@ -24,32 +24,8 @@ export default function SettingsContainer() {
             </div>
 
             <div className="space-y-4">
-                {/* 1. Profile Editor Accordion */}
-                <div className="bg-shades-white rounded-2xl border border-neutrals-03 overflow-hidden shadow-sm transition-all">
-                    <button
-                        onClick={() => toggleSection("profile")}
-                        className="w-full flex items-center justify-between p-5 md:p-6 hover:bg-neutrals-01/50 transition-colors"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-neutrals-02 flex items-center justify-center text-neutrals-07">
-                                <User size={20} />
-                            </div>
-                            <div className="text-left">
-                                <h2 className="text-base font-bold text-shades-black">Profile Editor</h2>
-                                <p className="text-sm text-neutrals-06">Manage your public storefront profile</p>
-                            </div>
-                        </div>
-                        {expandedSection === "profile" ? <ChevronUp className="text-neutrals-06" /> : <ChevronDown className="text-neutrals-06" />}
-                    </button>
-
-                    {expandedSection === "profile" && (
-                        <div className="px-5 pb-6 md:px-6 animation-expand">
-                            <div className="pt-4 border-t border-neutrals-02">
-                                <ProfileEditor />
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {/* 1. Profile Editor - Main Section (Always Visible) */}
+                <ProfileEditor />
 
                 {/* 2. Subscriptions Accordion */}
                 <div className="bg-shades-white rounded-2xl border border-neutrals-03 overflow-hidden shadow-sm transition-all">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, Plus, Twitter, Instagram, Trash2, Camera, Minus, Save, Edit, X, Globe } from "lucide-react";
+import { MapPin, Plus, Twitter, Instagram, Trash2, Camera, Minus, Save, Edit, X, Globe, Check } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 interface VendorProfile {
@@ -67,6 +67,7 @@ export default function ProfileBasics({
     });
 
     const [newService, setNewService] = useState("");
+    const [isServiceDropdownOpen, setIsServiceDropdownOpen] = useState(false);
     const [socialLinks, setSocialLinks] = useState({
         twitter: "",
         instagram: "",
@@ -180,8 +181,9 @@ export default function ProfileBasics({
         }
     };
 
-    const handleAddService = async () => {
-        if (!newService.trim()) return;
+    const handleAddService = async (serviceName?: string) => {
+        const nameToAdd = serviceName || newService;
+        if (!nameToAdd.trim()) return;
 
         try {
             const response = await fetch('/api/vendor/services', {
@@ -190,7 +192,7 @@ export default function ProfileBasics({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: newService,
+                    name: nameToAdd,
                     description: "",
                     price: null,
                 }),
@@ -417,7 +419,7 @@ export default function ProfileBasics({
                     </div>
 
                     {isEditing && (
-                        <label className="cursor-pointer text-sm font-semibold text-neutrals-06 hover:text-primary-01 underline underline-offset-4 transition-colors">
+                        <label className="mt-3 cursor-pointer text-sm text-neutrals-05 underline hover:text-shades-black transition-colors">
                             Change Photo
                             <input
                                 type="file"
@@ -473,70 +475,141 @@ export default function ProfileBasics({
                         </div>
                     </div>
 
-                    {/* Services Tags */}
-                    <div className="space-y-2">
+                    {/* Service Categories */}
+                    <div className="space-y-3">
                         <label className="text-sm font-bold text-shades-black">
-                            Type of Services <span className="text-neutrals-06 font-normal">(Select all that apply)</span>
+                            Service Categories
                         </label>
-                        <div className="flex flex-wrap gap-2">
-                            {services.map((service) => (
-                                <div key={service.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-01/10 text-primary-01 border border-primary-01/20 text-sm font-medium">
-                                    {service.name}
-                                    {isEditing && (
-                                        <button onClick={() => handleRemoveService(service.id)} className="hover:text-primary-02">
-                                            <X size={14} />
+                        <div className="flex flex-wrap gap-3">
+                            {/* Predefined Categories */}
+                            {["DJ & Music", "Photographer", "Catering", "Florist", "Event Planner", "Videographer", "Venue", "Decor"]
+                                .filter(category => isEditing || services.some(s => s.name === category))
+                                .map((category) => {
+                                    const isActive = services.some(s => s.name === category);
+                                    const serviceId = services.find(s => s.name === category)?.id;
+
+                                    return (
+                                        <button
+                                            key={category}
+                                            type="button"
+                                            disabled={!isEditing}
+                                            onClick={() => {
+                                                if (isActive && serviceId) {
+                                                    handleRemoveService(serviceId);
+                                                } else {
+                                                    handleAddService(category);
+                                                }
+                                            }}
+                                            className={`
+                                            px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2
+                                            ${isActive
+                                                    ? 'bg-primary-01 text-white hover:bg-primary-02 shadow-sm'
+                                                    : isEditing
+                                                        ? 'bg-neutrals-02 text-shades-black hover:bg-neutrals-03 border border-transparent'
+                                                        : 'bg-neutrals-01 text-neutrals-06 cursor-default'
+                                                }
+                                        `}
+                                        >
+                                            {isActive && <Check size={14} strokeWidth={3} />}
+                                            {category}
                                         </button>
+                                    );
+                                })}
+
+                            {/* Custom Services (Not in predefined list) */}
+                            {services
+                                .filter(s => !["DJ & Music", "Photographer", "Catering", "Florist", "Event Planner", "Videographer", "Venue", "Decor"].includes(s.name))
+                                .map((service) => (
+                                    <div key={service.id} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-01 text-white text-sm font-medium shadow-sm">
+                                        <Check size={14} strokeWidth={3} />
+                                        {service.name}
+                                        {isEditing && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRemoveService(service.id);
+                                                }}
+                                                className="hover:text-white/80 ml-1"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            }
+
+                            {/* Add Custom Button */}
+                            {isEditing && (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsServiceDropdownOpen(!isServiceDropdownOpen)}
+                                        className="px-4 py-2 rounded-full border border-dashed border-neutrals-04 text-neutrals-06 hover:text-shades-black hover:border-neutrals-06 hover:bg-neutrals-01 transition-all text-sm font-medium flex items-center gap-2 bg-white"
+                                    >
+                                        <Plus size={16} /> Add Custom
+                                    </button>
+
+                                    {/* Inline Input Popover */}
+                                    {isServiceDropdownOpen && (
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-neutrals-02 z-50 p-3 animation-fade-in">
+                                            <label className="text-xs font-bold text-neutrals-06 mb-1 block">Custom Service Name</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    value={newService}
+                                                    onChange={(e) => setNewService(e.target.value)}
+                                                    onKeyPress={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            handleAddService(newService);
+                                                            setNewService(""); // Clear input
+                                                            setIsServiceDropdownOpen(false); // Close popover
+                                                        }
+                                                    }}
+                                                    placeholder="e.g. Master of Ceremonies"
+                                                    className="flex-1 px-3 py-2 text-sm rounded-md border border-neutrals-03 focus:border-primary-01 outline-none"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        handleAddService(newService);
+                                                        setNewService("");
+                                                        setIsServiceDropdownOpen(false);
+                                                    }}
+                                                    className="p-2 bg-primary-01 text-white rounded-md hover:bg-primary-02"
+                                                >
+                                                    <Plus size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Overlay */}
+                                    {isServiceDropdownOpen && (
+                                        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsServiceDropdownOpen(false)} />
                                     )}
                                 </div>
-                            ))}
-                            {isEditing && (
-                                <button
-                                    onClick={() => {/* Trigger add modal or inline add */ }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutrals-02 text-shades-black border border-transparent hover:bg-neutrals-03 text-sm font-semibold transition-colors"
-                                >
-                                    <Plus size={14} /> Add Service
-                                </button>
                             )}
                         </div>
-                        {isEditing && (
-                            <div className="flex gap-2 mt-2 w-full md:w-1/2">
-                                <input
-                                    type="text"
-                                    value={newService}
-                                    onChange={(e) => setNewService(e.target.value)}
-                                    placeholder="Type service..."
-                                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-neutrals-03 focus:border-primary-01 outline-none"
-                                    onKeyPress={(e) => e.key === 'Enter' && handleAddService()}
-                                />
-                                <button
-                                    onClick={handleAddService}
-                                    className="px-3 py-2 bg-shades-black text-white rounded-lg text-sm font-bold"
-                                >
-                                    Add
-                                </button>
-                            </div>
-                        )}
                     </div>
 
                     {/* Years in Business */}
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-shades-black">Years in Business</label>
                         {isEditing ? (
-                            <div className="flex items-center">
+                            <div className="flex items-center border border-neutrals-03 rounded-lg overflow-hidden w-fit">
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, yearsExperience: Math.max(0, formData.yearsExperience - 1) })}
-                                    className="w-10 h-10 rounded-l-lg border border-neutrals-03 flex items-center justify-center hover:bg-neutrals-01 transition-colors text-neutrals-06"
+                                    className="w-10 h-10 flex items-center justify-center hover:bg-neutrals-01 transition-colors text-neutrals-06 border-r border-neutrals-03"
                                 >
                                     <Minus size={16} />
                                 </button>
-                                <div className="w-12 h-10 border-y border-neutrals-03 flex items-center justify-center font-bold text-shades-black bg-white">
+                                <div className="w-12 h-10 flex items-center justify-center font-bold text-shades-black bg-white">
                                     {formData.yearsExperience}
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, yearsExperience: formData.yearsExperience + 1 })}
-                                    className="w-10 h-10 rounded-r-lg border border-neutrals-03 flex items-center justify-center hover:bg-neutrals-01 transition-colors text-neutrals-06"
+                                    className="w-10 h-10 flex items-center justify-center hover:bg-neutrals-01 transition-colors text-neutrals-06 border-l border-neutrals-03"
                                 >
                                     <Plus size={16} />
                                 </button>

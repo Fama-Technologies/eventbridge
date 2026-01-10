@@ -16,7 +16,7 @@ export async function GET() {
   try {
     // First check NextAuth session
     const nextAuthSession = await getServerSession(authOptions);
-    
+
     if (nextAuthSession?.user?.id) {
       const userId = parseInt(nextAuthSession.user.id);
       const [result] = await db
@@ -44,7 +44,7 @@ export async function GET() {
       if (result && result.user) {
         const user = {
           ...result.user,
-          image: result.user.image || result.vendorImage || null,
+          image: result.vendorImage || result.user.image || null,
         };
 
         if (user.isActive) {
@@ -93,7 +93,7 @@ export async function GET() {
           if (result && result.user) {
             const user = {
               ...result.user,
-              image: result.user.image || result.vendorImage || null,
+              image: result.vendorImage || result.user.image || null,
             };
 
             if (user.isActive) {
@@ -145,7 +145,7 @@ export async function GET() {
         if (result && result.user) {
           const user = {
             ...result.user,
-            image: result.user.image || result.vendorImage || null,
+            image: result.vendorImage || result.user.image || null,
           };
 
           if (user.isActive) {

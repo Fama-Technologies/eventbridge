@@ -111,7 +111,7 @@ export default function ProfileEditor() {
 
     if (isLoading) {
         return (
-            <div className="w-full bg-white rounded-xl border border-neutrals-03 p-8">
+            <div className="w-full bg-shades-white rounded-xl border border-neutrals-03 p-8">
                 <div className="animate-pulse space-y-6">
                     <div className="h-8 bg-gray-200 rounded w-48"></div>
                     <div className="flex gap-8">
@@ -128,7 +128,7 @@ export default function ProfileEditor() {
     }
 
     return (
-        <div className="w-full bg-white rounded-xl border border-neutrals-03 shadow-sm overflow-hidden">
+        <div className="w-full bg-shades-white rounded-xl border border-neutrals-03 shadow-sm">
             {/* Header */}
             <div className="px-8 py-6 border-b border-neutrals-03 flex items-start justify-between">
                 <div className="flex gap-4">
@@ -162,7 +162,7 @@ export default function ProfileEditor() {
                         {tab.label}
                         {/* Add notification badges if needed */}
                         {tab.id === "packages" && packages.length === 0 && (
-                            <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                            <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-shades-white bg-red-500 rounded-full">
                                 !
                             </span>
                         )}
