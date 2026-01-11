@@ -32,7 +32,11 @@ const navigation = [
         href: '/vendor/earnings',
         icon: Wallet,
         hasSubmenu: true,
-        action: <ChevronDown size={18} className="text-neutrals-05" />
+        action: <ChevronDown size={18} className="text-neutrals-05" />,
+        submenu: [
+            { name: 'Overview', href: '/vendor/earnings' },
+            { name: 'Transaction History', href: '/vendor/earnings/history' },
+        ]
     },
 ];
 
@@ -95,27 +99,50 @@ export default function Sidebar() {
                     {navigation.map((item) => (
                         <div key={item.name}>
                             {item.hasSubmenu ? (
-                                <button
-                                    onClick={() => setEarningsExpanded(!earningsExpanded)}
-                                    className={cn(
-                                        'w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 text-sm',
-                                        pathname.startsWith(item.href)
-                                            ? 'bg-[#FFD7C9] text-primary-01'
-                                            : 'text-shades-black hover:bg-neutrals-02'
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <item.icon size={20} />
-                                        <span>{item.name}</span>
-                                    </div>
-                                    <ChevronDown
-                                        size={18}
+                                <div className="space-y-1">
+                                    <button
+                                        onClick={() => setEarningsExpanded(!earningsExpanded)}
                                         className={cn(
-                                            "text-neutrals-06 transition-transform duration-200",
-                                            earningsExpanded && "rotate-180"
+                                            'w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 text-sm',
+                                            pathname.startsWith(item.href)
+                                                ? 'bg-[#FFD7C9] text-primary-01'
+                                                : 'text-shades-black hover:bg-neutrals-02'
                                         )}
-                                    />
-                                </button>
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <item.icon size={20} />
+                                            <span>{item.name}</span>
+                                        </div>
+                                        <ChevronDown
+                                            size={18}
+                                            className={cn(
+                                                "text-neutrals-06 transition-transform duration-200",
+                                                earningsExpanded && "rotate-180"
+                                            )}
+                                        />
+                                    </button>
+
+                                    {/* Submenu */}
+                                    <div className={cn(
+                                        "overflow-hidden transition-all duration-300 ease-in-out pl-9 space-y-1",
+                                        earningsExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                                    )}>
+                                        {item.submenu?.map((subItem) => (
+                                            <Link
+                                                key={subItem.name}
+                                                href={subItem.href}
+                                                className={cn(
+                                                    'block px-4 py-2 rounded-lg text-sm transition-colors',
+                                                    pathname === subItem.href
+                                                        ? 'text-primary-01 font-semibold bg-primary-01/5'
+                                                        : 'text-neutrals-06 hover:text-shades-black hover:bg-neutrals-02'
+                                                )}
+                                            >
+                                                {subItem.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
                             ) : (
                                 <Link
                                     href={item.href}
