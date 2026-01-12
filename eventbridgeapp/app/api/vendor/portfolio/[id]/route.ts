@@ -7,6 +7,7 @@ import { eq, and } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 import { unlink } from 'fs/promises';
 import path from 'path';
+import { del } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,20 +60,19 @@ export async function DELETE(
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     if (user.accountType !== 'VENDOR') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized - Vendor only' 
-      }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - Vendor only' },
+        { status: 403 }
+      );
     }
 
-    // Get vendor profile
     const [vendorProfile] = await db
       .select()
       .from(vendorProfiles)
@@ -80,22 +80,21 @@ export async function DELETE(
       .limit(1);
 
     if (!vendorProfile) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Vendor profile not found' 
-      }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: 'Vendor profile not found' },
+        { status: 404 }
+      );
     }
 
     const portfolioId = parseInt(params.id);
 
     if (isNaN(portfolioId)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid portfolio ID' 
-      }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Invalid portfolio ID' },
+        { status: 400 }
+      );
     }
 
-    // Get the portfolio item to verify ownership and get file path
     const [portfolioItem] = await db
       .select()
       .from(vendorPortfolio)
@@ -108,18 +107,18 @@ export async function DELETE(
       .limit(1);
 
     if (!portfolioItem) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Portfolio item not found' 
-      }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: 'Portfolio item not found' },
+        { status: 404 }
+      );
     }
 
-    // Delete from database
+    // Delete from DB
     await db
       .delete(vendorPortfolio)
       .where(eq(vendorPortfolio.id, portfolioId));
 
-    // Try to delete the file from disk
+    // Local file deletion
     try {
       if (portfolioItem.imageUrl.startsWith('/uploads/')) {
         const filePath = path.join(
@@ -129,9 +128,17 @@ export async function DELETE(
         );
         await unlink(filePath);
       }
-    } catch (fileError) {
-      // File might not exist or already deleted, continue anyway
-      console.warn('Could not delete file:', fileError);
+    } catch (error) {
+      console.warn('Could not delete local file:', error);
+    }
+
+    // Blob storage deletion
+    try {
+      if (portfolioItem.imageUrl.startsWith('https://')) {
+        await del(portfolioItem.imageUrl);
+      }
+    } catch (error) {
+      console.warn('Blob deletion failed:', error);
     }
 
     return NextResponse.json({
@@ -141,9 +148,9 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Delete portfolio error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to delete portfolio item' 
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete portfolio item' },
+      { status: 500 }
+    );
   }
 }

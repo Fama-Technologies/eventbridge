@@ -7,10 +7,10 @@ import { eq } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
 
-// Increase max body size for file uploads (adjust as needed)
 export const config = {
   api: {
     bodyParser: false,
@@ -63,20 +63,19 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     if (user.accountType !== 'VENDOR') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized - Vendor only' 
-      }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - Vendor only' },
+        { status: 403 }
+      );
     }
 
-    // Get vendor profile
     const [vendorProfile] = await db
       .select()
       .from(vendorProfiles)
@@ -84,13 +83,12 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!vendorProfile) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Vendor profile not found' 
-      }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: 'Vendor profile not found' },
+        { status: 404 }
+      );
     }
 
-    // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const title = formData.get('title') as string;
@@ -98,90 +96,88 @@ export async function POST(request: NextRequest) {
     const category = formData.get('category') as string;
 
     if (!file) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'No file provided' 
-      }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'No file provided' },
+        { status: 400 }
+      );
     }
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' 
-      }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
+        { status: 400 }
+      );
     }
 
-    // Validate file size (5MB max)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'File too large. Maximum size is 5MB.' 
-      }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'File too large. Maximum size is 5MB.' },
+        { status: 400 }
+      );
     }
 
-    // Get image dimensions
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
-    // Create upload directory if it doesn't exist
+
     const uploadDir = path.join(process.cwd(), 'public/uploads/portfolio');
     try {
       await mkdir(uploadDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist
-    }
+    } catch (_) {}
 
-    // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
     const fileExtension = path.extname(file.name);
     const fileName = `${timestamp}-${randomString}${fileExtension}`;
     const filePath = path.join(uploadDir, fileName);
 
-    // Save file to disk
     await writeFile(filePath, buffer);
 
-    // Public URL for the image
-    const imageUrl = `/uploads/portfolio/${fileName}`;
-    const fileKey = `portfolio/${fileName}`;
+    // Local public URL
+    const localImageUrl = `/uploads/portfolio/${fileName}`;
 
-    // Get image dimensions (basic - you might want to use sharp or another library)
-    let width = null;
-    let height = null;
+    // BLOB STORAGE UPLOAD
+    let blobUrl = null;
+    let blobKey = null;
+
     try {
-      // If you have sharp installed: const metadata = await sharp(buffer).metadata();
-      // width = metadata.width; height = metadata.height;
+      const blob = await put(`portfolio/${fileName}`, buffer, {
+        access: 'public',
+        contentType: file.type
+      });
+
+      blobUrl = blob.url;
+      blobKey = blob.pathname;
     } catch (error) {
-      console.log('Could not get image dimensions:', error);
+      console.error('Blob upload failed:', error);
     }
 
-    // Save to user_uploads table
+    let width = null;
+    let height = null;
+
     const [upload] = await db
       .insert(userUploads)
       .values({
         userId: user.id,
         vendorId: vendorProfile.id,
-        fileKey: fileKey,
-        fileUrl: imageUrl,
+        fileKey: blobKey ?? `portfolio/${fileName}`,
+        fileUrl: blobUrl ?? localImageUrl,
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
         uploadType: 'portfolio',
         width: width,
         height: height,
-        createdAt: new Date(),
+        createdAt: new Date()
       })
       .returning();
 
-    // Save to vendor_portfolio table
     const [portfolioItem] = await db
       .insert(vendorPortfolio)
       .values({
         vendorId: vendorProfile.id,
-        imageUrl: imageUrl,
+        imageUrl: blobUrl ?? localImageUrl,
         title: title || null,
         description: description || null,
         category: category || null,
@@ -190,7 +186,7 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         quality: null,
         displayOrder: 0,
-        createdAt: new Date(),
+        createdAt: new Date()
       })
       .returning();
 
@@ -199,15 +195,16 @@ export async function POST(request: NextRequest) {
       data: {
         portfolioItem,
         upload,
+        storage: blobUrl ? 'blob' : 'local'
       },
       message: 'Portfolio image uploaded successfully'
     });
 
   } catch (error) {
     console.error('Portfolio upload error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to upload image. Please try again.' 
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Failed to upload image. Please try again.' },
+      { status: 500 }
+    );
   }
 }
