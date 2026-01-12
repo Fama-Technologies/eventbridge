@@ -35,6 +35,7 @@ export async function GET() {
           },
           vendorImage: vendorProfiles.profileImage,
           vendorId: vendorProfiles.id,
+          phone: vendorProfiles.phone,
         })
         .from(users)
         .leftJoin(vendorProfiles, eq(users.id, vendorProfiles.userId))
@@ -45,6 +46,7 @@ export async function GET() {
         const user = {
           ...result.user,
           image: result.vendorImage || result.user.image || null,
+          phone: result.phone || null,
         };
 
         if (user.isActive) {
@@ -84,6 +86,7 @@ export async function GET() {
               },
               vendorImage: vendorProfiles.profileImage,
               vendorId: vendorProfiles.id,
+              phone: vendorProfiles.phone,
             })
             .from(users)
             .leftJoin(vendorProfiles, eq(users.id, vendorProfiles.userId))
@@ -94,6 +97,7 @@ export async function GET() {
             const user = {
               ...result.user,
               image: result.vendorImage || result.user.image || null,
+              phone: result.phone || null,
             };
 
             if (user.isActive) {
@@ -136,6 +140,7 @@ export async function GET() {
             },
             vendorImage: vendorProfiles.profileImage,
             vendorId: vendorProfiles.id,
+            phone: vendorProfiles.phone,
           })
           .from(users)
           .leftJoin(vendorProfiles, eq(users.id, vendorProfiles.userId))
@@ -146,6 +151,7 @@ export async function GET() {
           const user = {
             ...result.user,
             image: result.vendorImage || result.user.image || null,
+            phone: result.phone || null,
           };
 
           if (user.isActive) {

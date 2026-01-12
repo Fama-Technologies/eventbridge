@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, AlertTriangle, FileText, Download, CreditCard, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
@@ -11,9 +11,9 @@ export default function AccountSecurity() {
 
     // Form State
     const [formData, setFormData] = useState({
-        fullName: "David Letterman",
-        email: "michaelsmith12@gmail.com",
-        phone: "+1 (555) 000-1234",
+        fullName: "",
+        email: "",
+        phone: "",
     });
 
     const [passwords, setPasswords] = useState({
@@ -23,9 +23,30 @@ export default function AccountSecurity() {
     });
 
     const [socials, setSocials] = useState({
-        google: true,
+        google: false,
         facebook: false
     });
+
+    useEffect(() => {
+        async function fetchProfile() {
+            try {
+                const response = await fetch('/api/users/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    setFormData({
+                        fullName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+                        email: data.email || "",
+                        phone: data.phone || "",
+                    });
+                    // Assuming social connections might come from profile or separate endpoint
+                    // valid: data.socials
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
+            }
+        }
+        fetchProfile();
+    }, []);
 
     // Handlers
     const toggleEdit = () => {

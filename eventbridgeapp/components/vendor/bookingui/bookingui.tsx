@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/toast";
 import CalendarHeader from "./calendarheader";
@@ -8,18 +8,41 @@ import BookingSidebar from "./sidebar";
 import BookingModal from "../BookingModal";
 import BlockDatesModal from "./BlockDatesModal";
 import BookingDetailsModal from "./BookingDetailsModal";
-import { bookingsData, blockedDatesData } from "./data";
 import type { Booking } from "./data";
 
 export default function BookingUI() {
     const { addToast } = useToast();
-    const [bookings, setBookings] = useState<Booking[]>(bookingsData);
-    const [blockedDates, setBlockedDates] = useState<Date[]>(blockedDatesData);
-    const [confirmedBookings, setConfirmedBookings] = useState(3);
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [blockedDates, setBlockedDates] = useState<Date[]>([]); // This might need to be derived from bookings if API returns blocked dates as bookings
+    const [confirmedBookings, setConfirmedBookings] = useState(0);
     const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to today
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isBlockDatesModalOpen, setIsBlockDatesModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch Bookings
+    useEffect(() => {
+        async function fetchBookings() {
+            setIsLoading(true);
+            try {
+                const response = await fetch('/api/vendor/bookings');
+                if (response.ok) {
+                    const data = await response.json();
+                    const bookingsList = data.bookings || [];
+                    setBookings(bookingsList);
+                    // Update confirmed count
+                    setConfirmedBookings(bookingsList.filter((b: Booking) => b.status === 'confirmed').length);
+                }
+            } catch (error) {
+                console.error("Failed to fetch bookings:", error);
+                addToast("Failed to load bookings", "error");
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchBookings();
+    }, [addToast]);
 
     // Removed sidebarOpen state as requested to always show sidebar
 
@@ -31,43 +54,27 @@ export default function BookingUI() {
         setIsBlockDatesModalOpen(true);
     };
 
-    const handleBookingSubmit = (bookingData: any) => {
-        // Create new booking object
-        const startDate = bookingData.selectedDates[0];
-        const endDate = bookingData.selectedDates[bookingData.selectedDates.length - 1];
+    const handleBookingSubmit = async (bookingData: any) => {
+        try {
+            const response = await fetch('/api/vendor/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingData)
+            });
 
-        const newBooking: Booking = {
-            id: Date.now().toString(),
-            bookingId: `BK-${Math.floor(Math.random() * 10000)}`,
-            title: bookingData.eventName,
-            status: 'confirmed',
-            date: startDate,
-            startDate: startDate,
-            endDate: endDate,
-            initials: bookingData.hostContact ? bookingData.hostContact.substring(0, 2).toUpperCase() : "NA",
-            dateDisplay: format(startDate, "MMM d"),
-            client: {
-                name: bookingData.hostContact || "Unknown Client",
-                avatar: undefined,
-                rating: 5.0,
-                reviews: 0
-            },
-            guestCount: bookingData.guestCount,
-            totalAmount: bookingData.totalAmount,
-            venue: "Venue TBD",
-            dateRange: `${format(startDate, "MMM d")} - ${format(endDate, "MMM d, yyyy")}`,
-            timeRange: "09:00 AM - 05:00 PM", // Default
-            paymentStatus: "Pending",
-            payments: [
-                { label: "Total Estimate", amount: bookingData.totalAmount, type: 'due' }
-            ],
-            latestMessage: undefined
-        };
-
-        setBookings([...bookings, newBooking]);
-        setConfirmedBookings(prev => prev + 1);
-        setIsBookingModalOpen(false);
-        addToast("Booking successfully created", "success");
+            if (response.ok) {
+                const newBooking = await response.json();
+                setBookings([...bookings, newBooking]);
+                setConfirmedBookings(prev => prev + 1);
+                setIsBookingModalOpen(false);
+                addToast("Booking successfully created", "success");
+            } else {
+                addToast("Failed to create booking", "error");
+            }
+        } catch (error) {
+            console.error("Error creating booking:", error);
+            addToast("Error creating booking", "error");
+        }
     };
 
     const handleBlockDatesSubmit = (dates: Date[], reason: string, note: string, recurring: boolean) => {

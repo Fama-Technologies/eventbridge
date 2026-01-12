@@ -2,19 +2,26 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Calendar, MapPin, Users, Paperclip, Smile, Send, Download, CheckCircle, Mic, X, FileText } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Calendar, MapPin, Users, Paperclip, Smile, Send, Download, CheckCircle, Mic, X, FileText, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import type {
     Conversation,
     Message,
-    Booking,
 } from '@/lib/messages-data';
 import {
     EMOJI_CATEGORIES,
-    MOCK_CONVERSATIONS,
-    MOCK_BOOKINGS,
     findConversationByEventName
 } from '@/lib/messages-data';
+
+interface LocalBooking {
+    id: string;
+    conversationId?: string;
+    dateRange: string;
+    title: string;
+    guestCount: number;
+    totalAmount: number;
+    eventName?: string;
+}
 
 interface User {
     firstName: string;
@@ -26,7 +33,9 @@ interface User {
 export default function MessagesPage() {
     const searchParams = useSearchParams();
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-    const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [recentBookings, setRecentBookings] = useState<LocalBooking[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
     const [messageInput, setMessageInput] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
@@ -37,24 +46,54 @@ export default function MessagesPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
 
-    // Fetch user profile
+    // Fetch user profile, conversations, and bookings
     useEffect(() => {
-        async function fetchUser() {
+        async function fetchInitialData() {
+            setIsLoading(true);
             try {
-                const res = await fetch('/api/users/me');
-                if (res.ok) {
-                    const data = await res.json();
-                    setUser(data);
+                // Fetch User
+                const userRes = await fetch('/api/users/me');
+                if (userRes.ok) setUser(await userRes.json());
+
+                // Fetch Conversations
+                const convRes = await fetch('/api/vendor/conversations');
+                if (convRes.ok) {
+                    const data = await convRes.json();
+                    setConversations(data.conversations || (Array.isArray(data) ? data : []));
                 }
+
+                // Fetch Recent Bookings
+                // Fetch Recent Bookings
+                const bookingsRes = await fetch('/api/vendor/bookings?limit=5');
+                if (bookingsRes.ok) {
+                    const data = await bookingsRes.json();
+                    const bookingsData = data.bookings || [];
+
+                    const formattedBookings: LocalBooking[] = bookingsData.map((b: any) => ({
+                        id: b.id,
+                        conversationId: b.conversationId,
+                        dateRange: b.date || "TBD", // Simplistic mapping
+                        title: b.eventName || "Untitled Event",
+                        guestCount: b.guests || 0,
+                        totalAmount: b.amount || 0,
+                        eventName: b.eventName
+                    }));
+                    setRecentBookings(formattedBookings);
+                }
+
             } catch (error) {
-                console.error('Failed to fetch user', error);
+                console.error('Failed to fetch messages data', error);
+            } finally {
+                setIsLoading(false);
             }
         }
-        fetchUser();
+        fetchInitialData();
     }, []);
 
     // Handle URL parameters to auto-select conversation
     useEffect(() => {
+        if (conversations.length === 0) return;
+
         const conversationId = searchParams.get('conversation');
         const newChatId = searchParams.get('newChat');
         const newChatName = searchParams.get('name');
@@ -66,14 +105,14 @@ export default function MessagesPage() {
                 setSelectedConversation(conversation);
             }
         } else if (newChatId && newChatName) {
-            // Create a new conversation placeholder for new chat
+            // Create a new conversation placeholder for new chat if logic allows, or select existing
             const existingConversation = conversations.find(c =>
                 c.name.toLowerCase().includes(newChatName.toLowerCase())
             );
             if (existingConversation) {
                 setSelectedConversation(existingConversation);
             }
-            // TODO: If no existing conversation, could create a new one here
+            // TODO: Logic for creating new conversation reference on UI if doesn't exist yet
         }
     }, [searchParams, conversations]);
 
@@ -581,51 +620,57 @@ export default function MessagesPage() {
 
                 {/* Conversations List */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-4 space-y-3">
-                    {conversations.map((conversation) => (
-                        <div
-                            key={conversation.id}
-                            onClick={() => setSelectedConversation(conversation)}
-                            className="flex items-start gap-4 p-4 bg-shades-white rounded-2xl cursor-pointer hover:shadow-sm transition-all border border-neutrals-02"
-                        >
-                            <div className="relative flex-shrink-0">
-                                {conversation.avatar ? (
-                                    <Image
-                                        src={conversation.avatar}
-                                        alt={conversation.name}
-                                        width={48}
-                                        height={48}
-                                        className="rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-12 h-12 rounded-full bg-primary-01/10 flex items-center justify-center text-lg font-semibold text-primary-01">
-                                        {conversation.name.split(' ').map(n => n[0]).join('')}
-                                    </div>
-                                )}
-                                {conversation.unread && (
-                                    <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-shades-white"></span>
-                                )}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="font-semibold text-shades-black truncate">{conversation.name}</span>
-                                        <span className="text-sm text-neutrals-06 flex-shrink-0">• {conversation.eventType}</span>
-                                    </div>
-                                    <span className="text-xs text-neutrals-06 flex-shrink-0 ml-2">{conversation.timestamp}</span>
-                                </div>
-                                <p className="text-sm text-neutrals-07 truncate mb-2">{conversation.lastMessage}</p>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    {getStatusBadge(conversation.status)}
-                                    {conversation.status === 'pending-quote' && (
-                                        <button className="text-xs font-medium text-primary-01 hover:underline">
-                                            Review Request
-                                        </button>
+                    {isLoading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="animate-spin text-primary-01 h-8 w-8" />
+                        </div>
+                    ) : (
+                        conversations.map((conversation) => (
+                            <div
+                                key={conversation.id}
+                                onClick={() => setSelectedConversation(conversation)}
+                                className="flex items-start gap-4 p-4 bg-shades-white rounded-2xl cursor-pointer hover:shadow-sm transition-all border border-neutrals-02"
+                            >
+                                <div className="relative flex-shrink-0">
+                                    {conversation.avatar ? (
+                                        <Image
+                                            src={conversation.avatar}
+                                            alt={conversation.name}
+                                            width={48}
+                                            height={48}
+                                            className="rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-full bg-primary-01/10 flex items-center justify-center text-lg font-semibold text-primary-01">
+                                            {conversation.name.split(' ').map(n => n[0]).join('')}
+                                        </div>
+                                    )}
+                                    {conversation.unread && (
+                                        <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-shades-white"></span>
                                     )}
                                 </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="font-semibold text-shades-black truncate">{conversation.name}</span>
+                                            <span className="text-sm text-neutrals-06 flex-shrink-0">• {conversation.eventType}</span>
+                                        </div>
+                                        <span className="text-xs text-neutrals-06 flex-shrink-0 ml-2">{conversation.timestamp}</span>
+                                    </div>
+                                    <p className="text-sm text-neutrals-07 truncate mb-2">{conversation.lastMessage}</p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {getStatusBadge(conversation.status)}
+                                        {conversation.status === 'pending-quote' && (
+                                            <button className="text-xs font-medium text-primary-01 hover:underline">
+                                                Review Request
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
@@ -634,12 +679,21 @@ export default function MessagesPage() {
                 <h2 className="text-lg font-semibold text-shades-black mb-6">Recent Bookings</h2>
 
                 <div className="space-y-4">
-                    {MOCK_BOOKINGS.map((booking) => (
+                    {recentBookings.map((booking) => (
                         <div
                             key={booking.id}
                             onClick={() => {
                                 // Find and open the conversation related to this booking
-                                const conversation = findConversationByEventName(conversations, booking.eventName);
+                                // Try ID first, then fallback to title mapping
+                                let conversation = null;
+                                if (booking.conversationId) {
+                                    conversation = conversations.find(c => c.id === booking.conversationId);
+                                }
+
+                                if (!conversation) {
+                                    conversation = findConversationByEventName(conversations, booking.title);
+                                }
+
                                 if (conversation) {
                                     setSelectedConversation(conversation);
                                 }
@@ -647,9 +701,9 @@ export default function MessagesPage() {
                             className="p-4 bg-accents-peach/20 rounded-xl border border-accents-peach/30 cursor-pointer hover:bg-accents-peach/30 transition-colors"
                         >
                             <span className="text-xs font-semibold text-primary-01">{booking.dateRange}</span>
-                            <h3 className="text-sm font-semibold text-shades-black mt-1">{booking.eventName}</h3>
+                            <h3 className="text-sm font-semibold text-shades-black mt-1">{booking.title}</h3>
                             <p className="text-xs text-neutrals-06 mt-1">
-                                {booking.guests} Guests • {booking.amount}
+                                {booking.guestCount || 0} Guests • UGX {booking.totalAmount?.toLocaleString()}
                             </p>
                         </div>
                     ))}

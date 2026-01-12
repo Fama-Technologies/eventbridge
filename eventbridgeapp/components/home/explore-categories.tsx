@@ -1,34 +1,65 @@
-import { ArrowRight } from 'lucide-react';
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import CategoryCard from './category-card';
 
+interface CategoryData {
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  vendorCount: number;
+}
+
 export default function ExploreCategories() {
-  const categories = [
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // Mock data requested by user
+  const MOCK_CATEGORIES: CategoryData[] = [
     {
-      title: 'Weddings',
-      subtitle: 'Venues, Photographers, Florists',
-      image: '/categories/weddings.jpg',
-      href: '/category/weddings',
+      slug: 'weddings',
+      name: 'Weddings',
+      description: 'Plan your dream wedding',
+      imageUrl: '/categories/weddings.jpg',
+      vendorCount: 150
     },
     {
-      title: 'Corporate',
-      subtitle: 'Seminars, Catering, Team Building',
-      image: '/categories/Corporate.jpg',
-      href: '/category/corporate',
+      slug: 'corporate',
+      name: 'Corporate',
+      description: 'Professional events & conferences',
+      imageUrl: '/categories/Corporate.jpg',
+      vendorCount: 85
     },
     {
-      title: 'Parties',
-      subtitle: 'Djs, Decor, Entertainments',
-      image: '/categories/Parties.jpg',
-      href: '/category/parties',
+      slug: 'birthdays',
+      name: 'Birthdays',
+      description: 'Celebrate another year',
+      imageUrl: '/categories/Birthdays.jpg',
+      vendorCount: 120
     },
     {
-      title: 'Birthdays',
-      subtitle: 'Bakers, Caterers, Entertainment',
-      image: '/categories/Birthdays.jpg',
-      href: '/category/birthdays',
-    },
+      slug: 'parties',
+      name: 'Parties',
+      description: 'Fun gatherings & celebrations',
+      imageUrl: '/categories/Parties.jpg',
+      vendorCount: 200
+    }
   ];
+
+  useEffect(() => {
+    // Simulate loading for effect, but use mock data
+    const timer = setTimeout(() => {
+      setCategories(MOCK_CATEGORIES);
+      setIsLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (error) return null;
 
   return (
     <section className="py-12 px-6 bg-background">
@@ -43,11 +74,27 @@ export default function ExploreCategories() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((category) => (
-            <CategoryCard key={category.title} {...category} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-01" />
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-neutrals-06 text-lg">No categories found.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {categories.map((cat) => (
+              <CategoryCard
+                key={cat.slug}
+                title={cat.name}
+                subtitle={cat.description}
+                image={cat.imageUrl}
+                href={`/category/${cat.slug}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

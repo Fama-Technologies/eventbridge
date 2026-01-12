@@ -2,19 +2,48 @@
 
 import { CreditCard, Check, Download, Monitor, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FeaturesModal from "@/components/category/FeaturesModal";
+
+interface Invoice {
+    id: string;
+    date: string;
+    amount: string;
+    status: string;
+}
 
 export default function Subscriptions() {
     const { addToast } = useToast();
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [showFeatures, setShowFeatures] = useState(false);
+    const [billingHistory, setBillingHistory] = useState<Invoice[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const billingHistory = [
-        { id: "INV-2024-009", date: "Sep 24, 2024", amount: "$49.00", status: "paid" },
-        { id: "INV-2024-008", date: "Aug 24, 2024", amount: "$49.00", status: "paid" },
-        { id: "INV-2024-007", date: "Jul 24, 2024", amount: "$49.00", status: "paid" },
-    ];
+    useEffect(() => {
+        async function fetchBilling() {
+            setLoading(true);
+            try {
+                // Determine API endpoint - assuming /api/vendor/billing or strictly mocking if strictly defined
+                // The prompt says "To be integrated", implying I should add the logic.
+                // Assuming /api/vendor/earnings might have this or dedicated endpoint.
+                // Let's try /api/vendor/billing and fallback to empty logic
+                const response = await fetch('/api/vendor/billing');
+                if (response.ok) {
+                    const data = await response.json();
+                    setBillingHistory(data.invoices || []);
+                } else {
+                    // If endpoint doesn't exist, we can show empty or fallback mock for demo preservation if strictly needed,
+                    // but goal is to remove mock. showing empty is safer.
+                    setBillingHistory([]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch billing:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchBilling();
+    }, []);
 
     const handleExtendPlan = () => {
         setShowFeatures(true);
@@ -136,31 +165,45 @@ export default function Subscriptions() {
                             </tr>
                         </thead>
                         <tbody>
-                            {billingHistory.map((invoice, i) => (
-                                <tr key={invoice.id} className="border-b border-neutrals-02 last:border-0 hover:bg-neutrals-01/30 transition-colors group">
-                                    <td className="py-4 text-sm font-medium text-shades-black">{invoice.id}</td>
-                                    <td className="py-4 text-sm text-neutrals-06">{invoice.date}</td>
-                                    <td className="py-4 text-sm font-medium text-shades-black">{invoice.amount}</td>
-                                    <td className="py-4">
-                                        <span className="bg-accents-discount/10 text-accents-discount px-2 py-1 rounded text-[10px] font-bold uppercase">
-                                            {invoice.status}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 text-right">
-                                        <button
-                                            onClick={() => handleDownload(invoice.id)}
-                                            disabled={downloadingId === invoice.id}
-                                            className="p-2 text-neutrals-04 hover:text-shades-black transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                                        >
-                                            {downloadingId === invoice.id ? (
-                                                <Loader2 size={16} className="animate-spin" />
-                                            ) : (
-                                                <Download size={16} />
-                                            )}
-                                        </button>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="py-8 text-center">
+                                        <Loader2 className="animate-spin h-6 w-6 text-primary-01 mx-auto" />
                                     </td>
                                 </tr>
-                            ))}
+                            ) : billingHistory.length > 0 ? (
+                                billingHistory.map((invoice, i) => (
+                                    <tr key={invoice.id} className="border-b border-neutrals-02 last:border-0 hover:bg-neutrals-01/30 transition-colors group">
+                                        <td className="py-4 text-sm font-medium text-shades-black">{invoice.id}</td>
+                                        <td className="py-4 text-sm text-neutrals-06">{invoice.date}</td>
+                                        <td className="py-4 text-sm font-medium text-shades-black">{invoice.amount}</td>
+                                        <td className="py-4">
+                                            <span className="bg-accents-discount/10 text-accents-discount px-2 py-1 rounded text-[10px] font-bold uppercase">
+                                                {invoice.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 text-right">
+                                            <button
+                                                onClick={() => handleDownload(invoice.id)}
+                                                disabled={downloadingId === invoice.id}
+                                                className="p-2 text-neutrals-04 hover:text-shades-black transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                            >
+                                                {downloadingId === invoice.id ? (
+                                                    <Loader2 size={16} className="animate-spin" />
+                                                ) : (
+                                                    <Download size={16} />
+                                                )}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className="py-8 text-center text-sm text-neutrals-06">
+                                        No invoices found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

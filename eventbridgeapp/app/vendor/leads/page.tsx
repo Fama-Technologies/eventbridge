@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search, Loader2 } from 'lucide-react';
 import LeadCard from '@/components/vendor/leads/LeadCard';
 import LeadDetailModal from '@/components/vendor/leads/LeadDetailModal';
 import type { Lead, LeadStatus } from '@/components/vendor/leads/LeadCard';
 import {
-    MOCK_LEADS,
     LEAD_STATUS_OPTIONS,
     DATE_RANGE_OPTIONS,
     BUDGET_OPTIONS,
@@ -56,9 +55,8 @@ function FilterDropdown({ label, icon, options, value, onChange }: DropdownProps
                                     onChange(option.value);
                                     setIsOpen(false);
                                 }}
-                                className={`w-full px-4 py-2.5 text-sm text-left hover:bg-neutrals-02 transition-colors ${
-                                    value === option.value ? 'text-primary-01 font-semibold bg-primary-01/5' : 'text-shades-black'
-                                }`}
+                                className={`w-full px-4 py-2.5 text-sm text-left hover:bg-neutrals-02 transition-colors ${value === option.value ? 'text-primary-01 font-semibold bg-primary-01/5' : 'text-shades-black'
+                                    }`}
                             >
                                 {option.label}
                             </button>
@@ -80,12 +78,37 @@ export default function LeadsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const newInquiriesCount = MOCK_LEADS.filter(lead => lead.status === 'new').length;
+    // API State
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchLeads() {
+            setIsLoading(true);
+            try {
+                const response = await fetch('/api/vendor/leads');
+                if (response.ok) {
+                    const data = await response.json();
+                    setLeads(data.leads || (Array.isArray(data) ? data : []));
+                } else {
+                    console.error('Failed to fetch leads');
+                    // Fallback to empty or error state
+                }
+            } catch (error) {
+                console.error('Error fetching leads:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchLeads();
+    }, []);
+
+    const newInquiriesCount = leads.filter(lead => lead.status === 'new').length;
 
     // Filter and sort leads using helper functions
     const filteredLeads = sortLeads(
         filterLeadsBySearch(
-            filterLeadsByStatus(MOCK_LEADS as Lead[], statusFilter),
+            filterLeadsByStatus(leads, statusFilter),
             searchQuery
         ),
         sortBy
@@ -97,11 +120,13 @@ export default function LeadsPage() {
     };
 
     const handleRespond = (lead: Lead) => {
+        // Implement respond logic (could be API call to update status)
         console.log('Respond to lead:', lead.id);
         handleViewDetails(lead);
     };
 
     const handleDecline = (lead: Lead) => {
+        // Implement decline logic
         console.log('Decline lead:', lead.id);
     };
 
@@ -197,17 +222,23 @@ export default function LeadsPage() {
 
                 {/* Leads List */}
                 <div className="space-y-4">
-                    {filteredLeads.map((lead) => (
-                        <LeadCard
-                            key={lead.id}
-                            lead={lead}
-                            onViewDetails={handleViewDetails}
-                            onRespond={handleRespond}
-                            onDecline={handleDecline}
-                            onUpdateQuote={handleUpdateQuote}
-                            onMessage={handleMessage}
-                        />
-                    ))}
+                    {isLoading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary-01" />
+                        </div>
+                    ) : (
+                        filteredLeads.map((lead) => (
+                            <LeadCard
+                                key={lead.id}
+                                lead={lead}
+                                onViewDetails={handleViewDetails}
+                                onRespond={handleRespond}
+                                onDecline={handleDecline}
+                                onUpdateQuote={handleUpdateQuote}
+                                onMessage={handleMessage}
+                            />
+                        ))
+                    )}
                 </div>
 
                 {/* Load More */}

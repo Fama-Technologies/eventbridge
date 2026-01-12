@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  Star, 
-  Heart, 
-  MapPin, 
-  Clock, 
+import {
+  Star,
+  Heart,
+  MapPin,
+  Clock,
   Calendar,
-  MessageSquare, 
-  Shield, 
+  MessageSquare,
+  Shield,
   Flag,
   Check,
   ChevronLeft,
@@ -53,96 +53,7 @@ interface VendorData {
   packages: VendorPackage[];
 }
 
-// Mock vendor data
-const MOCK_VENDOR: VendorData = {
-  id: '2',
-  name: 'Royal Touch Décor',
-  category: 'Event Décor & Styling',
-  location: 'Kampala',
-  country: 'Uganda',
-  rating: 4.91,
-  reviewCount: 87,
-  isVerified: true,
-  startingPrice: 1500000,
-  priceUnit: 'event',
-  yearsExperience: 8,
-  responseTime: '<1h',
-  availability: 'Available this month',
-  guestCapacity: '100+',
-  description: 'We specialize in creating stunning event décor and styling that transforms your vision into reality.',
-  images: [
-    '/categories/weddings.jpg',
-    '/categories/Corporate.jpg',
-    '/categories/Parties.jpg',
-    '/categories/Birthdays.jpg',
-    '/categories/weddings.jpg',
-  ],
-  packages: [
-    {
-      id: '1',
-      name: 'Silver Wedding',
-      description: 'Perfect for intimate gatherings up to 100 guests.',
-      price: 1500000,
-      priceType: 'fixed',
-      features: ['Bridal & Groom Table Décor', '10 Guest Centerpieces', 'Standard Backdrop'],
-      badge: 'Best Value',
-    },
-    {
-      id: '2',
-      name: 'Gold Royal',
-      description: 'Full styling for standard weddings up to 300 guests.',
-      price: 4500000,
-      priceType: 'fixed',
-      features: ['Complete Hall Draping', 'Fresh Floral Arrangements', 'Mood Lighting Setup', 'Luxury Furniture'],
-      badge: 'Popular',
-    },
-    {
-      id: '3',
-      name: 'Corporate Gala',
-      description: 'Professional branding and decor for business events.',
-      price: 0,
-      priceType: 'custom',
-      features: ['Branded Photo Booths', 'Stage Design', 'Table Linens & Runners'],
-    },
-  ],
-};
-
-// Similar vendors mock data
-const SIMILAR_VENDORS = [
-  {
-    id: '3',
-    name: 'Business name',
-    category: 'Service Category',
-    location: 'Location',
-    availability: 'Available dates',
-    price: '---',
-    priceUnit: 'day',
-    rating: 4.91,
-    images: ['/categories/weddings.jpg', '/categories/Corporate.jpg'],
-  },
-  {
-    id: '4',
-    name: 'Business name',
-    category: 'Service Category',
-    location: 'Location',
-    availability: 'Available dates',
-    price: '---',
-    priceUnit: 'day',
-    rating: 4.91,
-    images: ['/categories/Parties.jpg', '/categories/Birthdays.jpg'],
-  },
-  {
-    id: '5',
-    name: 'Business name',
-    category: 'Service Category',
-    location: 'Location',
-    availability: 'Available dates',
-    price: '---',
-    priceUnit: 'day',
-    rating: 4.91,
-    images: ['/categories/Corporate.jpg', '/categories/weddings.jpg'],
-  },
-];
+// MOCK_VENDOR and SIMILAR_VENDORS removed. Data will be fetched from API.
 
 // Format currency
 function formatCurrency(amount: number): string {
@@ -168,12 +79,12 @@ function FloatingHearts({ show }: { show: boolean }) {
         size: 14 + Math.random() * 8 // Random size between 14-22px
       }));
       setHearts(newHearts);
-      
+
       // Clear hearts after animation
       const timer = setTimeout(() => {
         setHearts([]);
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [show]);
@@ -255,17 +166,38 @@ export default function VendorProfilePage() {
   const [packageScrollIndex, setPackageScrollIndex] = useState(0);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
 
+  // State for similar vendors
+  const [similarVendors, setSimilarVendors] = useState<any[]>([]);
+
   useEffect(() => {
-    // Simulate API fetch
-    const fetchVendor = async () => {
+    const fetchVendorData = async () => {
       setLoading(true);
-      // In production, fetch from API: /api/vendor/${params.id}
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setVendor(MOCK_VENDOR);
-      setLoading(false);
+      try {
+        // Fetch Vendor Details
+        const vendorRes = await fetch(`/api/vendor/${params.id}`);
+        if (!vendorRes.ok) throw new Error('Failed to fetch vendor');
+        const vendorData = await vendorRes.json();
+        setVendor(vendorData);
+
+        // Fetch Similar Vendors (using the vendor's category)
+        if (vendorData && vendorData.category) {
+          const similarRes = await fetch(`/api/public/vendors?category=${encodeURIComponent(vendorData.category)}&limit=3`);
+          if (similarRes.ok) {
+            const similarData = await similarRes.json();
+            // Filter out the current vendor from similar results
+            setSimilarVendors(similarData.filter((v: any) => v.id !== params.id));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading vendor:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    fetchVendor();
+
+    if (params.id) {
+      fetchVendorData();
+    }
   }, [params.id]);
 
   if (loading) {
@@ -304,7 +236,7 @@ export default function VendorProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       <CategoryHeader />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Image Gallery */}
         <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[300px] sm:h-[400px] lg:h-[450px] mb-6 rounded-xl overflow-hidden">
@@ -317,7 +249,7 @@ export default function VendorProfilePage() {
               className="object-cover"
             />
           </div>
-          
+
           {/* Secondary Images */}
           <div className="hidden sm:block relative">
             <Image
@@ -327,7 +259,7 @@ export default function VendorProfilePage() {
               className="object-cover"
             />
           </div>
-          
+
           <div className="hidden sm:block relative">
             {/* Verified Badge */}
             <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
@@ -344,11 +276,10 @@ export default function VendorProfilePage() {
                     setShowFloatingHearts(false); // Reset first
                     setTimeout(() => setShowFloatingHearts(true), 50); // Then trigger
                   }}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    isFavorite
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isFavorite
                       ? 'bg-primary-01 text-white'
                       : 'bg-shades-white text-neutrals-07 hover:bg-white'
-                  }`}
+                    }`}
                 >
                   <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
                 </button>
@@ -362,7 +293,7 @@ export default function VendorProfilePage() {
               className="object-cover"
             />
           </div>
-          
+
           <div className="hidden sm:block relative">
             <Image
               src={vendor.images[3] || vendor.images[0]}
@@ -371,7 +302,7 @@ export default function VendorProfilePage() {
               className="object-cover"
             />
           </div>
-          
+
           <div className="hidden sm:block relative">
             <Image
               src={vendor.images[4] || vendor.images[0]}
@@ -380,7 +311,7 @@ export default function VendorProfilePage() {
               className="object-cover"
             />
             {/* Show All Photos Button */}
-            <button 
+            <button
               onClick={() => setShowAllPhotos(true)}
               className="absolute bottom-3 right-3  bg-shades-white text-shades-black px-3 py-1.5 font-semibold rounded-4xl flex items-center gap-2 text-sm transition-colors"
             >
@@ -393,7 +324,7 @@ export default function VendorProfilePage() {
         {/* Photo Gallery Modal */}
         {showAllPhotos && (
           <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-            <button 
+            <button
               onClick={() => setShowAllPhotos(false)}
               className="absolute top-4 right-4 text-shades-white hover:text-gray-300"
             >
@@ -460,11 +391,10 @@ export default function VendorProfilePage() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                      activeTab === tab.key
+                    className={`pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key
                         ? 'text-primary-01 border-primary-01'
                         : 'text-neutrals-06 border-transparent hover:text-foreground'
-                    }`}
+                      }`}
                   >
                     {tab.label}
                   </button>
@@ -506,17 +436,16 @@ export default function VendorProfilePage() {
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-foreground">{pkg.name}</h3>
                         {pkg.badge && (
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            pkg.badge === 'Best Value' 
-                              ? 'bg-primary-01 text-white' 
+                          <span className={`text-xs px-2 py-0.5 rounded ${pkg.badge === 'Best Value'
+                              ? 'bg-primary-01 text-white'
                               : 'bg-primary-01/20 text-primary-01'
-                          }`}>
+                            }`}>
                             {pkg.badge}
                           </span>
                         )}
                       </div>
                       <p className="text-neutrals-06 text-sm mb-4">{pkg.description}</p>
-                      
+
                       {pkg.priceType === 'custom' ? (
                         <div className="mb-4">
                           <span className="text-lg font-bold text-foreground">Custom</span>
@@ -572,7 +501,7 @@ export default function VendorProfilePage() {
                 </span>
                 <span className="text-neutrals-06">/{vendor.priceUnit}</span>
               </div>
-              
+
               <div className="flex items-center gap-1 mb-4">
                 <Star size={14} className="text-foreground" fill="currentColor" />
                 <span className="text-sm text-foreground">{vendor.rating}</span>
@@ -594,7 +523,7 @@ export default function VendorProfilePage() {
               <button className="w-full bg-primary-01 text-white py-3 rounded-lg font-medium mb-3 hover:bg-primary-02 transition-colors">
                 Make Inquiry
               </button>
-              
+
               <button className="w-full border border-neutrals-03 dark:border-neutrals-07 text-foreground py-3 rounded-lg font-medium mb-4 hover:border-foreground transition-colors flex items-center justify-center gap-2">
                 <MessageSquare size={16} />
                 Chat with Vendor
@@ -625,9 +554,13 @@ export default function VendorProfilePage() {
             Similar vendors in {vendor.location}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SIMILAR_VENDORS.map((similarVendor) => (
-              <SimilarVendorCard key={similarVendor.id} vendor={similarVendor} />
-            ))}
+            {similarVendors.length > 0 ? (
+              similarVendors.map((similarVendor) => (
+                <SimilarVendorCard key={similarVendor.id} vendor={similarVendor} />
+              ))
+            ) : (
+              <p className="text-neutrals-06 col-span-full">No similar vendors found.</p>
+            )}
           </div>
         </section>
 
@@ -680,11 +613,10 @@ function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
             e.stopPropagation();
             setIsFavorite(!isFavorite);
           }}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-            isFavorite
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFavorite
               ? 'bg-primary-01 text-white'
               : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
-          }`}
+            }`}
         >
           <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
@@ -706,11 +638,10 @@ function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
                   e.stopPropagation();
                   setCurrentImageIndex(index);
                 }}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  index === currentImageIndex
+                className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex
                     ? 'bg-white w-3'
                     : 'bg-white/50 hover:bg-white/70'
-                }`}
+                  }`}
               />
             ))}
           </div>
@@ -745,11 +676,11 @@ function OverviewTab({ vendor }: { vendor: VendorData }) {
           We offer full-service floral design, custom backdrops, lighting, and furniture rentals. Our mission is to tell your unique love story through exquisite design.
         </p>
       </div>
-      <button 
+      <button
         onClick={() => setExpanded(!expanded)}
         className="text-primary-01 text-sm font-medium hover:underline flex items-center gap-1"
       >
-        {expanded ? 'Show less' : 'Read more'} 
+        {expanded ? 'Show less' : 'Read more'}
         <ChevronRight size={14} className={`transition-transform ${expanded ? 'rotate-90' : ''}`} />
       </button>
     </div>
@@ -797,8 +728,8 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
           <div key={review.id} className="border border-neutrals-03 dark:border-neutrals-07 rounded-xl p-5">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-neutrals-03 overflow-hidden relative">
-                <Image 
-                  src={review.avatar} 
+                <Image
+                  src={review.avatar}
                   alt={review.author}
                   fill
                   className="object-cover"
@@ -816,7 +747,7 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
             <p className="text-neutrals-07 text-sm leading-relaxed">&ldquo;{review.text}&rdquo;</p>
           </div>
         ))}
-        
+
         {/* Load More Button */}
         <button className="w-full py-3 border border-neutrals-03 dark:border-neutrals-07 rounded-lg text-foreground text-sm font-medium hover:border-foreground transition-colors">
           Show all reviews
@@ -832,7 +763,7 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
             <div key={stars} className="flex items-center gap-2">
               <span className="text-xs text-neutrals-06 w-3">{stars}</span>
               <div className="flex-1 h-2 bg-neutrals-03 dark:bg-neutrals-07 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-neutrals-08 dark:bg-neutrals-04 rounded-full"
                   style={{ width: stars === 5 ? '85%' : stars === 4 ? '10%' : '5%' }}
                 />
@@ -862,8 +793,8 @@ const PORTFOLIO_IMAGES = [
 function PortfolioTab() {
   const [activeCategory, setActiveCategory] = useState('All Photos');
 
-  const filteredImages = activeCategory === 'All Photos' 
-    ? PORTFOLIO_IMAGES 
+  const filteredImages = activeCategory === 'All Photos'
+    ? PORTFOLIO_IMAGES
     : PORTFOLIO_IMAGES.filter(img => img.category === activeCategory);
 
   return (
@@ -874,11 +805,10 @@ function PortfolioTab() {
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              activeCategory === cat
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat
                 ? 'bg-primary-01 text-white'
                 : 'bg-neutrals-02 dark:bg-neutrals-08 text-foreground hover:bg-neutrals-03 dark:hover:bg-neutrals-07'
-            }`}
+              }`}
           >
             {cat}
           </button>
@@ -888,11 +818,10 @@ function PortfolioTab() {
       {/* Masonry Grid */}
       <div className="columns-2 md:columns-3 gap-4 space-y-4">
         {filteredImages.map((image, index) => (
-          <div 
-            key={index} 
-            className={`break-inside-avoid relative rounded-xl overflow-hidden ${
-              index % 3 === 0 ? 'aspect-3/4' : index % 3 === 1 ? 'aspect-square' : 'aspect-4/3'
-            }`}
+          <div
+            key={index}
+            className={`break-inside-avoid relative rounded-xl overflow-hidden ${index % 3 === 0 ? 'aspect-3/4' : index % 3 === 1 ? 'aspect-square' : 'aspect-4/3'
+              }`}
           >
             <Image
               src={image.src}

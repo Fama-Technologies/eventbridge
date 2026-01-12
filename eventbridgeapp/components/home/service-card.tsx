@@ -12,7 +12,7 @@ interface ServiceCardProps {
   availableDates: string;
   pricePerDay: string;
   rating: number;
-  image?: string;
+  images: string[];
   isFavorite?: boolean;
 }
 
@@ -23,20 +23,14 @@ export default function ServiceCard({
   availableDates,
   pricePerDay,
   rating,
-  image,
+  images,
   isFavorite = false,
 }: ServiceCardProps) {
   const [favorite, setFavorite] = useState(isFavorite);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Category images for the carousel
-  const categoryImages = [
-    '/categories/weddings.jpg',
-    '/categories/Corporate.jpg',
-    '/categories/Parties.jpg',
-    '/categories/Birthdays.jpg',
-    image || '/categories/weddings.jpg', // Include the provided image or default
-  ];
+  // Use provided images or fallback to default if empty
+  const categoryImages = images.length > 0 ? images : ['/categories/weddings.jpg'];
 
   // Auto-play carousel
   useEffect(() => {

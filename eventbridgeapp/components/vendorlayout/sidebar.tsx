@@ -42,23 +42,35 @@ const navigation = [
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const [messageBadge] = useState(2);
+    const [messageBadge, setMessageBadge] = useState(0);
     const [earningsExpanded, setEarningsExpanded] = useState(false);
     const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; image?: string } | null>(null);
 
     useEffect(() => {
-        async function fetchUser() {
+        async function fetchData() {
             try {
-                const res = await fetch('/api/users/me');
-                if (res.ok) {
-                    const data = await res.json();
+                // Fetch User
+                const userRes = await fetch('/api/users/me');
+                if (userRes.ok) {
+                    const data = await userRes.json();
                     setUser(data);
                 }
+
+                // Fetch Unread Messages Count
+                const msgRes = await fetch('/api/vendor/conversations');
+                if (msgRes.ok) {
+                    const data = await msgRes.json();
+                    const convs = data.conversations || [];
+                    // Count unread conversations or sum unread messages
+                    // For now, assuming simply counting conversations with unread=true
+                    const unreadCount = convs.filter((c: any) => c.unread).length;
+                    setMessageBadge(unreadCount);
+                }
             } catch (error) {
-                console.error('Failed to fetch user', error);
+                console.error('Failed to fetch sidebar data', error);
             }
         }
-        fetchUser();
+        fetchData();
     }, []);
 
     const handleLogout = async (e: React.MouseEvent) => {
