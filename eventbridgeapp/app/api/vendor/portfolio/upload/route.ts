@@ -7,15 +7,10 @@ import { eq } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { put } from '@vercel/blob';
 
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -63,17 +58,17 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized'
+      }, { status: 401 });
     }
 
     if (user.accountType !== 'VENDOR') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Vendor only' },
-        { status: 403 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Vendor only'
+      }, { status: 403 });
     }
 
     const [vendorProfile] = await db
@@ -83,10 +78,10 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!vendorProfile) {
-      return NextResponse.json(
-        { success: false, error: 'Vendor profile not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Vendor profile not found'
+      }, { status: 404 });
     }
 
     const formData = await request.formData();
@@ -96,26 +91,26 @@ export async function POST(request: NextRequest) {
     const category = formData.get('category') as string;
 
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'No file provided'
+      }, { status: 400 });
     }
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.'
+      }, { status: 400 });
     }
 
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: 'File too large. Maximum size is 5MB.' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'File too large. Maximum size is 5MB.'
+      }, { status: 400 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -124,7 +119,7 @@ export async function POST(request: NextRequest) {
     const uploadDir = path.join(process.cwd(), 'public/uploads/portfolio');
     try {
       await mkdir(uploadDir, { recursive: true });
-    } catch (_) {}
+    } catch (error) {}
 
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
@@ -134,24 +129,8 @@ export async function POST(request: NextRequest) {
 
     await writeFile(filePath, buffer);
 
-    // Local public URL
-    const localImageUrl = `/uploads/portfolio/${fileName}`;
-
-    // BLOB STORAGE UPLOAD
-    let blobUrl = null;
-    let blobKey = null;
-
-    try {
-      const blob = await put(`portfolio/${fileName}`, buffer, {
-        access: 'public',
-        contentType: file.type
-      });
-
-      blobUrl = blob.url;
-      blobKey = blob.pathname;
-    } catch (error) {
-      console.error('Blob upload failed:', error);
-    }
+    const imageUrl = `/uploads/portfolio/${fileName}`;
+    const fileKey = `portfolio/${fileName}`;
 
     let width = null;
     let height = null;
@@ -161,15 +140,15 @@ export async function POST(request: NextRequest) {
       .values({
         userId: user.id,
         vendorId: vendorProfile.id,
-        fileKey: blobKey ?? `portfolio/${fileName}`,
-        fileUrl: blobUrl ?? localImageUrl,
+        fileKey: fileKey,
+        fileUrl: imageUrl,
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
         uploadType: 'portfolio',
         width: width,
         height: height,
-        createdAt: new Date()
+        createdAt: new Date(),
       })
       .returning();
 
@@ -177,7 +156,7 @@ export async function POST(request: NextRequest) {
       .insert(vendorPortfolio)
       .values({
         vendorId: vendorProfile.id,
-        imageUrl: blobUrl ?? localImageUrl,
+        imageUrl: imageUrl,
         title: title || null,
         description: description || null,
         category: category || null,
@@ -186,7 +165,7 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         quality: null,
         displayOrder: 0,
-        createdAt: new Date()
+        createdAt: new Date(),
       })
       .returning();
 
@@ -195,16 +174,15 @@ export async function POST(request: NextRequest) {
       data: {
         portfolioItem,
         upload,
-        storage: blobUrl ? 'blob' : 'local'
       },
       message: 'Portfolio image uploaded successfully'
     });
 
   } catch (error) {
     console.error('Portfolio upload error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to upload image. Please try again.' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to upload image. Please try again.'
+    }, { status: 500 });
   }
 }
