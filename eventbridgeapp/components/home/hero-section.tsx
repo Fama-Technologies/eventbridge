@@ -72,6 +72,13 @@ export default function HeroSection() {
     if (selectedDate) params.set('when', format(selectedDate, 'yyyy-MM-dd'));
     router.push(`/search?${params.toString()}`);
   };
+  
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSearch();
+    }
+  };
 
   const popularCategories = ['Photographers', 'Catering', 'Venues'];
   const vendorMedia: MediaItem[] = [
@@ -118,6 +125,7 @@ export default function HeroSection() {
                   setShowLocationDropdown(false);
                   setShowDatePicker(false);
                 }}
+                onKeyDown={handleKeyDown}
                 onFocus={() => {
                   setShowEventDropdown(true);
                   setShowLocationDropdown(false);
@@ -144,6 +152,7 @@ export default function HeroSection() {
                   setShowEventDropdown(false);
                   setShowDatePicker(false);
                 }}
+                onKeyDown={handleKeyDown}
                 onFocus={() => {
                   setShowLocationDropdown(true);
                   setShowEventDropdown(false);
