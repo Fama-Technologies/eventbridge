@@ -59,6 +59,17 @@ export default function ServiceCard({
     setCurrentImageIndex(index);
   };
 
+  const shouldShowCategoryLocation =
+    category &&
+    location &&
+    !(category === 'Event Service' && ['Location not specified', 'New York'].includes(location));
+
+  const shouldShowAvailability =
+    availableDates && availableDates.toLowerCase() !== 'check availability';
+
+  const shouldShowPrice =
+    pricePerDay && pricePerDay.toLowerCase() !== 'contact for pricing';
+
   return (
     <div className="group block">
       {/* Image Carousel */}
@@ -132,13 +143,19 @@ export default function ServiceCard({
           </div>
         </div>
 
-        <p className="text-sm text-neutrals-06 mb-0.5">
-          {category} - {location}
-        </p>
-        <p className="text-sm text-neutrals-06 mb-0.5">{availableDates}</p>
-        <p className="text-sm text-shades-black">
-          {pricePerDay} <span className="text-neutrals-06">/day</span>
-        </p>
+        {shouldShowCategoryLocation && (
+          <p className="text-sm text-neutrals-06 mb-0.5">
+            {category} - {location}
+          </p>
+        )}
+        {shouldShowAvailability && (
+          <p className="text-sm text-neutrals-06 mb-0.5">{availableDates}</p>
+        )}
+        {shouldShowPrice && (
+          <p className="text-sm text-shades-black">
+            {pricePerDay} <span className="text-neutrals-06">/day</span>
+          </p>
+        )}
       </div>
     </div>
   );
