@@ -130,7 +130,7 @@ export default function Header() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <nav className="md:hidden mt-4 pb-4 flex flex-col gap-4 border-t border-neutrals-04 pt-4">
-          <Link
+          <Link 
             href="/find-vendors"
             className="block py-2 text-shades-black transition-colors hover:text-primary-01"
           >
