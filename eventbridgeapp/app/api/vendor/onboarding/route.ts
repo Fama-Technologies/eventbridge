@@ -6,7 +6,9 @@ import {
   users,
   sessions,
   vendorProfiles,
+  vendorAvailability,
   onboardingProgress,
+  vendorServices,
   vendorPackages,
   vendorPortfolio,
   vendorVideos,
@@ -53,6 +55,32 @@ function canUserBeVendor(user: any): { allowed: boolean; reason?: string } {
     };
   }
   return { allowed: true };
+}
+
+function parsePriceRange(value?: string): number | null {
+  if (!value) return null;
+  const match = value.match(/[\d,]+/);
+  if (!match) return null;
+  const parsed = Number(match[0].replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function mapWorkingDaysToActiveDays(workingDays?: string[]): number[] {
+  const dayMap: Record<string, number> = {
+    Mon: 0,
+    Tue: 1,
+    Wed: 2,
+    Thur: 3,
+    Thu: 3,
+    Fri: 4,
+    Sat: 5,
+    Sun: 6,
+  };
+
+  if (!workingDays || workingDays.length === 0) return [];
+  return workingDays
+    .map((day) => dayMap[day])
+    .filter((day) => Number.isFinite(day));
 }
 
 export async function GET(request: NextRequest) {
@@ -236,6 +264,57 @@ export async function POST(request: NextRequest) {
         .returning();
       vendorProfileId = newProfile.id;
       console.log('Created new vendor profile:', vendorProfileId);
+    }
+
+    // ===== SAVE SERVICES =====
+    if (serviceCategories && serviceCategories.length > 0) {
+      await db
+        .delete(vendorServices)
+        .where(eq(vendorServices.vendorId, vendorProfileId));
+
+      const price = parsePriceRange(priceRange);
+      const services = serviceCategories.map((name: string) => ({
+        vendorId: vendorProfileId,
+        name,
+        description: serviceDescription || null,
+        price,
+        duration: null,
+        isActive: true,
+      }));
+
+      await db.insert(vendorServices).values(services);
+      console.log('Saved services:', services.length);
+    }
+
+    // ===== SAVE AVAILABILITY =====
+    const activeDays = mapWorkingDaysToActiveDays(workingDays);
+    const [existingAvailability] = await db
+      .select()
+      .from(vendorAvailability)
+      .where(eq(vendorAvailability.vendorId, vendorProfileId))
+      .limit(1);
+
+    if (existingAvailability) {
+      await db
+        .update(vendorAvailability)
+        .set({
+          activeDays,
+          workingHours: { start: '09:00', end: '17:00' },
+          sameDayService: false,
+          maxEvents: 5,
+          updatedAt: new Date(),
+        })
+        .where(eq(vendorAvailability.vendorId, vendorProfileId));
+    } else {
+      await db.insert(vendorAvailability).values({
+        vendorId: vendorProfileId,
+        activeDays,
+        workingHours: { start: '09:00', end: '17:00' },
+        sameDayService: false,
+        maxEvents: 5,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     }
 
     // ===== SAVE PACKAGES =====

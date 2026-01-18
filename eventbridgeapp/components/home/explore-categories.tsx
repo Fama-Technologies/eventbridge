@@ -1,65 +1,11 @@
 'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import CategoryCard from './category-card';
-
-interface CategoryData {
-  slug: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  vendorCount: number;
-}
+import { CATEGORY_DATA } from '@/lib/categories-data';
 
 export default function ExploreCategories() {
-  const [categories, setCategories] = useState<CategoryData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  // Mock data requested by user
-  const MOCK_CATEGORIES: CategoryData[] = [
-    {
-      slug: 'weddings',
-      name: 'Weddings',
-      description: 'Plan your dream wedding',
-      imageUrl: '/categories/weddings.jpg',
-      vendorCount: 150
-    },
-    {
-      slug: 'corporate',
-      name: 'Corporate',
-      description: 'Professional events & conferences',
-      imageUrl: '/categories/Corporate.jpg',
-      vendorCount: 85
-    },
-    {
-      slug: 'birthdays',
-      name: 'Birthdays',
-      description: 'Celebrate another year',
-      imageUrl: '/categories/Birthdays.jpg',
-      vendorCount: 120
-    },
-    {
-      slug: 'parties',
-      name: 'Parties',
-      description: 'Fun gatherings & celebrations',
-      imageUrl: '/categories/Parties.jpg',
-      vendorCount: 200
-    }
-  ];
-
-  useEffect(() => {
-    // Simulate loading for effect, but use mock data
-    const timer = setTimeout(() => {
-      setCategories(MOCK_CATEGORIES);
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (error) return null;
+  const categories = CATEGORY_DATA.slice(0, 4);
 
   return (
     <section className="py-12 px-6 bg-background">
@@ -74,11 +20,7 @@ export default function ExploreCategories() {
           </Link>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-01" />
-          </div>
-        ) : categories.length === 0 ? (
+        {categories.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-neutrals-06 text-lg">No categories found.</p>
           </div>

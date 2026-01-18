@@ -215,6 +215,28 @@ export const vendorProfiles = pgTable('vendor_profiles', {
   };
 });
 
+/* ===================== VENDOR AVAILABILITY ===================== */
+export const vendorAvailability = pgTable('vendor_availability', {
+  id: serial('id').primaryKey(),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .unique()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  activeDays: jsonb('active_days').$type<number[]>(),
+  workingHours: jsonb('working_hours').$type<{ start: string; end: string }>(),
+  sameDayService: boolean('same_day_service').default(false),
+  maxEvents: integer('max_events').default(5),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_availability_vendor_id_idx').on(table.vendorId),
+  };
+});
+
 /* ===================== VENDOR SERVICES ===================== */
 export const vendorServices = pgTable('vendor_services', {
   id: serial('id').primaryKey(),
@@ -592,6 +614,7 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
     fields: [vendorProfiles.userId],
     references: [users.id],
   }),
+  availability: one(vendorAvailability),
   services: many(vendorServices),
   packages: many(vendorPackages),
   portfolio: many(vendorPortfolio),
@@ -610,6 +633,13 @@ export const vendorServicesRelations = relations(vendorServices, ({ one, many })
     references: [vendorProfiles.id],
   }),
   gallery: many(serviceGallery),
+}));
+
+export const vendorAvailabilityRelations = relations(vendorAvailability, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorAvailability.vendorId],
+    references: [vendorProfiles.id],
+  }),
 }));
 
 export const vendorPackagesRelations = relations(vendorPackages, ({ one }) => ({
@@ -716,6 +746,9 @@ export type EventCategoryRelation = typeof eventCategoryRelations.$inferSelect;
 
 export type VendorProfile = typeof vendorProfiles.$inferSelect;
 export type NewVendorProfile = typeof vendorProfiles.$inferInsert;
+
+export type VendorAvailability = typeof vendorAvailability.$inferSelect;
+export type NewVendorAvailability = typeof vendorAvailability.$inferInsert;
 
 export type VendorService = typeof vendorServices.$inferSelect;
 export type NewVendorService = typeof vendorServices.$inferInsert;

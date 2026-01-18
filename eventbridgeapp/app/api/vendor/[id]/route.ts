@@ -5,9 +5,12 @@ import {
   users, 
   vendorServices, 
   vendorPackages,
-  vendorPortfolio 
+  vendorPortfolio,
+  vendorAvailability,
+  reviews
 } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { formatAvailability } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +88,26 @@ export async function GET(
       .from(vendorPortfolio)
       .where(eq(vendorPortfolio.vendorId, vendorId));
 
+    const [availability] = await db
+      .select({
+        activeDays: vendorAvailability.activeDays,
+      })
+      .from(vendorAvailability)
+      .where(eq(vendorAvailability.vendorId, vendorId))
+      .limit(1);
+
+    const [reviewStats] = await db
+      .select({
+        avgRating: sql<number>`avg(${reviews.rating})`,
+        reviewCount: sql<number>`count(${reviews.id})`,
+      })
+      .from(reviews)
+      .where(eq(reviews.vendorId, vendorId));
+
+    const rating = Number(reviewStats?.avgRating) || 0;
+    const reviewCount = Number(reviewStats?.reviewCount) || 0;
+    const availabilityText = formatAvailability(availability?.activeDays);
+
     // Format response
     const response = {
       id: vendor.id.toString(),
@@ -92,14 +115,14 @@ export async function GET(
       category: services.length > 0 ? services[0].name : 'Event Services',
       location: vendor.city || 'Kampala',
       country: vendor.state || 'Uganda',
-      rating: (vendor.rating || 0) / 100, // Convert from integer to decimal
-      reviewCount: vendor.reviewCount || 0,
+      rating,
+      reviewCount,
       isVerified: vendor.isVerified || false,
       startingPrice: vendor.hourlyRate || 0,
       priceUnit: 'event',
       yearsExperience: vendor.yearsExperience || 0,
       responseTime: '<1h',
-      availability: 'Available this month',
+      availability: availabilityText,
       guestCapacity: '100+',
       description: vendor.description || '',
       images: portfolio.length > 0 
