@@ -271,8 +271,17 @@ export const vendorPackages = pgTable('vendor_packages', {
   name: text('name').notNull(),
   description: text('description'),
   price: integer('price').notNull(),
+  priceMax: integer('price_max'),
   duration: integer('duration'),
+
+  capacityMin: integer('capacity_min'),
+  capacityMax: integer('capacity_max'),
+  pricingModel: text('pricing_model').default('per_event'),
+
   features: jsonb('features').$type<string[]>(),
+  pricingStructure: jsonb('pricing_structure').$type<string[]>(),
+  customPricing: boolean('custom_pricing').default(false),
+  tags: jsonb('tags').$type<string[]>(),
 
   isPopular: boolean('is_popular').default(false),
   isActive: boolean('is_active').default(true),

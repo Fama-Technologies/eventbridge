@@ -213,7 +213,7 @@ export default function HeroSection() {
       </div>
 
       {/* Dropdowns - using portaled fixed positioning */}
-      {showEventDropdown && what && (
+      {showEventDropdown && (
         <EventTypeDropdown
           onSelect={handleEventSelect}
           searchValue={what}
@@ -222,7 +222,7 @@ export default function HeroSection() {
         />
       )}
 
-      {showLocationDropdown && where && (
+      {showLocationDropdown && (
         <LocationDropdown
           onSelect={handleLocationSelect}
           searchValue={where}

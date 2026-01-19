@@ -11,7 +11,7 @@ export default function Footer() {
     // Check for saved theme preference or default to system preference
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -24,7 +24,7 @@ export default function Footer() {
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    
+
     if (newMode) {
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
@@ -280,34 +280,32 @@ export default function Footer() {
             </p>
             {/* Dark Mode Toggle */}
             <div className="flex items-center gap-3">
-             {/*lets this will have a toggle button for sun and moon*/}
-             <Image src="/icons/moon.svg" alt="sun" width={24} height={24} />
+              {/*lets this will have a toggle button for sun and moon*/}
+              <Image src="/icons/moon.svg" alt="sun" width={24} height={24} />
               <span className="text-sm text-neutrals-07">Dark mode</span>
-              
+
               {/* Animated Toggle Button */}
               <button
                 onClick={toggleDarkMode}
-                className={`relative w-12 h-6 rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-01 focus:ring-offset-2 ${
-                  isDarkMode ? 'bg-primary-01' : 'bg-gray-300'
-                }`}
+                className={`relative w-12 h-6 rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-01 focus:ring-offset-2 ${isDarkMode ? 'bg-primary-01' : 'bg-gray-300'
+                  }`}
                 aria-label="Toggle dark mode"
               >
                 <div
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out ${
-                    isDarkMode ? 'transform translate-x-6' : 'transform translate-x-0'
-                  }`}
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out ${isDarkMode ? 'transform translate-x-6' : 'transform translate-x-0'
+                    }`}
                 >
                   {/* Icon inside the toggle circle */}
                   <div className="w-full h-full flex items-center justify-center">
                     {isDarkMode ? (
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2a10 10 0 1 0 10 10c0-5.523-4.477-10-10-10z" fill="#FF7043"/>
-                        <path d="M12 22a10 10 0 0 1 0-20c-2.5 2-4 5.5-4 10s1.5 8 4 10z" fill="#7C3F1C"/>
+                        <path d="M12 2a10 10 0 1 0 10 10c0-5.523-4.477-10-10-10z" fill="#FF7043" />
+                        <path d="M12 22a10 10 0 0 1 0-20c-2.5 2-4 5.5-4 10s1.5 8 4 10z" fill="#7C3F1C" />
                       </svg>
                     ) : (
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="5" fill="#FFA726"/>
-                        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24" stroke="#FFA726" strokeWidth="1.5" strokeLinecap="round"/>
+                        <circle cx="12" cy="12" r="5" fill="#FFA726" />
+                        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24" stroke="#FFA726" strokeWidth="1.5" strokeLinecap="round" />
                       </svg>
                     )}
                   </div>

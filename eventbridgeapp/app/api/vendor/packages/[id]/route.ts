@@ -88,3 +88,69 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (user.accountType !== 'VENDOR') {
+      return NextResponse.json({ success: false, error: 'Vendor only' }, { status: 403 });
+    }
+
+    const [vendorProfile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.userId, user.id))
+      .limit(1);
+
+    if (!vendorProfile) {
+      return NextResponse.json({ success: false, error: 'Vendor profile not found' }, { status: 404 });
+    }
+
+    const packageId = Number(params.id);
+    if (!Number.isFinite(packageId)) {
+      return NextResponse.json({ success: false, error: 'Invalid package ID' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const name = String(body.name || '').trim();
+
+    if (!name) {
+      return NextResponse.json({ success: false, error: 'Package name is required' }, { status: 400 });
+    }
+
+    const [updated] = await db
+      .update(vendorPackages)
+      .set({
+        name,
+        description: body.description || null,
+        price: Number(body.price) || 0,
+        priceMax: Number.isFinite(Number(body.priceMax)) ? Number(body.priceMax) : null,
+        duration: Number.isFinite(Number(body.duration)) ? Number(body.duration) : null,
+        capacityMin: Number.isFinite(Number(body.capacityMin)) ? Number(body.capacityMin) : null,
+        capacityMax: Number.isFinite(Number(body.capacityMax)) ? Number(body.capacityMax) : null,
+        pricingModel: body.pricingModel || 'per_event',
+        pricingStructure: Array.isArray(body.pricingStructure) ? body.pricingStructure : [],
+        customPricing: Boolean(body.customPricing),
+        features: Array.isArray(body.features) ? body.features : [],
+        tags: Array.isArray(body.tags) ? body.tags : [],
+        isPopular: Boolean(body.isPopular),
+        isActive: body.isActive !== false,
+        updatedAt: new Date()
+      })
+      .where(and(eq(vendorPackages.id, packageId), eq(vendorPackages.vendorId, vendorProfile.id)))
+      .returning();
+
+    return NextResponse.json({ success: true, package: updated });
+  } catch (error) {
+    console.error('Update package error:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+  }
+}

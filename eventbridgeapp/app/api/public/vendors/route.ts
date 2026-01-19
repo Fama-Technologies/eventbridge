@@ -62,53 +62,53 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(vendorProfiles.rating))
       .limit(Number.isFinite(limit) ? limit : 24);
 
-    const vendorIds = Array.from(new Set(rows.map((row) => row.vendorId)));
+    const vendorIds: number[] = Array.from(new Set(rows.map((row: any) => row.vendorId)));
 
     const reviewStats = vendorIds.length
       ? await db
-          .select({
-            vendorId: reviews.vendorId,
-            avgRating: sql<number>`avg(${reviews.rating})`,
-            reviewCount: sql<number>`count(${reviews.id})`,
-          })
-          .from(reviews)
-          .where(inArray(reviews.vendorId, vendorIds))
-          .groupBy(reviews.vendorId)
+        .select({
+          vendorId: reviews.vendorId,
+          avgRating: sql<number>`avg(${reviews.rating})`,
+          reviewCount: sql<number>`count(${reviews.id})`,
+        })
+        .from(reviews)
+        .where(inArray(reviews.vendorId, vendorIds))
+        .groupBy(reviews.vendorId)
       : [];
 
     const ratingMap = new Map<number, number>();
-    reviewStats.forEach((row) => {
+    reviewStats.forEach((row: any) => {
       ratingMap.set(row.vendorId, Number(row.avgRating) || 0);
     });
 
     const availabilityRows = vendorIds.length
       ? await db
-          .select({
-            vendorId: vendorAvailability.vendorId,
-            activeDays: vendorAvailability.activeDays,
-          })
-          .from(vendorAvailability)
-          .where(inArray(vendorAvailability.vendorId, vendorIds))
+        .select({
+          vendorId: vendorAvailability.vendorId,
+          activeDays: vendorAvailability.activeDays,
+        })
+        .from(vendorAvailability)
+        .where(inArray(vendorAvailability.vendorId, vendorIds))
       : [];
 
     const availabilityMap = new Map<number, number[]>();
-    availabilityRows.forEach((row) => {
+    availabilityRows.forEach((row: any) => {
       if (row.activeDays) availabilityMap.set(row.vendorId, row.activeDays);
     });
 
     const packageRows = vendorIds.length
       ? await db
-          .select({
-            vendorId: vendorPackages.vendorId,
-            minPrice: sql<number>`min(${vendorPackages.price})`,
-          })
-          .from(vendorPackages)
-          .where(and(inArray(vendorPackages.vendorId, vendorIds), eq(vendorPackages.isActive, true)))
-          .groupBy(vendorPackages.vendorId)
+        .select({
+          vendorId: vendorPackages.vendorId,
+          minPrice: sql<number>`min(${vendorPackages.price})`,
+        })
+        .from(vendorPackages)
+        .where(and(inArray(vendorPackages.vendorId, vendorIds), eq(vendorPackages.isActive, true)))
+        .groupBy(vendorPackages.vendorId)
       : [];
 
     const packagePriceMap = new Map<number, number>();
-    packageRows.forEach((row) => {
+    packageRows.forEach((row: any) => {
       if (Number(row.minPrice) > 0) {
         packagePriceMap.set(row.vendorId, Number(row.minPrice));
       }
