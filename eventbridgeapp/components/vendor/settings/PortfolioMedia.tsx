@@ -4,23 +4,42 @@ import { useState, useEffect } from "react";
 import { Upload, X, Image as ImageIcon, Camera, Trash2 } from "lucide-react";
 
 interface PortfolioItem {
-  id: number;
-  imageUrl: string;
-  title: string | null;
-  description: string | null;
-  category: string | null;
+    id: number;
+    imageUrl: string;
+    title: string | null;
+    description: string | null;
+    category: string | null;
 }
 
 interface PortfolioMediaProps {
-  vendorId?: number;
+    vendorId?: number;
 }
 
 export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
-    const [images, setImages] = useState<PortfolioItem[]>([
-        { id: 1, imageUrl: "https://images.unsplash.com/photo-1546241072-48010ad2862c?auto=format&fit=crop&q=80&w=400", title: "Appetizer Platter", description: null, category: "Food" },
-        { id: 2, imageUrl: "https://images.unsplash.com/photo-1519225468765-a6a2800a6f85?auto=format&fit=crop&q=80&w=400", title: null, description: null, category: "Venue" },
-        { id: 3, imageUrl: "https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&q=80&w=400", title: null, description: null, category: "Setup" }
-    ]);
+    const [images, setImages] = useState<PortfolioItem[]>([]);
+
+    // DB DATA STRUCTURE DOCUMENTATION
+    // ----------------------------------------
+    // PUSH (Saving to DB):
+    // When uploading/saving a new portfolio item, the following structure is sent to the API:
+    // {
+    //   imageUrl: string;      // URL returned from upload service (e.g., S3/Cloudinary)
+    //   title?: string;        // Optional caption/title
+    //   description?: string;  // Optional description
+    //   category?: string;     // Optional category (e.g., 'Food', 'Venue')
+    //   vendorId: number;      // ID of the vendor owning this item
+    // }
+    //
+    // PULL (Fetching from DB):
+    // When fetching (GET /api/vendor/portfolio), the DB should return an array of objects matching:
+    // interface PortfolioItem {
+    //   id: number;            // Unique Primary Key
+    //   imageUrl: string;      // Hosted Image URL
+    //   title: string | null;  // Caption
+    //   description: string | null;
+    //   category: string | null;
+    // }
+    // ----------------------------------------
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -34,7 +53,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             setIsLoading(true);
             const response = await fetch(`/api/vendor/portfolio${vendorId ? `?vendorId=${vendorId}` : ''}`);
             const data = await response.json();
-            
+
             if (data.success) {
                 setImages(data.portfolio || []);
             }
@@ -47,7 +66,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
 
     const handleCaptionChange = (id: number, val: string) => {
         setImages(images.map(img => img.id === id ? { ...img, title: val } : img));
-        
+
         // Optional: Save caption to API
         saveCaption(id, val);
     };
@@ -81,7 +100,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
         try {
             setIsUploading(true);
             setUploadProgress(0);
-            
+
             // Simulate upload progress (in real app, use XMLHttpRequest or fetch with progress)
             const progressInterval = setInterval(() => {
                 setUploadProgress(prev => {
@@ -99,7 +118,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             });
 
             const data = await response.json();
-            
+
             clearInterval(progressInterval);
             setUploadProgress(100);
 
@@ -149,7 +168,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             });
 
             const data = await response.json();
-            
+
             if (data.success) {
                 setImages(images.filter(img => img.id !== itemId));
             }
@@ -168,14 +187,14 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                 <div className="animate-pulse">
                     <div className="h-8 bg-neutrals-03 rounded w-48 mb-2"></div>
                     <div className="h-4 bg-neutrals-03 rounded w-64 mb-8"></div>
-                    
+
                     {/* Upload Zone Skeleton */}
                     <div className="border-2 border-dashed border-neutrals-03 rounded-2xl p-10 mb-10">
                         <div className="h-10 w-10 bg-neutrals-03 rounded-full mx-auto mb-4"></div>
                         <div className="h-4 bg-neutrals-03 rounded w-48 mx-auto mb-1"></div>
                         <div className="h-3 bg-neutrals-03 rounded w-64 mx-auto"></div>
                     </div>
-                    
+
                     {/* Image Grid Skeleton */}
                     <div className="grid md:grid-cols-3 gap-6">
                         {[1, 2, 3].map((i) => (
@@ -198,19 +217,17 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             </p>
 
             {/* Upload Zone */}
-            <label 
+            <label
                 onClick={!isUploading ? triggerFileInput : undefined}
-                className={`border-2 border-dashed ${
-                    isUploading ? 'border-primary-01/50' : 'border-neutrals-03 hover:border-primary-01'
-                } rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer ${
-                    !isUploading && 'hover:bg-primary-01/05'
-                } transition-all mb-10 group relative overflow-hidden`}
+                className={`border-2 border-dashed ${isUploading ? 'border-primary-01/50' : 'border-neutrals-03 hover:border-primary-01'
+                    } rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer ${!isUploading && 'hover:bg-primary-01/05'
+                    } transition-all mb-10 group relative overflow-hidden`}
             >
                 {isUploading ? (
                     <>
                         <div className="relative w-full">
                             <div className="w-full h-1 bg-neutrals-02 rounded-full overflow-hidden mb-4">
-                                <div 
+                                <div
                                     className="h-full bg-primary-01 transition-all duration-300"
                                     style={{ width: `${uploadProgress}%` }}
                                 ></div>
@@ -247,7 +264,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                         <span className="text-sm font-medium text-primary-01">{uploadProgress}%</span>
                     </div>
                     <div className="w-full h-2 bg-neutrals-02 rounded-full overflow-hidden">
-                        <div 
+                        <div
                             className="h-full bg-gradient-to-r from-primary-01 to-primary-02 transition-all duration-300"
                             style={{ width: `${uploadProgress}%` }}
                         ></div>
@@ -261,12 +278,12 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                     {images.map((image) => (
                         <div key={image.id} className="group">
                             <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-3 border border-neutrals-02">
-                                <img 
-                                    src={image.imageUrl} 
-                                    alt={image.title || "Portfolio"} 
-                                    className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                                <img
+                                    src={image.imageUrl}
+                                    alt={image.title || "Portfolio"}
+                                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                 />
-                                <button 
+                                <button
                                     onClick={() => handleDeleteImage(image.id)}
                                     className="absolute top-2 right-2 p-1.5 bg-shades-black/50 text-shades-white rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-errors-main hover:scale-110"
                                 >
@@ -287,7 +304,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                             />
                         </div>
                     ))}
-                    
+
                     {/* Add More Button */}
                     <label className="aspect-[4/3] rounded-xl border-2 border-dashed border-neutrals-03 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary-01 hover:bg-primary-01/05 transition-all group">
                         <Camera className="w-8 h-8 text-neutrals-04 group-hover:text-primary-01 mb-3 transition-colors" />
