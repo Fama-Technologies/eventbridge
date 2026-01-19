@@ -1,155 +1,165 @@
-// app/api/vendor/portfolio/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { db } from '@/lib/db';
-import { users, vendorProfiles, vendorPortfolio, sessions } from '@/drizzle/schema';
+import { vendorPortfolio, vendorProfiles, users } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { verifyToken } from '@/lib/jwt';
-import { unlink } from 'fs/promises';
-import path from 'path';
-import { del } from '@vercel/blob';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Helper to get current user
 async function getCurrentUser() {
-  const cookieStore = await cookies();
-  const authToken = cookieStore.get('auth-token')?.value;
-  const sessionToken = cookieStore.get('session')?.value;
-
-  if (authToken) {
-    try {
-      const payload = await verifyToken(authToken);
-      if (payload && payload.userId) {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, payload.userId as number))
-          .limit(1);
-        return user;
-      }
-    } catch (error) {
-      console.error('Token verification failed:', error);
-    }
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id) {
+    return null;
   }
 
-  if (sessionToken) {
-    const [session] = await db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.token, sessionToken))
-      .limit(1);
-
-    if (session && new Date(session.expiresAt) >= new Date()) {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
-      return user;
-    }
-  }
-
-  return null;
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, Number(session.user.id)))
+    .limit(1);
+    
+  return user || null;
 }
 
+// Helper to check if user owns the portfolio item
+async function userOwnsPortfolioItem(userId: number, portfolioItemId: number): Promise<boolean> {
+  const [portfolioItem] = await db
+    .select({
+      vendorId: vendorPortfolio.vendorId,
+    })
+    .from(vendorPortfolio)
+    .innerJoin(vendorProfiles, eq(vendorPortfolio.vendorId, vendorProfiles.id))
+    .where(and(
+      eq(vendorPortfolio.id, portfolioItemId),
+      eq(vendorProfiles.userId, userId)
+    ))
+    .limit(1);
+
+  return !!portfolioItem;
+}
+
+// PUT: Update portfolio item
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const portfolioItemId = Number(params.id);
+    
+    if (isNaN(portfolioItemId)) {
+      return NextResponse.json(
+        { error: 'Invalid portfolio item ID' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user owns this portfolio item
+    const ownsItem = await userOwnsPortfolioItem(user.id, portfolioItemId);
+    
+    if (!ownsItem) {
+      return NextResponse.json(
+        { error: 'You do not have permission to update this item' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { title, description, category, displayOrder } = body;
+
+    // Prepare update data
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title || null;
+    if (description !== undefined) updateData.description = description || null;
+    if (category !== undefined) updateData.category = category || null;
+    if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
+    updateData.updatedAt = new Date();
+
+    // Update portfolio item
+    const [updatedItem] = await db
+      .update(vendorPortfolio)
+      .set(updateData)
+      .where(eq(vendorPortfolio.id, portfolioItemId))
+      .returning();
+
+    return NextResponse.json({
+      success: true,
+      portfolioItem: {
+        id: updatedItem.id,
+        imageUrl: updatedItem.imageUrl,
+        title: updatedItem.title,
+        description: updatedItem.description,
+        category: updatedItem.category,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating portfolio item:', error);
+    return NextResponse.json(
+      { error: 'Failed to update portfolio item' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Remove portfolio item
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const user = await getCurrentUser();
-
+    
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    if (user.accountType !== 'VENDOR') {
+    const portfolioItemId = Number(params.id);
+    
+    if (isNaN(portfolioItemId)) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized - Vendor only' },
-        { status: 403 }
-      );
-    }
-
-    const [vendorProfile] = await db
-      .select()
-      .from(vendorProfiles)
-      .where(eq(vendorProfiles.userId, user.id))
-      .limit(1);
-
-    if (!vendorProfile) {
-      return NextResponse.json(
-        { success: false, error: 'Vendor profile not found' },
-        { status: 404 }
-      );
-    }
-
-    const portfolioId = parseInt(params.id);
-
-    if (isNaN(portfolioId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid portfolio ID' },
+        { error: 'Invalid portfolio item ID' },
         { status: 400 }
       );
     }
 
-    const [portfolioItem] = await db
-      .select()
-      .from(vendorPortfolio)
-      .where(
-        and(
-          eq(vendorPortfolio.id, portfolioId),
-          eq(vendorPortfolio.vendorId, vendorProfile.id)
-        )
-      )
-      .limit(1);
-
-    if (!portfolioItem) {
+    // Check if user owns this portfolio item
+    const ownsItem = await userOwnsPortfolioItem(user.id, portfolioItemId);
+    
+    if (!ownsItem) {
       return NextResponse.json(
-        { success: false, error: 'Portfolio item not found' },
-        { status: 404 }
+        { error: 'You do not have permission to delete this item' },
+        { status: 403 }
       );
     }
 
-    // Delete from DB
+    // Delete portfolio item
     await db
       .delete(vendorPortfolio)
-      .where(eq(vendorPortfolio.id, portfolioId));
-
-    // Local file deletion
-    try {
-      if (portfolioItem.imageUrl.startsWith('/uploads/')) {
-        const filePath = path.join(
-          process.cwd(),
-          'public',
-          portfolioItem.imageUrl
-        );
-        await unlink(filePath);
-      }
-    } catch (error) {
-      console.warn('Could not delete local file:', error);
-    }
-
-    // Blob storage deletion
-    try {
-      if (portfolioItem.imageUrl.startsWith('https://')) {
-        await del(portfolioItem.imageUrl);
-      }
-    } catch (error) {
-      console.warn('Blob deletion failed:', error);
-    }
+      .where(eq(vendorPortfolio.id, portfolioItemId));
 
     return NextResponse.json({
       success: true,
-      message: 'Portfolio item deleted successfully'
+      message: 'Portfolio item deleted successfully',
     });
-
   } catch (error) {
-    console.error('Delete portfolio error:', error);
+    console.error('Error deleting portfolio item:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete portfolio item' },
+      { error: 'Failed to delete portfolio item' },
       { status: 500 }
     );
   }

@@ -1,125 +1,121 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-options';
 import { db } from '@/lib/db';
-import { users, vendorProfiles, vendorPortfolio, sessions } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
-import { verifyToken } from '@/lib/jwt';
+import { vendorPortfolio, vendorProfiles, users, userUploads } from '@/drizzle/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Helper to get current user
 async function getCurrentUser() {
-  const cookieStore = await cookies();
-  const authToken = cookieStore.get('auth-token')?.value;
-  const sessionToken = cookieStore.get('session')?.value;
-
-  if (authToken) {
-    try {
-      const payload = await verifyToken(authToken);
-      if (payload && payload.userId) {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, payload.userId as number))
-          .limit(1);
-        return user;
-      }
-    } catch (error) {
-      console.error('Token verification failed:', error);
-    }
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user?.id) {
+    return null;
   }
 
-  if (sessionToken) {
-    const [session] = await db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.token, sessionToken))
-      .limit(1);
-
-    if (session && new Date(session.expiresAt) >= new Date()) {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
-      return user;
-    }
-  }
-
-  return null;
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, Number(session.user.id)))
+    .limit(1);
+    
+  return user || null;
 }
 
-// GET all portfolio items for the vendor
-export async function GET() {
+// GET: Fetch portfolio items
+export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const { searchParams } = new URL(request.url);
+    const vendorIdParam = searchParams.get('vendorId');
+    
+    let vendorProfileId: number | null = null;
 
-    if (!user) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 });
+    // If vendorId is provided in query, use it
+    if (vendorIdParam) {
+      vendorProfileId = Number(vendorIdParam);
+    } else {
+      // Otherwise, get portfolio for current user
+      const user = await getCurrentUser();
+      
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+
+      // Get vendor profile for current user
+      const [vendorProfile] = await db
+        .select()
+        .from(vendorProfiles)
+        .where(eq(vendorProfiles.userId, user.id))
+        .limit(1);
+
+      if (!vendorProfile) {
+        return NextResponse.json(
+          { success: true, portfolio: [] },
+          { status: 200 }
+        );
+      }
+
+      vendorProfileId = vendorProfile.id;
     }
 
-    if (user.accountType !== 'VENDOR') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized - Vendor only' 
-      }, { status: 403 });
+    if (!vendorProfileId) {
+      return NextResponse.json(
+        { success: true, portfolio: [] },
+        { status: 200 }
+      );
     }
 
-    // Get vendor profile for this user
-    const [vendorProfile] = await db
-      .select()
-      .from(vendorProfiles)
-      .where(eq(vendorProfiles.userId, user.id))
-      .limit(1);
-
-    if (!vendorProfile) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Vendor profile not found' 
-      }, { status: 404 });
-    }
-
+    // Fetch portfolio items
     const portfolioItems = await db
-      .select()
+      .select({
+        id: vendorPortfolio.id,
+        imageUrl: vendorPortfolio.imageUrl,
+        title: vendorPortfolio.title,
+        description: vendorPortfolio.description,
+        category: vendorPortfolio.category,
+        width: vendorPortfolio.width,
+        height: vendorPortfolio.height,
+        fileSize: vendorPortfolio.fileSize,
+        quality: vendorPortfolio.quality,
+        displayOrder: vendorPortfolio.displayOrder,
+        createdAt: vendorPortfolio.createdAt,
+      })
       .from(vendorPortfolio)
-      .where(eq(vendorPortfolio.vendorId, vendorProfile.id))
-      .orderBy(vendorPortfolio.createdAt);
+      .where(eq(vendorPortfolio.vendorId, vendorProfileId))
+      .orderBy(desc(vendorPortfolio.displayOrder), desc(vendorPortfolio.createdAt));
 
     return NextResponse.json({
       success: true,
-      portfolio: portfolioItems
+      portfolio: portfolioItems,
     });
   } catch (error) {
-    console.error('Get portfolio error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Internal server error'
-    }, { status: 500 });
+    console.error('Error fetching portfolio:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch portfolio' },
+      { status: 500 }
+    );
   }
 }
 
-// POST - Add new portfolio item
+// POST: Create new portfolio item
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-
+    
     if (!user) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    if (user.accountType !== 'VENDOR') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized - Vendor only' 
-      }, { status: 403 });
-    }
-
-    // Get vendor profile for this user
+    // Get vendor profile for current user
     const [vendorProfile] = await db
       .select()
       .from(vendorProfiles)
@@ -127,33 +123,35 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!vendorProfile) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Vendor profile not found' 
-      }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Vendor profile not found' },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
-    const { 
-      imageUrl,
-      title,
-      description,
-      category,
-      width,
-      height,
-      fileSize,
-      quality,
-      displayOrder = 0
-    } = body;
+    const { imageUrl, title, description, category, pathname, size, type } = body;
 
+    // Validate required fields
     if (!imageUrl) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Image URL is required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Image URL is required' },
+        { status: 400 }
+      );
     }
 
-    const [newPortfolioItem] = await db
+    // Get the highest display order for this vendor
+    const [latestItem] = await db
+      .select({ displayOrder: vendorPortfolio.displayOrder })
+      .from(vendorPortfolio)
+      .where(eq(vendorPortfolio.vendorId, vendorProfile.id))
+      .orderBy(desc(vendorPortfolio.displayOrder))
+      .limit(1);
+
+    const nextDisplayOrder = (latestItem?.displayOrder || 0) + 1;
+
+    // Create portfolio item
+    const [portfolioItem] = await db
       .insert(vendorPortfolio)
       .values({
         vendorId: vendorProfile.id,
@@ -161,25 +159,49 @@ export async function POST(request: NextRequest) {
         title: title || null,
         description: description || null,
         category: category || null,
-        width: width || null,
-        height: height || null,
-        fileSize: fileSize || null,
-        quality: quality || null,
-        displayOrder: displayOrder,
+        displayOrder: nextDisplayOrder,
+        width: null,
+        height: null,
+        fileSize: size || null,
+        quality: null,
         createdAt: new Date(),
       })
       .returning();
 
+    // Also save to user_uploads table for tracking (if pathname exists)
+    if (pathname) {
+      const fileName = pathname.split('/').pop() || 'portfolio.jpg';
+      
+      await db.insert(userUploads).values({
+        userId: user.id,
+        vendorId: vendorProfile.id,
+        fileKey: pathname,
+        fileUrl: imageUrl,
+        fileName: fileName,
+        fileType: type || 'image/jpeg',
+        fileSize: size || 0,
+        uploadType: 'gallery',
+        width: null,
+        height: null,
+        createdAt: new Date(),
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      portfolioItem: newPortfolioItem,
-      message: 'Portfolio item added successfully'
+      portfolioItem: {
+        id: portfolioItem.id,
+        imageUrl: portfolioItem.imageUrl,
+        title: portfolioItem.title,
+        description: portfolioItem.description,
+        category: portfolioItem.category,
+      },
     });
   } catch (error) {
-    console.error('Add portfolio error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Internal server error'
-    }, { status: 500 });
+    console.error('Error creating portfolio item:', error);
+    return NextResponse.json(
+      { error: 'Failed to create portfolio item' },
+      { status: 500 }
+    );
   }
 }

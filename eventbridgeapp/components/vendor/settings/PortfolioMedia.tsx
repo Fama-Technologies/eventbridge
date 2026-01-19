@@ -130,6 +130,9 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                     },
                     body: JSON.stringify({
                         imageUrl: data.url,
+                        pathname: data.pathname,  // From Vercel Blob response
+                        size: data.size,          // From Vercel Blob response  
+                        type: data.type,          // From Vercel Blob response
                     }),
                 });
 
