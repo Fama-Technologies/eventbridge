@@ -240,9 +240,11 @@ export async function POST(request: NextRequest) {
       website: website || null,
       profileImage: profilePhotoUrl || null,
       coverImage: coverImageUrl || null,
-      verificationStatus: 'under_review',
+      isVerified: true,
+      verificationStatus: 'approved',
       verificationSubmittedAt: new Date(),
-      canAccessDashboard: false,
+      verificationReviewedAt: new Date(),
+      canAccessDashboard: true,
       updatedAt: new Date(),
     };
 
@@ -259,7 +261,6 @@ export async function POST(request: NextRequest) {
         .values({
           userId: userId,
           ...profileData,
-          isVerified: false,
         })
         .returning();
       vendorProfileId = newProfile.id;
@@ -431,7 +432,7 @@ export async function POST(request: NextRequest) {
         documentType: 'business_license',
         documentUrl: url,
         documentName: `Document ${index + 1}`,
-        status: 'pending',
+        status: 'approved',
       }));
 
       await db.insert(verificationDocuments).values(documents);
@@ -474,7 +475,7 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // ✅ Link cover image to vendor
+    //  Link cover image to vendor
     if (coverImageUrl) {
       await db
         .update(userUploads)
@@ -520,8 +521,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Application submitted for verification.',
-      verificationStatus: 'under_review',
+      message: 'Vendor profile created successfully. Your profile is now visible to customers.',
+      verificationStatus: 'approved',
       vendorProfileId,
     });
   } catch (error) {
