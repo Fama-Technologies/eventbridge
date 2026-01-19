@@ -193,7 +193,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-shades-black hover:text-primary-01 transition-colors text-sm">
+                <Link href="/help" className="text-shades-black hover:text-primary-01 transition-colors text-sm">
                   Help Center/ FAQ
                 </Link>
               </li>

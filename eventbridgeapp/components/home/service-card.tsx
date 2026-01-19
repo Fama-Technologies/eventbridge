@@ -148,9 +148,14 @@ export default function ServiceCard({
             {category} - {location}
           </p>
         )}
+        {shouldShowAvailability && (
+          <p className="text-xs text-neutrals-06 mb-1">
+            {availableDates}
+          </p>
+        )}
         {shouldShowPrice && (
           <p className="text-sm text-shades-black">
-            {pricePerDay} <span className="text-neutrals-06">/day</span>
+            {pricePerDay} <span className="text-neutrals-06">/event</span>
           </p>
         )}
       </div>
