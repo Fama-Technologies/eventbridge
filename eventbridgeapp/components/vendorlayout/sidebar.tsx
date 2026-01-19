@@ -191,9 +191,12 @@ export default function Sidebar() {
                         <p className="text-xs mt-3 opacity-90 leading-relaxed">
                             Upgrade now and unlock more exclusive features
                         </p>
-                        <button className="mt-3 w-full bg-white text-primary-01 font-semibold text-xs py-2 px-4 rounded-full hover:bg-white/90 transition-colors">
+                        <Link
+                            href="/vendor/upgrade"
+                            className="mt-3 block w-full bg-white text-primary-01 font-semibold text-xs py-2 px-4 rounded-full hover:bg-white/90 transition-colors text-center"
+                        >
                             Upgrade Now
-                        </button>
+                        </Link>
                     </div>
                 </div>
 

@@ -85,6 +85,57 @@ export default function ProfileBasics({
         try {
             setIsLoading(true);
             const response = await fetch('/api/vendor/profile');
+            //this is what is returned from the api
+            {/*
+                
+            {
+  "success": true,
+  "profile": {
+    "id": 1,
+    "businessName": "...",
+    "description": "...",
+    "phone": "...",
+    "website": "...",
+    "address": "...",
+    "city": "...",
+    "state": "...",
+    "zipCode": "...",
+    "yearsExperience": 5,
+    "isVerified": false,
+    "rating": 4.6,
+    "reviewCount": 32,
+    "profileImage": "...",
+    "verificationStatus": "pending"
+  },
+  "services": [
+    { "id": 1, "name": "Catering", "description": null, "price": null, "isActive": true }
+  ]
+}
+
+
+
+            
+*/}
+
+//this wat is the body to send to the api when creating or updating a profile
+    {/*
+        {
+  "businessName": "...",
+  "description": "...",
+  "phone": "...",
+  "address": "...",
+  "city": "...",
+  "state": "...",
+  "zipCode": "...",
+  "website": "...",
+  "yearsExperience": 3,
+  "socialLinks": {
+    "twitter": "...",
+    "instagram": "..."
+  }
+}
+
+        */}
             const data = await response.json();
 
             if (data.success) {

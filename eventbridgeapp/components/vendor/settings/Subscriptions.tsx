@@ -27,10 +27,20 @@ export default function Subscriptions() {
                 // The prompt says "To be integrated", implying I should add the logic.
                 // Assuming /api/vendor/earnings might have this or dedicated endpoint.
                 // Let's try /api/vendor/billing and fallback to empty logic
+
                 const response = await fetch('/api/vendor/billing');
                 if (response.ok) {
                     const data = await response.json();
                     setBillingHistory(data.invoices || []);
+                    console.log(data);
+                    {/*
+                        the json  format is billing api is 
+                        {
+
+                        
+                        
+                        }
+                        */}
                 } else {
                     // If endpoint doesn't exist, we can show empty or fallback mock for demo preservation if strictly needed,
                     // but goal is to remove mock. showing empty is safer.

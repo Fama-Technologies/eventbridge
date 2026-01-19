@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ProfileBasics from "./ProfileBasics";
-import ServicePackages from "./ServicePackages";
+import ServicePackages, { type ServicePackage } from "./ServicePackages";
 import PortfolioMedia from "./PortfolioMedia";
 import AvailabilitySettings from "./AvailabilitySettings";
 import { useToast } from "@/components/ui/toast";
@@ -33,16 +33,7 @@ interface Service {
     isActive: boolean;
 }
 
-interface ServicePackage {
-    id: number;
-    name: string;
-    description: string | null;
-    price: number;
-    duration: number | null;
-    features: string[];
-    isPopular: boolean;
-    isActive: boolean; // Added this property
-}
+
 
 const TABS = [
     { id: "basics", label: "Profile Basics" },

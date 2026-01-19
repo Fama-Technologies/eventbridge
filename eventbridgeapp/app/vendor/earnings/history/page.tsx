@@ -14,6 +14,9 @@ export default function TransactionHistoryPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentTab, setCurrentTab] = useState("all"); // 'all', 'paid', 'pending', 'cancelled'
     const [currentPage, setCurrentPage] = useState(1);
+    const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     // Fetch Transactions
     useEffect(() => {
@@ -36,6 +39,10 @@ export default function TransactionHistoryPage() {
         fetchHistory();
     }, []);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, currentTab, startDate, endDate]);
+
     // Filter Logic (Client-side for now, can be moved to API query params later)
     const filteredTransactions = transactions.filter(tx => {
         // Filter by Tab
@@ -48,6 +55,13 @@ export default function TransactionHistoryPage() {
                 tx.title.toLowerCase().includes(lowerQuery) ||
                 (tx.clientName && tx.clientName.toLowerCase().includes(lowerQuery))
             );
+        }
+
+        if (startDate || endDate) {
+            const txDate = new Date(tx.date);
+            if (Number.isNaN(txDate.getTime())) return false;
+            if (startDate && txDate < new Date(startDate)) return false;
+            if (endDate && txDate > new Date(endDate)) return false;
         }
 
         return true;
@@ -85,9 +99,56 @@ export default function TransactionHistoryPage() {
                         onSearchChange={setSearchQuery}
                         currentTab={currentTab}
                         onTabChange={setCurrentTab}
-                        dateRangeLabel="Oct 1, 2023 - Dec 31, 2023"
-                        onDateRangeClick={() => { }}
+                        dateRangeLabel={
+                            startDate || endDate
+                                ? `${startDate || 'Start'} - ${endDate || 'End'}`
+                                : "All dates"
+                        }
+                        onDateRangeClick={() => setIsDateRangeOpen(prev => !prev)}
                     />
+                    {isDateRangeOpen && (
+                        <div className="mb-6 rounded-2xl border border-neutrals-03 bg-shades-white p-4">
+                            <div className="grid gap-4 md:grid-cols-3 items-end">
+                                <label className="flex flex-col text-sm text-neutrals-06">
+                                    Start date
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="mt-2 rounded-lg border border-neutrals-03 px-3 py-2 text-sm text-shades-black"
+                                    />
+                                </label>
+                                <label className="flex flex-col text-sm text-neutrals-06">
+                                    End date
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="mt-2 rounded-lg border border-neutrals-03 px-3 py-2 text-sm text-shades-black"
+                                    />
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsDateRangeOpen(false)}
+                                        className="rounded-full border border-neutrals-03 px-4 py-2 text-sm font-medium text-neutrals-06 hover:text-neutrals-08"
+                                    >
+                                        Apply
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStartDate("");
+                                            setEndDate("");
+                                        }}
+                                        className="rounded-full border border-neutrals-03 px-4 py-2 text-sm font-medium text-neutrals-06 hover:text-neutrals-08"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <TransactionList
                         transactions={displayedTransactions}

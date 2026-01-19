@@ -41,10 +41,6 @@ export default function MostUsedServices() {
     fetchServices();
   }, []);
 
-  if (error) {
-    return null;
-  }
-
   return (
     <section className="py-12 px-6" style={{ backgroundColor: '#fff5f2' }}>
       <div className="max-w-7xl mx-auto">
@@ -56,6 +52,12 @@ export default function MostUsedServices() {
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary-01" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-neutrals-06 text-lg">
+              We&apos;re having trouble loading top recommendations right now.
+            </p>
           </div>
         ) : services.length === 0 ? (
           <div className="text-center py-12">

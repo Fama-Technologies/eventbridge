@@ -36,7 +36,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             const data = await response.json();
             
             if (data.success) {
-                setImages(data.items || []);
+                setImages(data.portfolio || []);
             }
         } catch (error) {
             console.error('Failed to fetch portfolio:', error);
@@ -72,7 +72,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
         const file = e.target.files[0];
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('uploadType', 'portfolio');
+        formData.append('type', 'gallery');
 
         if (vendorId) {
             formData.append('vendorId', vendorId.toString());
@@ -103,23 +103,37 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             clearInterval(progressInterval);
             setUploadProgress(100);
 
-            if (data.success) {
-                // Add new image to the list
-                const newItem: PortfolioItem = {
-                    id: data.item.id,
-                    imageUrl: data.fileUrl,
-                    title: "",
-                    description: null,
-                    category: null
-                };
-                
-                setImages([...images, newItem]);
-                
-                // Show success message
-                setTimeout(() => {
+            if (response.ok && data.url) {
+                const portfolioResponse = await fetch('/api/vendor/portfolio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        imageUrl: data.url,
+                    }),
+                });
+
+                const portfolioData = await portfolioResponse.json();
+
+                if (portfolioData.success && portfolioData.portfolioItem) {
+                    const newItem: PortfolioItem = portfolioData.portfolioItem;
+                    setImages([...images, newItem]);
+
+                    // Show success message
+                    setTimeout(() => {
+                        setIsUploading(false);
+                        setUploadProgress(0);
+                    }, 500);
+                } else {
+                    console.error('Failed to save portfolio item:', portfolioData.error);
                     setIsUploading(false);
                     setUploadProgress(0);
-                }, 500);
+                }
+            } else {
+                console.error('Upload failed:', data.error || 'Unknown error');
+                setIsUploading(false);
+                setUploadProgress(0);
             }
         } catch (error) {
             console.error('Failed to upload image:', error);
@@ -218,7 +232,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                     type="file"
                     id="portfolio-upload"
                     className="hidden"
-                    accept="image/*,video/*"
+                    accept="image/*"
                     onChange={handleFileUpload}
                     disabled={isUploading}
                     multiple

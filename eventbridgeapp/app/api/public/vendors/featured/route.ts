@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { vendorProfiles, vendorServices, vendorPackages, vendorAvailability, reviews } from '@/drizzle/schema';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { vendorProfiles, vendorServices, vendorPackages, vendorAvailability, reviews, vendorPortfolio } from '@/drizzle/schema';
+import { and, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import { formatAvailability } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ export async function GET() {
       businessName: string | null;
       city: string | null;
       profileImage: string | null;
+      portfolioImage: string | null;
       serviceName: string | null;
       price: number | null;
     };
@@ -24,6 +25,7 @@ export async function GET() {
         businessName: vendorProfiles.businessName,
         city: vendorProfiles.city,
         profileImage: vendorProfiles.profileImage,
+        portfolioImage: vendorPortfolio.imageUrl,
         serviceName: vendorServices.name,
         price: vendorServices.price,
       })
@@ -32,7 +34,16 @@ export async function GET() {
         vendorServices,
         eq(vendorProfiles.id, vendorServices.vendorId)
       )
-      .where(eq(vendorProfiles.isVerified, true))
+      .leftJoin(
+        vendorPortfolio,
+        eq(vendorProfiles.id, vendorPortfolio.vendorId)
+      )
+      .where(
+        or(
+          eq(vendorProfiles.isVerified, true),
+          isNotNull(vendorPortfolio.id)
+        )
+      )
       .orderBy(desc(vendorProfiles.rating))
       .limit(12);
 
@@ -119,6 +130,8 @@ export async function GET() {
         const ratingData = ratingMap.get(row.vendorId);
         const rating = ratingData?.rating ?? 0;
         const servicePrice = row.price ?? packagePriceMap.get(row.vendorId) ?? null;
+        const image =
+          row.portfolioImage || row.profileImage || '/hero.jpg';
         map.set(row.vendorId.toString(), {
           id: row.vendorId.toString(),
           businessName: row.businessName || 'Verified Vendor',
@@ -129,8 +142,13 @@ export async function GET() {
             ? `UGX ${Number(servicePrice).toLocaleString()}`
             : 'Contact for pricing',
           rating,
-          images: row.profileImage ? [row.profileImage] : ['/hero.jpg'],
+          images: [image],
         });
+      } else if (row.portfolioImage) {
+        const existing = map.get(row.vendorId.toString());
+        if (existing && existing.images?.[0] === '/hero.jpg') {
+          existing.images = [row.portfolioImage];
+        }
       }
     }
 

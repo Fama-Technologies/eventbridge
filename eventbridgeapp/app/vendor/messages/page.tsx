@@ -10,7 +10,10 @@ import type {
 } from '@/lib/messages-data';
 import {
     EMOJI_CATEGORIES,
-    findConversationByEventName
+    filterConversationsByTab,
+    findConversationByEventName,
+    getMessages,
+    sendMessage
 } from '@/lib/messages-data';
 
 interface LocalBooking {
@@ -40,6 +43,7 @@ export default function MessagesPage() {
     const [messageInput, setMessageInput] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isRecording, setIsRecording] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [activeEmojiCategory, setActiveEmojiCategory] = useState(0);
     const [user, setUser] = useState<User | null>(null);
@@ -116,6 +120,27 @@ export default function MessagesPage() {
         }
     }, [searchParams, conversations]);
 
+    useEffect(() => {
+        async function loadMessages() {
+            if (!selectedConversation) return;
+            try {
+                const messages = await getMessages(selectedConversation.id);
+                setSelectedConversation(prev =>
+                    prev
+                        ? {
+                              ...prev,
+                              messages,
+                          }
+                        : prev
+                );
+            } catch (error) {
+                console.error('Failed to fetch messages', error);
+            }
+        }
+
+        loadMessages();
+    }, [selectedConversation?.id]);
+
     // Close emoji picker when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -134,36 +159,47 @@ export default function MessagesPage() {
         { id: 'quotes', label: 'Quotes' }
     ];
 
+    const filteredConversations = filterConversationsByTab(
+        conversations,
+        activeTab
+    );
+
     const handleEmojiSelect = (emoji: string) => {
         setMessageInput(prev => prev + emoji);
     };
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (messageInput.trim() || attachments.length > 0) {
             if (selectedConversation) {
-                const newMessage: Message = {
-                    id: `m${Date.now()}`,
-                    content: messageInput,
-                    timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                    sender: 'vendor',
-                    attachments: attachments.map(file => ({
-                        type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('audio/') ? 'audio' : 'file',
-                        url: URL.createObjectURL(file),
-                        name: file.name,
-                        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`
-                    }))
-                };
+                try {
+                    setIsSending(true);
+                    const newMessage = await sendMessage(
+                        selectedConversation.id,
+                        messageInput,
+                        attachments
+                    );
 
-                const updatedConversation = {
-                    ...selectedConversation,
-                    messages: [...selectedConversation.messages, newMessage],
-                    lastMessage: messageInput || `Sent ${attachments.length} attachment(s)`
-                };
+                    const updatedConversation = {
+                        ...selectedConversation,
+                        messages: [...selectedConversation.messages, newMessage],
+                        lastMessage:
+                            messageInput ||
+                            `Sent ${attachments.length} attachment(s)`,
+                    };
 
-                setSelectedConversation(updatedConversation);
-                setConversations(prev =>
-                    prev.map(c => c.id === selectedConversation.id ? updatedConversation : c)
-                );
+                    setSelectedConversation(updatedConversation);
+                    setConversations(prev =>
+                        prev.map(c =>
+                            c.id === selectedConversation.id
+                                ? updatedConversation
+                                : c
+                        )
+                    );
+                } catch (error) {
+                    console.error('Failed to send message', error);
+                } finally {
+                    setIsSending(false);
+                }
             }
             setMessageInput('');
             setAttachments([]);
@@ -497,7 +533,10 @@ export default function MessagesPage() {
 
                             <button
                                 onClick={handleSendMessage}
-                                disabled={!messageInput.trim() && attachments.length === 0}
+                                disabled={
+                                    isSending ||
+                                    (!messageInput.trim() && attachments.length === 0)
+                                }
                                 className="p-2.5 bg-primary-01 hover:bg-primary-02 disabled:bg-neutrals-04 rounded-md transition-colors flex-shrink-0"
                             >
                                 <Send size={18} className="text-shades-white" />
@@ -624,8 +663,15 @@ export default function MessagesPage() {
                         <div className="flex justify-center py-12">
                             <Loader2 className="animate-spin text-primary-01 h-8 w-8" />
                         </div>
+                    ) : filteredConversations.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-neutrals-03 bg-shades-white p-8 text-center">
+                            <p className="text-sm text-neutrals-06">
+                                No conversations yet. New messages will appear here
+                                when clients reach out.
+                            </p>
+                        </div>
                     ) : (
-                        conversations.map((conversation) => (
+                        filteredConversations.map((conversation) => (
                             <div
                                 key={conversation.id}
                                 onClick={() => setSelectedConversation(conversation)}
