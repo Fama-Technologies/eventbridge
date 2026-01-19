@@ -8,7 +8,17 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const rows = await db
+    // Define row types for better TypeScript support
+    type VendorServiceRow = {
+      vendorId: number;
+      businessName: string | null;
+      city: string | null;
+      profileImage: string | null;
+      serviceName: string | null;
+      price: number | null;
+    };
+
+    const rows: VendorServiceRow[] = await db
       .select({
         vendorId: vendorProfiles.id,
         businessName: vendorProfiles.businessName,
@@ -26,9 +36,17 @@ export async function GET() {
       .orderBy(desc(vendorProfiles.rating))
       .limit(12);
 
-    const vendorIds = Array.from(new Set(rows.map((row) => row.vendorId)));
+    // Cast vendorIds to number[] to satisfy TypeScript
+    const vendorIds: number[] = Array.from(new Set(rows.map((row: VendorServiceRow) => row.vendorId)));
 
-    const reviewStats = vendorIds.length
+    // Define review stats row type
+    type ReviewStatsRow = {
+      vendorId: number;
+      avgRating: number;
+      reviewCount: number;
+    };
+
+    const reviewStats: ReviewStatsRow[] = vendorIds.length
       ? await db
           .select({
             vendorId: reviews.vendorId,
@@ -41,14 +59,20 @@ export async function GET() {
       : [];
 
     const ratingMap = new Map<number, { rating: number; reviewCount: number }>();
-    reviewStats.forEach((row) => {
+    reviewStats.forEach((row: ReviewStatsRow) => {
       ratingMap.set(row.vendorId, {
         rating: Number(row.avgRating) || 0,
         reviewCount: Number(row.reviewCount) || 0,
       });
     });
 
-    const availabilityRows = vendorIds.length
+    // Define availability row type
+    type AvailabilityRow = {
+      vendorId: number;
+      activeDays: number[] | null;
+    };
+
+    const availabilityRows: AvailabilityRow[] = vendorIds.length
       ? await db
           .select({
             vendorId: vendorAvailability.vendorId,
@@ -59,11 +83,17 @@ export async function GET() {
       : [];
 
     const availabilityMap = new Map<number, number[]>();
-    availabilityRows.forEach((row) => {
+    availabilityRows.forEach((row: AvailabilityRow) => {
       if (row.activeDays) availabilityMap.set(row.vendorId, row.activeDays);
     });
 
-    const packageRows = vendorIds.length
+    // Define package row type
+    type PackageRow = {
+      vendorId: number;
+      minPrice: number;
+    };
+
+    const packageRows: PackageRow[] = vendorIds.length
       ? await db
           .select({
             vendorId: vendorPackages.vendorId,
@@ -75,7 +105,7 @@ export async function GET() {
       : [];
 
     const packagePriceMap = new Map<number, number>();
-    packageRows.forEach((row) => {
+    packageRows.forEach((row: PackageRow) => {
       if (Number(row.minPrice) > 0) {
         packagePriceMap.set(row.vendorId, Number(row.minPrice));
       }
