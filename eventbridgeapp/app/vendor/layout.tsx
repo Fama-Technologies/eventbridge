@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import VendorHeader from '@/components/vendorlayout/header';
 import Sidebar from '@/components/vendorlayout/sidebar';
+import UpgradeModal from '@/components/vendor/UpgradeModal';
 
 export default function VendorLayout({
     children,
@@ -14,6 +15,7 @@ export default function VendorLayout({
 
     return (
         <div className="flex h-screen overflow-hidden bg-neutrals-01">
+            <UpgradeModal />
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-[250px] flex-col flex-shrink-0">
                 <Sidebar />

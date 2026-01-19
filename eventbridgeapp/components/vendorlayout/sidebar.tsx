@@ -11,12 +11,14 @@ import {
     Settings,
     LogOut,
     PlusCircle,
-    ChevronDown
+    ChevronDown,
+    BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useUpgradeModal } from '@/hooks/useUpgradeModal';
 
 const navigation = [
     { name: 'Dashboard', href: '/vendor', icon: LayoutDashboard },
@@ -38,6 +40,7 @@ const navigation = [
             { name: 'Transaction History', href: '/vendor/earnings/history' },
         ]
     },
+    { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3, pro: true },
 ];
 
 export default function Sidebar() {
@@ -45,6 +48,7 @@ export default function Sidebar() {
     const [messageBadge, setMessageBadge] = useState(0);
     const [earningsExpanded, setEarningsExpanded] = useState(false);
     const [user, setUser] = useState<{ firstName: string; lastName: string; email: string; image?: string } | null>(null);
+    const { onOpen } = useUpgradeModal();
 
     useEffect(() => {
         async function fetchData() {
@@ -158,6 +162,13 @@ export default function Sidebar() {
                             ) : (
                                 <Link
                                     href={item.href}
+                                    onClick={(e) => {
+                                        // @ts-ignore
+                                        if (item.pro) {
+                                            e.preventDefault();
+                                            onOpen();
+                                        }
+                                    }}
                                     className={cn(
                                         'flex items-center justify-between gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 text-sm',
                                         pathname === item.href
@@ -168,6 +179,10 @@ export default function Sidebar() {
                                     <div className="flex items-center gap-3">
                                         <item.icon size={20} />
                                         <span>{item.name}</span>
+                                        {/* @ts-ignore */}
+                                        {item.pro && (
+                                            <span className="text-[10px] uppercase font-bold text-white bg-primary-01 px-1.5 py-0.5 rounded ml-2">PRO</span>
+                                        )}
                                     </div>
                                     {item.action && !item.hasSubmenu && (
                                         <div onClick={(e) => e.preventDefault()}>
