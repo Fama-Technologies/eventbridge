@@ -317,15 +317,16 @@ export default function ReceiptPage() {
                         {signatureEnabled && (
                             <div className="flex justify-between items-end mt-8">
                                 <div className="w-[45%]">
-                                    <div className="border-b border-neutrals-04 w-full mb-3" />
-                                    <p className="text-xs font-bold text-shades-black mb-1">{signatureTitle}</p>
-                                    <p className="text-[10px] text-neutrals-06 uppercase tracking-wider font-bold">Authorized Signatory</p>
+                                    <p className="text-xs text-neutrals-06 mb-1">{signatureTitle}</p>
+                                    <div className="border-2 border-b border-shades-black w-full mb-3" />
+
+                                    <p className="text-[10px] text-neutrals-07 uppercase tracking-wider font-bold">received by</p>
                                 </div>
                                 <div className="w-[25%] text-right">
                                     <p className="text-xs font-bold text-shades-black mb-1">{signatureDate}</p>
-                                    <div className="border-b border-neutrals-04 w-full mb-3" />
+                                    <div className="border-2 border-b border-shades-black w-full mb-3" />
 
-                                    <p className="text-[10px] text-neutrals-06 uppercase tracking-wider font-bold">DATE</p>
+                                    <p className="text-[10px] text-neutrals-07 uppercase tracking-wider font-bold">DATE</p>
 
                                 </div>
                             </div>
