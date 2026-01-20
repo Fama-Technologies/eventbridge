@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Save, Send, Plus, Trash2, Download, Search } from 'lucide-react';
+import { ArrowLeft, Save, Send, Plus, Trash2, Download, Search, ZoomIn } from 'lucide-react';
 import InvoicePreview from '@/components/vendor/invoices/InvoicePreview';
 
 interface InvoiceItem {
@@ -297,24 +297,25 @@ export default function CreateInvoicePage() {
                     Actually, in the screenshot, "Save Draft" is Black, "Send Invoice" is Orange. They look right aligned above the paper.
                 */}
                 <div className="absolute top-6 right-8 z-20 flex gap-3 print:hidden">
-                    <button onClick={handleSaveDraft} className="px-5 py-2.5 bg-shades-black text-white rounded-lg font-bold text-sm hover:bg-neutrals-08 transition-colors flex items-center gap-2 shadow-sm">
+                    <button onClick={handleSaveDraft} className="px-5 py-2.5 bg-shades-black text-shades-white rounded-lg font-bold text-sm hover:bg-neutrals-08 transition-colors flex items-center gap-2 shadow-sm">
                         Save Draft
                     </button>
                     <button
                         onClick={handleSendInvoice}
-                        className="px-5 py-2.5 bg-[#ff5e3a] hover:bg-[#ff451a] text-white rounded-lg font-bold text-sm shadow-lg shadow-[#ff5e3a]/30 transition-all flex items-center gap-2"
+                        className="px-5 py-2.5 bg-primary-01 hover:bg-primary-01 text-shades-white rounded-lg font-bold text-sm shadow-lg shadow-primary-01/30 transition-all flex items-center gap-2"
                     >
-                        <Send size={16} />
+                        {/*icon from iconify*/}
+                        <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24"><g fill="none"><path fill="#fff" d="M21.124 2.888s.01.547.01 1.439c.037 4.23-.116 16.305-2.888 16.305c-3.357 0-.48-3.836-2.877-3.836H8.194c1.065-5.324.959-13.908.959-13.908s.029-1.439.988-1.439h11.96c-.958 0-.977 1.439-.977 1.439"></path><path fill="#e3e3e3" d="M22.102 1.449H20.22c-.058 5.783-3.585 13.539-8.943 15.347h4.091c2.398 0-.48 3.837 2.878 3.837c2.772 0 2.925-12.076 2.887-16.306c0-.892-.01-1.44-.01-1.44s.02-1.438.979-1.438"></path><path stroke="#191919" strokeLinecap="round" strokeLinejoin="round" d="M21.124 2.888s.01.547.01 1.439c.037 4.23-.116 16.305-2.888 16.305c-3.357 0-.48-3.836-2.877-3.836H8.194c1.065-5.324.959-13.908.959-13.908s.029-1.439.988-1.439h11.96c-.958 0-.977 1.439-.977 1.439m-9.092 2.398h1.918m-1.677 5.754h5.515m-5.515-2.877h5.515m-6.235 5.755h5.755" strokeWidth={1}></path><path fill="#b2b2b2" stroke="#191919" strokeLinecap="round" strokeLinejoin="round" d="M22.994 3.252a.96.96 0 0 1-.24.748a.94.94 0 0 1-.71.327h-.91c0-.892-.01-1.44-.01-1.44s.019-1.438.978-1.438c.566 0 .796.988.892 1.803" strokeWidth={1}></path><path fill="#fff" stroke="#191919" strokeLinecap="round" strokeLinejoin="round" d="M15.368 16.796c-1.467 0-.959 2.168-1.122 3.837c-.096 1.055-.46 1.918-1.755 1.918H1c3.357 0 .48-5.755 2.878-5.755z" strokeWidth={1}></path><path fill="#b2b2b2" stroke="#191919" strokeLinecap="round" strokeLinejoin="round" d="M18.246 20.633h-4c.163-1.67-.345-3.837 1.122-3.837c2.398 0-.48 3.837 2.878 3.837" strokeWidth={1}></path></g></svg>
                         Send Invoice
                     </button>
                 </div>
 
                 {/* Actions Floating Button (Zoom & Download) */}
                 <div className="absolute bottom-8 right-8 z-10 print:hidden flex flex-col gap-3">
-                    <button onClick={handleZoom} className="w-12 h-12 bg-shades-black rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                        <Search size={22} />
+                    <button onClick={handleZoom} className="w-12 h-12 bg-shades-black rounded-full text-shades-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                        <ZoomIn size={22} />
                     </button>
-                    <button onClick={handleDownload} className="w-12 h-12 bg-[#ff5e3a] rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                    <button onClick={handleDownload} className="w-12 h-12 bg-primary-01 rounded-full text-white flex items-center justify-center shadow-lg shadow-primary-01/30 hover:scale-110 transition-transform">
                         <Download size={24} />
                     </button>
                 </div>

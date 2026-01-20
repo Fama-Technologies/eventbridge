@@ -32,69 +32,76 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
     const total = subtotal + tax;
 
     return (
-        <div className="bg-white p-8 md:p-12 shadow-sm border border-gray-100 h-full min-h-[800px] flex flex-col relative text-gray-800 font-sans" id="invoice-preview">
+        <div className="bg-shades-white p-8 md:p-12 shadow-sm  h-full min-h-[800px] flex flex-col relative  font-sans" id="invoice-preview">
 
-            {/* Header */}
-            <div className="flex justify-between items-start mb-16">
-                <div className="flex items-center gap-3">
-                    <img src="/logo.svg" alt="Event Bridge" className="h-10 w-auto" />
-                    <span className="text-xl font-bold tracking-tight text-gray-900 whitespace-nowrap">Event Bridge</span>
+            {/* Receipt Header */}
+            <div className="flex justify-between items-start ">
+                <div>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 relative">
+                            <Image
+                                src="/logo.svg"
+                                alt="EventBridge Logo"
+                                fill
+                                className="object-contain"
+                            />
+                        </div>
+                        <span className="font-bold text-xl text-shades-black">Event Bridge</span>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-xs font-bold text-shades-black">{data.vendorName}</p>
+                        <p className="text-xs text-neutrals-05">{data.vendorAddress}</p>
+                        <p className="text-xs text-neutrals-05">{data.vendorContact}</p>
+                    </div>
                 </div>
                 <div className="text-right">
-                    <h1 className="text-3xl font-black text-[#ff5e3a] tracking-wider mb-2">INVOICE</h1>
-                    <p className="text-sm font-bold text-gray-900 tracking-widest">{data.invoiceNumber}</p>
+                    <h2 className="text-2xl font-black text-primary-01 mb-1 tracking-tight">INVOICE</h2>
+                    <p className="text-shades-black text-[10px] font-bold tracking-widest uppercase"> {data.invoiceNumber}</p>
                 </div>
             </div>
 
-            {/* Vendor Info */}
-            <div className="mb-12">
-                <p className="font-bold text-sm text-gray-900">{data.vendorName || 'Vendor Business Name'}</p>
-                <p className="text-sm text-gray-500 mt-1">{data.vendorAddress || 'Vendor Address'}</p>
-                <p className="text-sm text-gray-500">{data.vendorContact || 'Contact Details'}</p>
-            </div>
 
             {/* Bill To & Dates */}
-            <div className="flex justify-between mb-20 border-t border-gray-100 pt-12 mt-12">
+            <div className="flex justify-between mb-10 border-t border-neutral-06 pt-5 mt-10">
                 <div className="w-[40%]">
-                    <h3 className="text-[11px] font-bold text-[#ff5e3a] uppercase tracking-widest mb-3">BILL TO</h3>
-                    <p className="font-bold text-lg text-gray-900 mb-1">{data.clientName}</p>
-                    {data.clientCompany && <p className="text-sm text-gray-500 mb-1">{data.clientCompany}</p>}
-                    <p className="text-sm text-gray-500">Attn: Sarah Jenkins, Ops Manager</p>
+                    <h3 className="text-[10px] font-bold text-[#ff5e3a] uppercase tracking-widest mb-3">BILL TO</h3>
+                    <p className="font-bold  text-shades-black mb-1">{data.clientName}</p>
+                    {data.clientCompany && <p className="text-xs text-neutrals-03 mb-1">{data.clientCompany}</p>}
                 </div>
-                <div className="w-[50%] grid grid-cols-2 gap-x-8 gap-y-8">
+                <div className="w-[50%] grid grid-cols-2 gap-x-4 gap-y-8">
                     <div>
-                        <h3 className="text-[11px] font-bold text-[#ff5e3a] uppercase tracking-widest mb-2">ISSUE DATE</h3>
-                        <p className="text-sm font-bold text-gray-900">{data.issueDate}</p>
+                        <h3 className="text-[10px] font-bold text-primary-01 uppercase tracking-widest mb-2">ISSUE DATE</h3>
+                        <p className="text-[11px] pt-1 font-bold text-shades-black">{data.issueDate}</p>
                     </div>
                     <div>
-                        <h3 className="text-[11px] font-bold text-[#ff5e3a] uppercase tracking-widest mb-2">DUE DATE</h3>
-                        <p className="text-sm font-bold text-gray-900">{data.dueDate}</p>
+                        <h3 className="text-[10px] font-bold text-primary-01 uppercase tracking-widest mb-2">DUE DATE</h3>
+                        <p className="text-[11px] font-bold text-shades-black pt-1">{data.dueDate}</p>
                     </div>
                     <div className="col-span-2">
-                        <h3 className="text-[11px] font-bold text-[#ff5e3a] uppercase tracking-widest mb-2">EVENT</h3>
-                        <p className="text-base font-bold text-gray-900 italic">{data.eventTitle}</p>
+                        <h3 className="text-[10px] font-bold text-primary-01 uppercase tracking-widest mb-2">EVENT</h3>
+                        <p className="text-[11px] font-bold text-shades-black italic">{data.eventTitle}</p>
                     </div>
                 </div>
             </div>
 
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 border-b-[2px] border-black pb-3 mb-6">
-                <div className="col-span-6 text-[11px] font-bold text-black uppercase tracking-widest">DESCRIPTION</div>
-                <div className="col-span-2 text-right text-[11px] font-bold text-black uppercase tracking-widest">QTY</div>
-                <div className="col-span-2 text-right text-[11px] font-bold text-black uppercase tracking-widest">RATE</div>
-                <div className="col-span-2 text-right text-[11px] font-bold text-black uppercase tracking-widest">AMOUNT</div>
+            <div className="grid grid-cols-12 gap-4 border-b-2 border-shades-black pb-3 mb-6">
+                <div className="col-span-6 text-[11px] font-bold text-shades-black uppercase tracking-widest">DESCRIPTION</div>
+                <div className="col-span-2 text-right text-[11px] font-bold text-shades-black uppercase tracking-widest">QTY</div>
+                <div className="col-span-2 text-right text-[11px] font-bold text-shades-black uppercase tracking-widest">RATE</div>
+                <div className="col-span-2 text-right text-[11px] font-bold text-shades-black uppercase tracking-widest">AMOUNT</div>
             </div>
 
             {/* Table Rows */}
             <div className="space-y-0 mb-12 flex-1">
                 {data.items.map((item) => (
-                    <div key={item.id} className="grid grid-cols-12 gap-4 items-center py-5 border-b border-gray-100">
+                    <div key={item.id} className="grid grid-cols-12 gap-3 items-center py-2 border-b border-neutrals-06">
                         <div className="col-span-6">
-                            <p className="text-base font-medium text-gray-900">{item.description}</p>
+                            <p className="text-[9px] font-medium text-shades-black">{item.description}</p>
                         </div>
-                        <div className="col-span-2 text-right text-sm text-gray-600">{item.quantity}</div>
-                        <div className="col-span-2 text-right text-sm text-gray-600">UGX {item.rate.toLocaleString()}</div>
-                        <div className="col-span-2 text-right text-sm font-bold text-gray-900">UGX {item.amount.toLocaleString()}</div>
+                        <div className="col-span-2 text-right text-[9px] text-shades-black">{item.quantity}</div>
+                        <div className="col-span-2 text-right text-[9px] text-shades-black">UGX {item.rate.toLocaleString()}</div>
+                        <div className="col-span-2 text-right text-[9px] font-bold text-shades-black">UGX {item.amount.toLocaleString()}</div>
                     </div>
                 ))}
             </div>
@@ -102,20 +109,20 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
             {/* Totals */}
             <div className="w-full max-w-sm ml-auto">
                 <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm font-medium text-gray-400">Subtotal</span>
-                    <span className="text-sm font-bold text-gray-900">UGX {subtotal.toLocaleString()}</span>
+                    <span className="text-xl font-medium text-neutrals-05">Subtotal</span>
+                    <span className="text-xl font-bold text-shades-black">UGX {subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center mb-8">
-                    <span className="text-sm font-medium text-gray-400">Tax (8%)</span>
-                    <span className="text-sm font-bold text-gray-900">UGX {tax.toLocaleString()}</span>
+                    <span className="text-xl font-medium text-neutrals-05">Tax (8%)</span>
+                    <span className="text-xl font-bold text-shades-black">UGX {tax.toLocaleString()}</span>
                 </div>
 
                 {/* Orange Divider */}
                 <div className="w-full h-[2px] bg-[#ff5e3a] mb-6"></div>
 
                 <div className="flex justify-between items-center">
-                    <span className="text-base font-black text-black uppercase tracking-wider">TOTAL AMOUNT</span>
-                    <span className="text-[32px] font-black text-[#ff5e3a] leading-none">UGX {total.toLocaleString()}</span>
+                    <span className="text-sm font-black text-shades-black uppercase tracking-wider">TOTAL AMOUNT</span>
+                    <span className="text-2xl  font-black text-primary-01 leading-none">UGX {total.toLocaleString()}</span>
                 </div>
             </div>
 
