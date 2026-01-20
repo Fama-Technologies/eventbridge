@@ -17,43 +17,23 @@ export default function HelpPage() {
     const [faqs, setFaqs] = useState<FAQItem[]>([
         {
             question: "What is EventBridge?",
-            answer: "Event Bridge is an E-services connection platform connecting event service providers to event organizers ad planners providing them with tools to connect and manage their events."
+            answer: "Event Bridge is an E-services connection platform connecting event service providers to event organizers and planners providing them with tools to connect and manage their events."
         },
         {
             question: "Does EventBridge manage payments to the vendors?",
-            answer: "EventBridge facilitates secure payments to vendors. We hold funds in escrow and release them upon successful completion of milestones or the event itself, ensuring safety for both parties."
+            answer: "No, Event Bridge does not currently process payment to the vendors. Payments are negotiable between the provider and customer but we provide digital invoicing and Receipt generation tools."
         },
         {
             question: "What features does EventBridge currently offer?",
-            answer: "We offer vendor discovery, booking management, secure payments, event planning tools, budget calculators, and review systems for both organizers and vendors."
+            answer: "We offer Digital invoicing and Receipting generation. Manage Bookings and Calendar management. Event Budget management and checklists, Leads and inquires and direct customer chats."
         },
         {
             question: "Is EventBridge free?",
-            answer: "EventBridge is free for event organizers. Vendors can list for free with basic features, or upgrade to Pro plans for advanced tools and lower transaction fees."
+            answer: "Yes, Event Bridge has a free plan that all customers enjoy but we also provide premium features in our pro and pro max versions."
         },
         {
             question: "What businesses can list on EventBridge?",
-            answer: "Any event-related service provider can list, including venues, caterers, photographers, decorators, DJs, makeup artists, and event planners."
-        },
-        {
-            question: "How do I communicate with vendors?",
-            answer: "You can use our built-in messaging system to chat directly with vendors, share requirements, and negotiate terms before booking."
-        },
-        {
-            question: "Can I cancel a booking?",
-            answer: "Yes, cancellations are subject to the specific vendor's cancellation policy which is clearly displayed on their profile and booking agreement."
-        },
-        {
-            question: "How do I leave a review?",
-            answer: "After your event is completed, you'll receive a link to rate and review the vendors you worked with, helping others make informed decisions."
-        },
-        {
-            question: "Is my data secure?",
-            answer: "Yes, we use industry-standard encryption and security measures to protect your personal information and payment details."
-        },
-        {
-            question: "Do you offer customer support?",
-            answer: "Yes, our support team is available 7 days a week to assist with any issues or questions you may have."
+            answer: "All service providers can create their business profile on event bridge and list their services and packages."
         }
     ]);
 

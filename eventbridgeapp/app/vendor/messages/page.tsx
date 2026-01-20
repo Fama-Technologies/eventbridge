@@ -8,6 +8,8 @@ import type {
     Conversation,
     Message,
 } from '@/lib/messages-data';
+import LeadDetailModal from '@/components/vendor/leads/LeadDetailModal';
+import type { Lead } from '@/components/vendor/leads/LeadCard';
 import {
     EMOJI_CATEGORIES,
     filterConversationsByTab,
@@ -47,6 +49,7 @@ export default function MessagesPage() {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [activeEmojiCategory, setActiveEmojiCategory] = useState(0);
     const [user, setUser] = useState<User | null>(null);
+    const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
 
@@ -128,9 +131,9 @@ export default function MessagesPage() {
                 setSelectedConversation(prev =>
                     prev
                         ? {
-                              ...prev,
-                              messages,
-                          }
+                            ...prev,
+                            messages,
+                        }
                         : prev
                 );
             } catch (error) {
@@ -548,8 +551,14 @@ export default function MessagesPage() {
                 {/* Event Details Sidebar */}
                 <div className="w-[300px] bg-shades-white flex-shrink-0 hidden lg:flex flex-col border-l border-neutrals-02">
                     {/* Fixed Header */}
-                    <div className="p-6 pb-4 border-b border-neutrals-02">
+                    <div className="p-6 pb-4 border-b border-neutrals-02 flex justify-between items-center">
                         <h2 className="text-lg font-semibold text-shades-black">Event Details</h2>
+                        <button
+                            onClick={() => setIsLeadModalOpen(true)}
+                            className="text-sm font-semibold text-primary-01 hover:text-primary-02 transition-colors"
+                        >
+                            View Details
+                        </button>
                     </div>
 
                     {/* Scrollable Content */}
@@ -628,6 +637,28 @@ export default function MessagesPage() {
                         </button>
                     </div>
                 </div>
+
+                {/* Lead Details Modal */}
+                <LeadDetailModal
+                    isOpen={isLeadModalOpen}
+                    onClose={() => setIsLeadModalOpen(false)}
+                    lead={{
+                        id: selectedConversation.id,
+                        name: selectedConversation.name,
+                        avatar: selectedConversation.avatar,
+                        eventType: selectedConversation.eventType,
+                        eventDate: selectedConversation.eventDetails?.date || 'TBD',
+                        guests: selectedConversation.eventDetails?.guests || 0,
+                        budget: '2,000,000',
+                        inquiredAt: selectedConversation.timestamp,
+                        status: selectedConversation.status === 'confirmed' ? 'booked' : 'new',
+                        location: selectedConversation.eventDetails?.venue,
+                        conversationId: selectedConversation.id,
+                        messageCount: selectedConversation.messages.length,
+                        inquiryNote: "Hi! We are looking for a venue for our wedding reception. We really need a space that feels disconnected from the city but still has high-speed internet. We also need catering for the event and a DJ to do the sound. Is the date flexible by +/- 2 days?",
+                        preferredTime: selectedConversation.eventDetails?.time
+                    }}
+                />
             </div>
         );
     }

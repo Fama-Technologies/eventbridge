@@ -146,3 +146,61 @@ export const bookingsData: Booking[] = [
 export const blockedDatesData: Date[] = [
     new Date(new Date().setDate(new Date().getDate() + 5)), // 5 days from now
 ];
+
+export interface Transaction {
+    id: string;
+    title: string;
+    clientName: string;
+    clientInitials: string;
+    date: Date;
+    amount: number;
+    status: 'paid' | 'pending' | 'cancelled';
+}
+
+export const transactionsData: Transaction[] = [
+    {
+        id: '1',
+        title: "Sarah's Wedding Reception",
+        clientName: "Sarah Williams",
+        clientInitials: "SW",
+        date: new Date(2023, 9, 24), // Oct 24, 2023
+        amount: 150000000,
+        status: 'paid'
+    },
+    {
+        id: '2',
+        title: "Tech Corp End-Year Mixer",
+        clientName: "Thomas Chen",
+        clientInitials: "TC",
+        date: new Date(2023, 10, 2), // Nov 02, 2023
+        amount: 10000000,
+        status: 'paid'
+    },
+    {
+        id: '3',
+        title: "Liam's 30th Birthday Bash",
+        clientName: "Linda Brown",
+        clientInitials: "LB",
+        date: new Date(2023, 10, 15), // Nov 15, 2023
+        amount: 8500000,
+        status: 'pending'
+    },
+    {
+        id: '4',
+        title: "Gala Event 2023",
+        clientName: "George Enock",
+        clientInitials: "GE",
+        date: new Date(2023, 11, 12), // Dec 12, 2023
+        amount: 25000000,
+        status: 'cancelled'
+    },
+    {
+        id: '5',
+        title: "Anniversary Moonlight Dinner",
+        clientName: "Arthur Morgan",
+        clientInitials: "AM",
+        date: new Date(2023, 11, 20), // Dec 20, 2023
+        amount: 1200000,
+        status: 'paid'
+    }
+];
