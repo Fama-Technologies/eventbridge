@@ -1,14 +1,18 @@
 {
     "cSpell.words": [
         "cardsection",
+        "dbname",
         "dotenv",
         "eventbridge",
+        "eventbridgeapp",
         "eventsection",
         "googleusercontent",
+        "iconify",
         "ilike",
         "neondatabase",
         "neondb",
         "NEXTAUTH",
+        "presigner",
         "sonner",
         "uploadthing",
         "VERCEL",

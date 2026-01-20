@@ -152,7 +152,19 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json(Array.from(map.values()).slice(0, 8));
+    // Transform the map values to match expected frontend structure
+    const result = Array.from(map.values()).slice(0, 8).map(vendor => ({
+      id: vendor.id,
+      name: vendor.businessName,
+      category: vendor.category,
+      location: vendor.location,
+      rating: vendor.rating,
+      images: vendor.images,
+      pricePerDay: vendor.pricePerDay,
+      availableDates: vendor.availableDates,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Featured vendors error:', error);
     return NextResponse.json([], { status: 500 });
