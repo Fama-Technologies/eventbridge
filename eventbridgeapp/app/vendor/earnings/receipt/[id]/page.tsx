@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Save, Send, Download, Search } from 'lucide-react';
+import { ArrowLeft, Save, Send, Download, Search, Banknote, SignatureIcon, Plus, ZoomIn } from 'lucide-react';
 import { transactionsData } from '@/components/vendor/earnings/data';
 import Image from 'next/image';
 
@@ -79,8 +79,10 @@ export default function ReceiptPage() {
                     {/* Payment Information Section */}
                     <section>
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="p-1.5 bg-[#ff5e3a]/10 rounded-lg">
-                                <span className="text-[#ff5e3a]">💵</span>
+                            <div className="p-1.5 rounded-lg">
+                                <span className="">
+                                    <Banknote className="text-primary-01" />
+                                </span>
                             </div>
                             <h2 className="text-lg font-bold text-shades-black">Payment Information</h2>
                         </div>
@@ -136,8 +138,10 @@ export default function ReceiptPage() {
                     {/* Signature Settings Section */}
                     <section>
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="p-1.5 bg-[#ff5e3a]/10 rounded-lg">
-                                <span className="text-[#ff5e3a]">✍️</span>
+                            <div className="p-1.5 rounded-lg">
+                                <span className="text-primary-01">
+                                    <SignatureIcon />
+                                </span>
                             </div>
                             <h2 className="text-lg font-bold text-shades-black">Signature Settings</h2>
                             <div className="ml-auto">
@@ -195,13 +199,13 @@ export default function ReceiptPage() {
                 <div className="absolute top-6 right-8 z-20 flex gap-3 print:hidden">
                     <button
                         onClick={handleSaveDraft}
-                        className="px-5 py-2.5 bg-shades-black text-white rounded-lg font-bold text-sm hover:bg-neutrals-08 transition-colors flex items-center gap-2 shadow-sm"
+                        className="px-5 py-2.5 bg-shades-black text-shades-white shadow-shades-black/30 transition-all  border border-shades-black rounded-lg font-bold text-sm hover:bg-neutrals-08 transition-colors flex items-center gap-2 shadow-sm"
                     >
                         Save Draft
                     </button>
                     <button
                         onClick={handleSendReceipt}
-                        className="px-5 py-2.5 bg-[#ff5e3a] hover:bg-[#ff451a] text-white rounded-lg font-bold text-sm shadow-lg shadow-[#ff5e3a]/30 transition-all flex items-center gap-2"
+                        className="px-5 py-2.5 bg-primary-01 hover:bg-[#ff451a] text-shades-white border border-primary-01 rounded-lg font-bold text-sm shadow-lg shadow-[#ff5e3a]/30 transition-all flex items-center gap-2"
                     >
                         <Send size={16} />
                         Send Receipt
@@ -212,13 +216,13 @@ export default function ReceiptPage() {
                 <div className="absolute bottom-8 right-8 z-10 print:hidden flex flex-col gap-3">
                     <button
                         onClick={handleZoom}
-                        className="w-12 h-12 bg-shades-black rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                        className="w-12 h-12 bg-shades-black rounded-full text-shades-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                     >
-                        <Search size={22} />
+                        <ZoomIn size={22} />
                     </button>
                     <button
                         onClick={handleDownload}
-                        className="w-12 h-12 bg-[#ff5e3a] rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                        className="w-12 h-12 bg-primary-01 rounded-full text-shades-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                     >
                         <Download size={24} />
                     </button>
@@ -227,7 +231,7 @@ export default function ReceiptPage() {
                 {/* Preview Container */}
                 <div className="flex-1 overflow-y-auto pt-24 pb-8 px-8 custom-scrollbar flex justify-center bg-neutrals-02 transition-all duration-300">
                     <div
-                        className="w-full max-w-[600px] h-fit bg-white shadow-xl transition-transform duration-300 origin-top p-12"
+                        className="w-full max-w-[600px] h-fit bg-shades-white shadow-xl transition-transform duration-300 origin-top p-12"
                         style={{ transform: `scale(${zoomLevel})` }}
                     >
                         {/* Receipt Header */}
@@ -251,8 +255,8 @@ export default function ReceiptPage() {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <h2 className="text-4xl font-black text-[#ff5e3a] mb-1 tracking-tight">RECEIPT</h2>
-                                <p className="text-neutrals-05 text-[10px] font-bold tracking-widest uppercase">NO. {receiptNumber}</p>
+                                <h2 className="text-2xl font-black text-primary-01 mb-1 tracking-tight">RECEIPT</h2>
+                                <p className="text-shades-black text-[10px] font-bold tracking-widest uppercase">NO. {receiptNumber}</p>
                             </div>
                         </div>
 
@@ -260,20 +264,20 @@ export default function ReceiptPage() {
                         <div className="border-b border-neutrals-03 mb-8" />
 
                         {/* Bill To */}
-                        <div className="flex justify-between mb-8">
+                        <div className="flex justify-between mb-8 border-b border-neutrals-03 pb-4">
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-neutrals-05 mb-2 font-bold">RECEIVED FROM</p>
                                 <p className="font-bold text-shades-black text-base mb-1">{transaction.clientName}</p>
                                 <p className="text-xs text-neutrals-05 italic">Event: {transaction.title}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-right">
+                            <div className="grid grid-cols-2 gap-x-5 gap-y-2 text-right">
                                 <div>
                                     <p className="text-[10px] uppercase tracking-widest text-neutrals-05 mb-1 font-bold">DATE</p>
-                                    <p className="font-bold text-shades-black text-sm">{signatureDate}</p>
+                                    <p className="font-bold text-shades-black pt-1 text-[10px]">{signatureDate}</p>
                                 </div>
                                 <div>
                                     <p className="text-[10px] uppercase tracking-widest text-neutrals-05 mb-1 font-bold">METHOD</p>
-                                    <p className="font-bold text-shades-black text-sm">{paymentMethod}</p>
+                                    <p className="font-bold text-shades-black pt-1 text-[10px]">{paymentMethod}</p>
                                 </div>
                             </div>
                         </div>
@@ -284,28 +288,28 @@ export default function ReceiptPage() {
                                 <span>Description</span>
                                 <span>Amount</span>
                             </div>
-                            <div className="space-y-4 border-t border-neutrals-03 pt-4">
+                            <div className="space-y-4 border-t border-neutrals-05 pt-4">
                                 {transaction.lineItems && transaction.lineItems.length > 0 ? (
                                     transaction.lineItems.map((item, index) => (
-                                        <div key={index} className="flex justify-between items-center">
-                                            <span className="text-sm font-medium text-shades-black">{item.description}</span>
-                                            <span className="text-sm font-bold text-shades-black">UGX {item.amount.toLocaleString()}</span>
+                                        <div key={index} className="flex justify-between items-center border-b border-neutrals-03 pb-4">
+                                            <span className="text-xs font-medium text-shades-black ">{item.description}</span>
+                                            <span className="text-xs font-bold text-shades-black">UGX {item.amount.toLocaleString()}</span>
                                         </div>
                                     ))
                                 ) : (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-shades-black">Event Services</span>
-                                        <span className="text-sm font-bold text-shades-black">UGX {transaction.amount.toLocaleString()}</span>
+                                        <span className="text-xs font-medium text-shades-black">Event Services</span>
+                                        <span className="text-xs font-bold text-shades-black">UGX {transaction.amount.toLocaleString()}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Total */}
-                        <div className="bg-neutrals-01 p-8 rounded-2xl mb-12">
+                        <div className="bg-neutrals-02/90 p-6 rounded-2xl mb-12 border-1 border-accents-discount">
                             <div className="flex flex-col items-center justify-center gap-2">
-                                <p className="text-xs uppercase tracking-widest text-green-600 font-bold">TOTAL AMOUNT RECEIVED</p>
-                                <p className="text-4xl font-black text-green-600">UGX {transaction.amount.toLocaleString()}</p>
+                                <p className="text-[9px] uppercase tracking-widest flex justify-end font-bold text-accents-discount ">TOTAL AMOUNT RECEIVED</p>
+                                <p className="text-2xl font-black text-accents-discount">UGX {transaction.amount.toLocaleString()}</p>
                             </div>
                         </div>
 
@@ -318,9 +322,11 @@ export default function ReceiptPage() {
                                     <p className="text-[10px] text-neutrals-06 uppercase tracking-wider font-bold">Authorized Signatory</p>
                                 </div>
                                 <div className="w-[25%] text-right">
-                                    <div className="border-b border-neutrals-04 w-full mb-3" />
                                     <p className="text-xs font-bold text-shades-black mb-1">{signatureDate}</p>
+                                    <div className="border-b border-neutrals-04 w-full mb-3" />
+
                                     <p className="text-[10px] text-neutrals-06 uppercase tracking-wider font-bold">DATE</p>
+
                                 </div>
                             </div>
                         )}
