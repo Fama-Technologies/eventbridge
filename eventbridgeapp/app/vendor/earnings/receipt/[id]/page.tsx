@@ -78,7 +78,7 @@ export default function ReceiptPage() {
 
                     {/* Payment Information Section */}
                     <section>
-                        <div className="flex items-center gap-2 mb-6">
+                        <div className="flex items-center gap-2 mb-6 border-b border-neutrals-05 pb-3">
                             <div className="p-1.5 rounded-lg">
                                 <span className="">
                                     <Banknote className="text-primary-01" />
@@ -95,7 +95,7 @@ export default function ReceiptPage() {
                                     type="text"
                                     value={receiptNumber}
                                     readOnly
-                                    className="w-full p-3 bg-neutrals-01 border border-neutrals-03 rounded-xl text-shades-black outline-none cursor-not-allowed"
+                                    className="w-full p-3 bg-neutrals-01 border border-neutrals-03 rounded-4xl text-shades-black outline-none cursor-not-allowed"
                                 />
                             </div>
 
@@ -105,7 +105,7 @@ export default function ReceiptPage() {
                                 <select
                                     value={paymentMethod}
                                     onChange={(e) => setPaymentMethod(e.target.value)}
-                                    className="w-full p-3 bg-shades-white border border-neutrals-03 rounded-xl text-shades-black focus:border-[#ff5e3a] focus:ring-1 focus:ring-[#ff5e3a] outline-none transition-all"
+                                    className="w-full p-3 bg-shades-white border border-neutrals-03 rounded-4xl text-shades-black focus:border-[#ff5e3a] focus:ring-1 focus:ring-[#ff5e3a] outline-none transition-all"
                                 >
                                     <option>Bank Transfer</option>
                                     <option>Credit Card</option>
@@ -118,8 +118,8 @@ export default function ReceiptPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-neutrals-06 uppercase tracking-wider">Amount Paid</label>
-                                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
-                                        <p className="text-sm font-bold text-green-600">UGX {amountPaid.toLocaleString()}</p>
+                                    <div className="p-3 bg-accents-discount/5 border border-accents-discount rounded-4xl">
+                                        <p className="text-sm font-bold text-accents-discount">UGX {amountPaid.toLocaleString()}</p>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -128,7 +128,7 @@ export default function ReceiptPage() {
                                         type="text"
                                         value={remainingBalance > 0 ? `UGX ${remainingBalance.toLocaleString()}` : 'UGX 0'}
                                         readOnly
-                                        className="w-full p-3 bg-neutrals-01 border border-neutrals-03 rounded-xl text-neutrals-05 outline-none"
+                                        className="w-full p-3 bg-neutrals-01 border border-neutrals-03 rounded-4xl text-neutrals-05 outline-none"
                                     />
                                 </div>
                             </div>
@@ -136,7 +136,7 @@ export default function ReceiptPage() {
                     </section>
 
                     {/* Signature Settings Section */}
-                    <section>
+                    <section className='bg-neutrals-02 p-5 rounded-xl '>
                         <div className="flex items-center gap-2 mb-6">
                             <div className="p-1.5 rounded-lg">
                                 <span className="text-primary-01">
