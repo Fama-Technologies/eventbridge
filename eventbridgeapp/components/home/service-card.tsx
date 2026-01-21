@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -17,6 +18,7 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({
+  id,
   businessName,
   category,
   location,
@@ -71,7 +73,7 @@ export default function ServiceCard({
     pricePerDay && pricePerDay.toLowerCase() !== 'contact for pricing';
 
   return (
-    <div className="group block">
+    <Link href={`/category/vendor/${id}`} className="group block">
       {/* Image Carousel */}
       <div className="relative h-44 w-full bg-neutrals-03 rounded-xl overflow-hidden mb-3">
         <Image
@@ -159,6 +161,6 @@ export default function ServiceCard({
           </p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
