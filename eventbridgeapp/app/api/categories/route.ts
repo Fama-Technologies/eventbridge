@@ -11,7 +11,7 @@ const CATEGORY_TEMPLATES = [
     name: 'DJ & Music',
     slug: 'dj-music',
     description: 'Professional DJs and music services for your events',
-    imageUrl: '/categories/music.jpg',
+    imageUrl: '/categories/djs.jpg',
   },
   {
     id: '2',
@@ -66,6 +66,13 @@ const CATEGORY_TEMPLATES = [
     id: '9',
     name: 'Engagements',
     slug: 'engagements',
+    description: 'Everything you need for a perfect engagement party',
+    imageUrl: '/categories/partners.jpg',
+  },
+  {
+    id: '10',
+    name: 'Wedding',
+    slug: 'wedding',
     description: 'Everything you need for a perfect engagement party',
     imageUrl: '/categories/partners.jpg',
   },
