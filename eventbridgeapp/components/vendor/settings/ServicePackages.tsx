@@ -82,6 +82,7 @@ export default function ServicePackages({
       setIsLoading(true);
       const response = await fetch("/api/vendor/packages");
       const data = await response.json();
+      console.log('Fetched packages:', data); // Debug log
 
       if (data.success) {
         setPackages(data.packages || []);
@@ -96,33 +97,51 @@ export default function ServicePackages({
 
   const handleSavePackage = async () => {
     if (isSaving) return;
-    const cleanedFeatures = packageForm.features.map((item) => item.trim()).filter(Boolean);
-    const cleanedTags = packageForm.tags.map((tag) => tag.trim()).filter(Boolean);
-    const pricingStructure = packageForm.pricingStructure.length > 0
-      ? packageForm.pricingStructure
-      : packageForm.pricingModel
-        ? [PRICING_MODEL_LABELS[packageForm.pricingModel] || packageForm.pricingModel]
-        : [];
-    const isPopular = cleanedTags.includes("Recommended") || cleanedTags.includes("Popular");
-
-    const payload = {
-      ...packageForm,
-      name: packageForm.name.trim(),
-      priceMax: packageForm.priceMax > 0 ? packageForm.priceMax : null,
-      capacityMin: packageForm.capacityMin > 0 ? packageForm.capacityMin : null,
-      capacityMax: packageForm.capacityMax > 0 ? packageForm.capacityMax : null,
-      pricingModel: pricingStructure[0] ? toPricingModel(pricingStructure[0]) : "per_event",
-      pricingStructure,
-      customPricing: packageForm.customPricing,
-      features: cleanedFeatures.length > 0 ? cleanedFeatures : [""],
-      tags: cleanedTags,
-      isPopular
-    };
-
-    if (!payload.name) {
+    
+    // Validate required fields
+    if (!packageForm.name.trim()) {
       addToast("Package title is required", "error");
       return;
     }
+
+    // Prepare the payload
+    const cleanedFeatures = packageForm.features
+      .map((item) => item.trim())
+      .filter(Boolean);
+    
+    const cleanedTags = packageForm.tags
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    
+    // Determine pricing structure
+    let pricingStructure = packageForm.pricingStructure;
+    if (!pricingStructure || pricingStructure.length === 0) {
+      pricingStructure = packageForm.pricingModel 
+        ? [PRICING_MODEL_LABELS[packageForm.pricingModel] || packageForm.pricingModel]
+        : ["Per event"];
+    }
+
+    // Determine if popular based on tags
+    const isPopular = cleanedTags.includes("Recommended") || cleanedTags.includes("Popular");
+
+    const payload = {
+      name: packageForm.name.trim(),
+      description: packageForm.description.trim() || null,
+      price: Number(packageForm.price) || 0,
+      priceMax: packageForm.priceMax && packageForm.priceMax > 0 ? Number(packageForm.priceMax) : null,
+      duration: packageForm.duration && packageForm.duration > 0 ? Number(packageForm.duration) : null,
+      capacityMin: packageForm.capacityMin && packageForm.capacityMin > 0 ? Number(packageForm.capacityMin) : null,
+      capacityMax: packageForm.capacityMax && packageForm.capacityMax > 0 ? Number(packageForm.capacityMax) : null,
+      pricingModel: toPricingModel(pricingStructure[0]),
+      pricingStructure,
+      customPricing: Boolean(packageForm.customPricing),
+      features: cleanedFeatures.length > 0 ? cleanedFeatures : [],
+      tags: cleanedTags,
+      isPopular,
+      isActive: true
+    };
+
+    console.log('Saving package payload:', payload); // Debug log
 
     try {
       setIsSaving(true);
@@ -130,6 +149,8 @@ export default function ServicePackages({
       const endpoint = isEditing
         ? `/api/vendor/packages/${editingPackage?.id}`
         : "/api/vendor/packages";
+
+      console.log('Making request to:', endpoint, 'with method:', isEditing ? 'PATCH' : 'POST'); // Debug log
 
       const response = await fetch(endpoint, {
         method: isEditing ? "PATCH" : "POST",
@@ -140,31 +161,47 @@ export default function ServicePackages({
       });
 
       const data = await response.json();
+      console.log('Response from server:', data); // Debug log
 
       if (data.success) {
+        const newPackage: ServicePackage = data.package;
         const updatedPackages = isEditing
-          ? packages.map((pkg) => (pkg.id === data.package.id ? data.package : pkg))
-          : [...packages, data.package];
+          ? packages.map((pkg) => (pkg.id === newPackage.id ? newPackage : pkg))
+          : [...packages, newPackage];
+        
         setPackages(updatedPackages);
 
         if (onPackagesUpdate) {
           onPackagesUpdate(updatedPackages);
         }
 
+        // Reset form and close modal
         setPackageForm({ ...DEFAULT_PACKAGE_FORM });
         setEditingPackage(null);
         setIsModalOpen(false);
+        setCustomPricingInput("");
+        setShowCustomPricingInput(false);
 
-        addToast(isEditing ? "Package updated successfully" : "Package created successfully", "success");
+        addToast(
+          isEditing ? "Package updated successfully" : "Package created successfully", 
+          "success"
+        );
+      } else {
+        // Handle API error response
+        const errorMessage = data.error || data.message || "Failed to save package";
+        addToast(errorMessage, "error");
       }
-    } catch (error) {
-      addToast("Failed to save package", "error");
+    } catch (error: any) {
+      console.error('Error saving package:', error);
+      addToast(error?.message || "Failed to save package", "error");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDeletePackage = async (packageId: number) => {
+    if (!confirm("Are you sure you want to delete this package?")) return;
+
     try {
       const response = await fetch(`/api/vendor/packages/${packageId}`, {
         method: "DELETE"
@@ -181,8 +218,11 @@ export default function ServicePackages({
         }
 
         addToast("Package deleted successfully", "success");
+      } else {
+        addToast(data.error || "Failed to delete package", "error");
       }
     } catch (error) {
+      console.error("Failed to delete package:", error);
       addToast("Failed to delete package", "error");
     }
   };
@@ -212,15 +252,21 @@ export default function ServicePackages({
   };
 
   const openEditModal = (pkg: ServicePackage) => {
-    const pricingStructure = pkg.pricingStructure && pkg.pricingStructure.length > 0
-      ? pkg.pricingStructure
-      : pkg.pricingModel
-        ? [PRICING_MODEL_LABELS[pkg.pricingModel] || pkg.pricingModel]
-        : [];
-    const tags = pkg.tags && pkg.tags.length > 0
-      ? pkg.tags
-      : pkg.isPopular
-        ? ["Recommended"]
+    // Determine pricing structure
+    let pricingStructure: string[];
+    if (pkg.pricingStructure && pkg.pricingStructure.length > 0) {
+      pricingStructure = pkg.pricingStructure;
+    } else if (pkg.pricingModel) {
+      pricingStructure = [PRICING_MODEL_LABELS[pkg.pricingModel] || pkg.pricingModel];
+    } else {
+      pricingStructure = ["Per event"];
+    }
+
+    // Determine tags
+    const tags = pkg.tags && pkg.tags.length > 0 
+      ? pkg.tags 
+      : pkg.isPopular 
+        ? ["Recommended"] 
         : [];
 
     setEditingPackage(pkg);
@@ -245,16 +291,17 @@ export default function ServicePackages({
 
   const closeModal = () => {
     setEditingPackage(null);
+    setPackageForm({ ...DEFAULT_PACKAGE_FORM });
     setIsModalOpen(false);
-    setIsSaving(false);
     setCustomPricingInput("");
     setShowCustomPricingInput(false);
+    setIsSaving(false);
   };
 
   const updateFeature = (index: number, value: string) => {
-    const next = [...packageForm.features];
-    next[index] = value;
-    setPackageForm({ ...packageForm, features: next });
+    const newFeatures = [...packageForm.features];
+    newFeatures[index] = value;
+    setPackageForm({ ...packageForm, features: newFeatures });
   };
 
   const addFeature = () => {
@@ -262,8 +309,8 @@ export default function ServicePackages({
   };
 
   const removeFeature = (index: number) => {
-    const next = packageForm.features.filter((_, i) => i !== index);
-    setPackageForm({ ...packageForm, features: next.length ? next : [""] });
+    const newFeatures = packageForm.features.filter((_, i) => i !== index);
+    setPackageForm({ ...packageForm, features: newFeatures.length > 0 ? newFeatures : [""] });
   };
 
   const togglePricingStructure = (value: string) => {
@@ -297,6 +344,31 @@ export default function ServicePackages({
   const isFreeTier = packages.length >= 2;
   const remainingFreePackages = Math.max(0, 2 - packages.length);
 
+  // Loading state
+  if (isLoading && !initialPackages) {
+    return (
+      <div className="bg-shades-white p-6 md:p-8 rounded-2xl border border-neutrals-02">
+        <div className="animate-pulse">
+          <div className="h-8 bg-neutrals-03 rounded w-48 mb-2"></div>
+          <div className="h-4 bg-neutrals-03 rounded w-64 mb-8"></div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-neutrals-01 rounded-xl p-6 border border-neutrals-03">
+                <div className="h-6 bg-neutrals-03 rounded w-32 mb-4"></div>
+                <div className="h-4 bg-neutrals-03 rounded w-48 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-neutrals-03 rounded w-full"></div>
+                  <div className="h-3 bg-neutrals-03 rounded w-3/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-shades-white p-6 md:p-8 rounded-2xl border border-neutrals-02">
       <div className="flex items-center justify-between mb-8">
@@ -310,8 +382,10 @@ export default function ServicePackages({
         <button
           onClick={openCreateModal}
           disabled={isFreeTier}
-          className={`flex items-center gap-2 font-semibold transition-colors ${isFreeTier ? "text-neutrals-05 cursor-not-allowed" : "text-primary-01 hover:text-primary-02"
-            }`}
+          className={`flex items-center gap-2 font-semibold transition-colors ${isFreeTier 
+            ? "text-neutrals-05 cursor-not-allowed" 
+            : "text-primary-01 hover:text-primary-02"
+          }`}
         >
           <Plus className="w-5 h-5" />
           Add Package
@@ -352,6 +426,7 @@ export default function ServicePackages({
                     <button
                       onClick={() => handleDeletePackage(pkg.id)}
                       className="text-neutrals-05 hover:text-red-600 transition-colors"
+                      title="Delete package"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -471,44 +546,35 @@ export default function ServicePackages({
       )}
 
       {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          onClick={closeModal}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
           <div
-            className="w-full max-w-2xl bg-background rounded-3xl border border-border shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            className="w-full max-w-2xl bg-shades-white rounded-3xl border border-neutrals-02 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-8 py-6 border-b border-border">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-neutrals-02">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-neutrals-02 rounded-lg">
-                  <Package className="w-5 h-5 text-foreground" />
+                  <Package className="w-5 h-5 text-shades-black" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-foreground">
-                    {packageForm.name || "New Package"}
-                  </h3>
-                  {editingPackage && (
-                    <span className="text-[10px] font-bold tracking-wider text-primary-01 bg-primary-01/10 px-2 py-0.5 rounded border border-primary-01/20 uppercase">
-                      Editing
-                    </span>
-                  )}
-                </div>
+                <h3 className="text-lg font-bold text-shades-black">
+                  {editingPackage ? "Edit Package" : "Create New Package"}
+                </h3>
               </div>
               <div className="flex items-center gap-4">
                 <button
                   onClick={closeModal}
-                  className="text-neutrals-06 hover:text-foreground transition-colors text-sm font-medium"
+                  className="text-neutrals-06 hover:text-shades-black transition-colors text-sm font-medium"
+                  disabled={isSaving}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSavePackage}
-                  disabled={isSaving}
-                  className="bg-primary-01 hover:bg-primary-02 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                  disabled={isSaving || !packageForm.name.trim()}
+                  className="bg-primary-01 hover:bg-primary-02 text-shades-white px-6 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
                   {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSaving ? "Saving..." : "Save"}
+                  {isSaving ? "Saving..." : editingPackage ? "Update" : "Create"}
                 </button>
               </div>
             </div>
@@ -517,14 +583,15 @@ export default function ServicePackages({
               <div className="space-y-6">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-neutrals-06 mb-2">
-                    Package Title
+                    Package Title *
                   </label>
                   <input
                     type="text"
                     value={packageForm.name}
                     onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })}
-                    className="w-full px-4 py-3 bg-neutrals-02 border border-neutrals-04 rounded-xl text-foreground placeholder:text-neutrals-06 focus:outline-none focus:border-primary-01"
+                    className="w-full px-4 py-3 bg-neutrals-02 border border-neutrals-04 rounded-xl text-shades-black placeholder:text-neutrals-06 focus:outline-none focus:border-primary-01 focus:ring-2 focus:ring-primary-01/10"
                     placeholder="e.g. Gold Royal"
+                    disabled={isSaving}
                   />
                 </div>
 
@@ -534,10 +601,11 @@ export default function ServicePackages({
                   </label>
                   <input
                     type="text"
-                    value={packageForm.description || ""}
+                    value={packageForm.description}
                     onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-                    className="w-full px-4 py-3 bg-neutrals-02 border border-neutrals-04 rounded-xl text-foreground placeholder:text-neutrals-06 focus:outline-none focus:border-primary-01"
+                    className="w-full px-4 py-3 bg-neutrals-02 border border-neutrals-04 rounded-xl text-shades-black placeholder:text-neutrals-06 focus:outline-none focus:border-primary-01 focus:ring-2 focus:ring-primary-01/10"
                     placeholder="Full styling for standard weddings up to 150 guests."
+                    disabled={isSaving}
                   />
                 </div>
               </div>
@@ -554,8 +622,10 @@ export default function ServicePackages({
                         type="number"
                         value={packageForm.price || ""}
                         onChange={(e) => setPackageForm({ ...packageForm, price: Number(e.target.value) })}
-                        className="w-full pl-10 pr-3 py-2.5 bg-neutrals-02 border border-neutrals-04 rounded-lg text-foreground text-sm focus:outline-none focus:border-primary-01"
+                        className="w-full pl-10 pr-3 py-2.5 bg-shades-white border border-neutrals-04 rounded-lg text-shades-black text-sm focus:outline-none focus:border-primary-01"
                         placeholder="Min"
+                        min="0"
+                        disabled={isSaving}
                       />
                     </div>
                     <span className="text-neutrals-05">-</span>
@@ -565,8 +635,10 @@ export default function ServicePackages({
                         type="number"
                         value={packageForm.priceMax || ""}
                         onChange={(e) => setPackageForm({ ...packageForm, priceMax: Number(e.target.value) })}
-                        className="w-full pl-10 pr-3 py-2.5 bg-neutrals-02 border border-neutrals-04 rounded-lg text-foreground text-sm focus:outline-none focus:border-primary-01"
-                        placeholder="Max (opt)"
+                        className="w-full pl-10 pr-3 py-2.5 bg-shades-white border border-neutrals-04 rounded-lg text-shades-black text-sm focus:outline-none focus:border-primary-01"
+                        placeholder="Max (optional)"
+                        min="0"
+                        disabled={isSaving}
                       />
                     </div>
                   </div>
@@ -575,6 +647,7 @@ export default function ServicePackages({
                     <Switch
                       checked={packageForm.customPricing}
                       onCheckedChange={(checked) => setPackageForm({ ...packageForm, customPricing: checked })}
+                      disabled={isSaving}
                     />
                   </div>
                 </div>
@@ -588,16 +661,20 @@ export default function ServicePackages({
                       type="number"
                       value={packageForm.capacityMin || ""}
                       onChange={(e) => setPackageForm({ ...packageForm, capacityMin: Number(e.target.value) })}
-                      className="w-full px-3 py-2.5 bg-neutrals-02 border border-neutrals-04 rounded-lg text-foreground text-sm focus:outline-none focus:border-primary-01"
+                      className="w-full px-3 py-2.5 bg-shades-white border border-neutrals-04 rounded-lg text-shades-black text-sm focus:outline-none focus:border-primary-01"
                       placeholder="Min"
+                      min="0"
+                      disabled={isSaving}
                     />
                     <span className="text-neutrals-05">-</span>
                     <input
                       type="number"
                       value={packageForm.capacityMax || ""}
                       onChange={(e) => setPackageForm({ ...packageForm, capacityMax: Number(e.target.value) })}
-                      className="w-full px-3 py-2.5 bg-neutrals-02 border border-neutrals-04 rounded-lg text-foreground text-sm focus:outline-none focus:border-primary-01"
+                      className="w-full px-3 py-2.5 bg-shades-white border border-neutrals-04 rounded-lg text-shades-black text-sm focus:outline-none focus:border-primary-01"
                       placeholder="Max"
+                      min="0"
+                      disabled={isSaving}
                     />
                   </div>
                 </div>
@@ -613,11 +690,13 @@ export default function ServicePackages({
                     return (
                       <button
                         key={option}
+                        type="button"
                         onClick={() => togglePricingStructure(option)}
+                        disabled={isSaving}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive
-                            ? "bg-primary-01 text-white"
+                            ? "bg-primary-01 text-shades-white"
                             : "bg-shades-white text-neutrals-06 border border-neutrals-04 hover:text-primary-01 hover:border-primary-01"
-                          }`}
+                          } disabled:opacity-60 disabled:cursor-not-allowed`}
                       >
                         {option}
                       </button>
@@ -631,13 +710,15 @@ export default function ServicePackages({
                         value={customPricingInput}
                         onChange={(e) => setCustomPricingInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && addCustomPricing()}
-                        className="px-3 py-2 rounded-full text-sm bg-shades-white border border-neutrals-04 text-foreground focus:border-primary-01 focus:outline-none"
+                        className="px-3 py-2 rounded-full text-sm bg-shades-white border border-neutrals-04 text-shades-black focus:border-primary-01 focus:outline-none"
                         placeholder="Custom"
                         autoFocus
+                        disabled={isSaving}
                       />
                       <button
                         onClick={addCustomPricing}
-                        className="px-3 py-2 rounded-full bg-primary-01 text-white text-sm font-semibold"
+                        disabled={isSaving}
+                        className="px-3 py-2 rounded-full bg-primary-01 text-shades-white text-sm font-semibold disabled:opacity-60"
                       >
                         Add
                       </button>
@@ -646,15 +727,18 @@ export default function ServicePackages({
                           setShowCustomPricingInput(false);
                           setCustomPricingInput("");
                         }}
-                        className="px-3 py-2 rounded-full bg-neutrals-03 text-neutrals-07 text-sm font-semibold"
+                        disabled={isSaving}
+                        className="px-3 py-2 rounded-full bg-neutrals-03 text-neutrals-07 text-sm font-semibold disabled:opacity-60"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </div>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => setShowCustomPricingInput(true)}
-                      className="px-4 py-2 rounded-full text-sm font-medium border border-dashed border-neutrals-04 text-neutrals-06 hover:text-primary-01 hover:border-primary-01 flex items-center gap-2"
+                      disabled={isSaving}
+                      className="px-4 py-2 rounded-full text-sm font-medium border border-dashed border-neutrals-04 text-neutrals-06 hover:text-primary-01 hover:border-primary-01 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-3 h-3" /> Add Custom
                     </button>
@@ -677,21 +761,28 @@ export default function ServicePackages({
                           type="text"
                           value={feature}
                           onChange={(e) => updateFeature(index, e.target.value)}
-                          className="flex-1 bg-transparent border-b border-neutrals-04 py-1 text-foreground text-sm focus:outline-none focus:border-primary-01 placeholder:text-neutrals-06"
+                          className="flex-1 bg-transparent border-b border-neutrals-04 py-1 text-shades-black text-sm focus:outline-none focus:border-primary-01 placeholder:text-neutrals-06"
                           placeholder="e.g. Venue scouting and selection"
+                          disabled={isSaving}
                         />
-                        <button
-                          onClick={() => removeFeature(index)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-neutrals-06 hover:text-red-400 transition-all"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        {packageForm.features.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeFeature(index)}
+                            disabled={isSaving}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-neutrals-06 hover:text-red-400 transition-all disabled:opacity-60"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
                   <button
+                    type="button"
                     onClick={addFeature}
-                    className="flex items-center gap-2 text-primary-01 text-sm font-bold hover:text-primary-02 transition-colors mt-2"
+                    disabled={isSaving}
+                    className="flex items-center gap-2 text-primary-01 text-sm font-bold hover:text-primary-02 transition-colors mt-2 disabled:opacity-60"
                   >
                     <Plus className="w-4 h-4" /> Add Item
                   </button>
@@ -707,7 +798,7 @@ export default function ServicePackages({
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-foreground">
+                    <div className="text-sm font-bold text-shades-black">
                       Mark as <span className="text-primary-01">Recommended</span>
                     </div>
                     <div className="text-xs text-neutrals-06">Highlight this package on your profile.</div>
@@ -716,14 +807,13 @@ export default function ServicePackages({
                 <Switch
                   checked={packageForm.tags.includes("Recommended")}
                   onCheckedChange={(checked) => {
-                    const hasTag = packageForm.tags.includes("Recommended");
-                    if (checked && !hasTag) {
+                    if (checked) {
                       toggleTag("Recommended");
-                    }
-                    if (!checked && hasTag) {
+                    } else {
                       toggleTag("Recommended");
                     }
                   }}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -733,11 +823,13 @@ export default function ServicePackages({
                   return (
                     <button
                       key={badge}
+                      type="button"
                       onClick={() => toggleTag(badge)}
+                      disabled={isSaving}
                       className={`px-3 py-1 rounded text-xs font-bold uppercase transition-colors ${isActive
-                          ? "bg-primary-01 text-white"
+                          ? "bg-primary-01 text-shades-white"
                           : "bg-neutrals-02 text-neutrals-06 border border-neutrals-04 hover:text-primary-01 hover:border-primary-01"
-                        }`}
+                        } disabled:opacity-60 disabled:cursor-not-allowed`}
                     >
                       {badge}
                     </button>
