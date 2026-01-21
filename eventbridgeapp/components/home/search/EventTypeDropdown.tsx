@@ -59,7 +59,7 @@ export default function EventTypeDropdown({
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div
-        className="fixed bg-[#1E1E1E] rounded-2xl shadow-2xl p-4 border border-white/10 w-80"
+        className="fixed bg-shades-white rounded-2xl shadow-2xl p-4 border border-neutrals-03 w-80"
         style={{
           top: position.top,
           left: position.left
@@ -71,9 +71,9 @@ export default function EventTypeDropdown({
             <button
               key={index}
               onClick={() => onSelect(event.name)}
-              className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-2 rounded-lg transition-colors group"
+              className="w-full flex items-center gap-3 text-left hover:bg-neutrals-01 p-2 rounded-lg transition-colors group"
             >
-              <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-white/10 group-hover:border-primary-01 transition-colors">
+              <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-neutrals-03 group-hover:border-primary-01 transition-colors">
                 {/* @ts-ignore */}
                 <img
                   src={event.image}
@@ -82,8 +82,8 @@ export default function EventTypeDropdown({
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-white font-medium text-sm group-hover:text-primary-01 transition-colors">{event.name}</h4>
-                <p className="text-white/40 text-xs truncate">
+                <h4 className="text-shades-black font-medium text-sm group-hover:text-primary-01 transition-colors">{event.name}</h4>
+                <p className="text-neutrals-05 text-xs truncate">
                   {event.services.slice(0, 3).join(', ')}{event.services.length > 3 && '...'}
                 </p>
               </div>

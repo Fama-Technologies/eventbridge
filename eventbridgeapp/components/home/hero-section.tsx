@@ -72,7 +72,7 @@ export default function HeroSection() {
     if (selectedDate) params.set('when', format(selectedDate, 'yyyy-MM-dd'));
     router.push(`/search?${params.toString()}`);
   };
-  
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -80,41 +80,85 @@ export default function HeroSection() {
     }
   };
 
+  const [currentSlide, setCurrentSlide] = useState(0);
+
   const popularCategories = ['Photographers', 'Catering', 'Venues'];
+  const slideContent = [
+    {
+      title: (
+        <>
+          Discover & Connect
+          <br />
+          with Trusted Event Vendors
+        </>
+      ),
+      subtitle: (
+        <>
+          Plan your perfect event with verified service providers, smart budgeting tools,
+          <br />
+          and seamless communication
+        </>
+      ),
+    },
+    {
+      title: (
+        <>
+          Event Management
+          <br />
+          Tools in One Platform
+        </>
+      ),
+      subtitle: (
+        <>
+          Manage bookings, digital invoicing, receipting, and track your budget effortlessly
+        </>
+      ),
+    },
+    {
+      title: (
+        <>
+          Discover Service Packages
+          <br />
+          That Fit Your Budget
+        </>
+      ),
+      subtitle: (
+        <>
+          Compare vendors, chat directly, and make informed decisions for your special day
+        </>
+      ),
+    },
+  ];
+
   const vendorMedia: MediaItem[] = [
-    { type: 'video', src: '/vids/vid1.mp4', alt: 'Event Video 1' },
-    { type: 'video', src: '/vids/vid2.mp4', alt: 'Event Video 2' },
-    { type: 'video', src: '/vids/vid3.mp4', alt: 'Event Video 3' },
-    { type: 'video', src: '/vids/vid4.mp4', alt: 'Event Video 4' },
+    { src: '/hero/hero.jpg', alt: 'Discover Service Packages', overlay: 'bg-purple-900/40' },
+    { src: '/hero/hero1.png', alt: 'Discover & Connect with Trusted Event Vendors' },
+    { src: '/hero/hero2.png', alt: 'Manage bookings and track your budget' },
   ];
 
   return (
     <section className="relative min-h-[500px] flex items-center justify-center overflow-hidden">
-      <HeroCarousel mediaItems={vendorMedia} />
+      <HeroCarousel mediaItems={vendorMedia} onSlideChange={setCurrentSlide} />
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/40" />
 
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-5xl font-bold text-white mb-4">
-          Plan the perfect event,
-          <br />
-          <span className="text-primary-01">effortlessly.</span>
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 transition-all duration-500 min-h-[3.6em] md:min-h-[2.4em] flex items-end justify-center">
+          <span>{slideContent[currentSlide]?.title}</span>
         </h1>
-        <p className="text-white text-lg mb-8">
-          Connect with top-rated planners, venues, and vendors in your area. Curated
-          <br />
-          specifically for your memorable moments.
+        <p className="text-white text-base md:text-lg mb-8 transition-all duration-500 min-h-[3em] flex items-start justify-center">
+          <span>{slideContent[currentSlide]?.subtitle}</span>
         </p>
 
         {/* Search Bar */}
-        <div className="bg-[#1E1E1E] rounded-full p-2 flex items-center shadow-2xl max-w-3xl mx-auto border border-white/10">
+        <div className="bg-shades-white rounded-full p-2 flex items-center shadow-2xl max-w-3xl mx-auto border border-white/10">
           {/* What */}
           <div ref={whatInputRef} className="flex items-center gap-3 px-5 flex-1 border-r border-white/20">
-            <Search size={18} className="text-white/50 shrink-0" />
+            <Search size={18} className="text-shades-black shrink-0" />
             <div className="flex-1 text-left">
-              <label className="text-xs font-medium text-white/70 block">What</label>
+              <label className="text-xs font-medium text-shades-black block">What</label>
               <input
                 type="text"
                 placeholder="Wedding, Birthday..."
@@ -132,16 +176,16 @@ export default function HeroSection() {
                   setShowDatePicker(false);
                   updateRects();
                 }}
-                className="w-full text-sm text-white placeholder:text-white/40 focus:outline-none bg-transparent"
+                className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent"
               />
             </div>
           </div>
 
           {/* Where */}
           <div ref={whereInputRef} className="flex items-center gap-3 px-5 flex-1 border-r border-white/20">
-            <MapPin size={18} className="text-white/50 shrink-0" />
+            <MapPin size={18} className="text-shades-black shrink-0" />
             <div className="flex-1 text-left">
-              <label className="text-xs font-medium text-white/70 block">Where</label>
+              <label className="text-xs font-medium text-shades-black block">Where</label>
               <input
                 type="text"
                 placeholder="City or Zip code"
@@ -159,16 +203,16 @@ export default function HeroSection() {
                   setShowDatePicker(false);
                   updateRects();
                 }}
-                className="w-full text-sm text-white placeholder:text-white/40 focus:outline-none bg-transparent"
+                className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent"
               />
             </div>
           </div>
 
           {/* When */}
           <div ref={whenInputRef} className="flex items-center gap-3 px-5 flex-1">
-            <Calendar size={18} className="text-white/50 shrink-0" />
+            <Calendar size={18} className="text-shades-black shrink-0" />
             <div className="flex-1 text-left">
-              <label className="text-xs font-medium text-white/70 block">When</label>
+              <label className="text-xs font-medium text-shades-black block">When</label>
               <input
                 type="text"
                 placeholder="Add dates"
@@ -180,7 +224,7 @@ export default function HeroSection() {
                   updateRects();
                 }}
                 readOnly
-                className="w-full text-sm text-white placeholder:text-white/40 focus:outline-none bg-transparent cursor-pointer"
+                className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent cursor-pointer"
               />
             </div>
           </div>
@@ -188,7 +232,7 @@ export default function HeroSection() {
           {/* Search Button */}
           <button
             onClick={handleSearch}
-            className="bg-primary-01 hover:bg-primary-02 text-white rounded-full w-11 h-11 flex items-center justify-center transition-colors shrink-0 ml-2"
+            className="bg-primary-01 hover:bg-primary-02 text-shades-white rounded-full w-11 h-11 flex items-center justify-center transition-colors shrink-0 ml-2"
             aria-label="Search"
           >
             <Search size={20} />
@@ -196,14 +240,14 @@ export default function HeroSection() {
         </div>
 
         {/* Popular Categories */}
-        <div className="mt-8 flex items-center justify-center gap-4 text-white">
+        <div className="mt-8 flex items-center justify-center gap-4 text-shades-white">
           <span className="text-sm">Popular:</span>
           <div className="flex gap-3">
             {popularCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setWhat(category)}
-                className="px-4 py-2 rounded-full border border-white/30 hover:bg-white/10 transition-colors text-sm"
+                className="px-4 py-2 rounded-full border border-shades-white/30 hover:bg-shades-primary-01 hover:text-shades-white transition-colors text-sm"
               >
                 {category}
               </button>

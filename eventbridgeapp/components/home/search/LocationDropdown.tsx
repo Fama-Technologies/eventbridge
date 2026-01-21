@@ -21,28 +21,28 @@ interface LocationDropdownProps {
   anchorRect?: DOMRect | null;
 }
 
-export default function LocationDropdown({ 
-  onSelect, 
-  searchValue, 
+export default function LocationDropdown({
+  onSelect,
+  searchValue,
   onClose,
-  anchorRect 
+  anchorRect
 }: LocationDropdownProps) {
   // Calculate position based on anchor using useMemo
   const position = useMemo(() => {
     if (!anchorRect) {
       return { top: 280, left: '50%', transform: 'translateX(-50%)' };
     }
-    
+
     const dropdownWidth = 320;
     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    
+
     let left = anchorRect.left;
-    
+
     // Keep within viewport
     if (left + dropdownWidth > viewportWidth - 16) {
       left = viewportWidth - dropdownWidth - 16;
     }
-    
+
     return {
       top: anchorRect.bottom + 12,
       left: Math.max(16, left),
@@ -50,7 +50,7 @@ export default function LocationDropdown({
     };
   }, [anchorRect]);
 
-  const filtered = LOCATION_SUGGESTIONS.filter(loc => 
+  const filtered = LOCATION_SUGGESTIONS.filter(loc =>
     loc.city.toLowerCase().includes(searchValue.toLowerCase()) ||
     loc.country.toLowerCase().includes(searchValue.toLowerCase())
   );
@@ -59,10 +59,10 @@ export default function LocationDropdown({
 
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
-      <div 
-        className="fixed bg-[#1E1E1E] rounded-2xl shadow-2xl p-4 border border-white/10 w-80"
-        style={{ 
-          top: position.top, 
+      <div
+        className="fixed bg-shades-white rounded-2xl shadow-2xl p-4 border border-neutrals-03 w-80"
+        style={{
+          top: position.top,
           left: position.left,
           transform: position.transform
         }}
@@ -73,10 +73,10 @@ export default function LocationDropdown({
             <button
               key={index}
               onClick={() => onSelect(`${location.city}, ${location.country}`)}
-              className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-2 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 text-left hover:bg-neutrals-01 p-2 rounded-lg transition-colors"
             >
-              <div className="w-10 h-10 bg-[#555] rounded-lg shrink-0" />
-              <span className="text-white font-medium">
+              <div className="w-10 h-10 bg-neutrals-03 rounded-lg shrink-0" />
+              <span className="text-shades-black font-medium">
                 {location.city}, {location.country}
               </span>
             </button>
