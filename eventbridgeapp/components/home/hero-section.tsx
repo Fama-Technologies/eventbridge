@@ -82,7 +82,12 @@ export default function HeroSection() {
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const popularCategories = ['Photographers', 'Catering', 'Venues'];
+  const popularCategories = [
+    { label: 'Photographer', slug: 'photographer' },
+    { label: 'Catering', slug: 'catering' },
+    { label: 'Venue', slug: 'venue' },
+    { label: 'Weddings', slug: 'weddings' },
+  ];
   const slideContent = [
     {
       title: (
@@ -245,11 +250,11 @@ export default function HeroSection() {
           <div className="flex gap-3">
             {popularCategories.map((category) => (
               <button
-                key={category}
-                onClick={() => setWhat(category)}
+                key={category.label}
+                onClick={() => router.push(`/category/${category.slug}`)}
                 className="px-4 py-2 rounded-full border border-shades-white/30 hover:bg-primary-01 hover:text-shades-white transition-colors text-sm"
               >
-                {category}
+                {category.label}
               </button>
             ))}
           </div>
