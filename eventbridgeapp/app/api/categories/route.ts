@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { vendorProfiles, vendorServices } from '@/drizzle/schema';
+import { ilike, or, sql, eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
-const MOCK_CATEGORIES = [
+const CATEGORY_TEMPLATES = [
   {
     id: '1',
     name: 'DJ & Music',
     slug: 'dj-music',
     description: 'Professional DJs and music services for your events',
     imageUrl: '/categories/music.jpg',
-    vendorCount: 24,
   },
   {
     id: '2',
@@ -17,7 +19,6 @@ const MOCK_CATEGORIES = [
     slug: 'photographer',
     description: 'Capture your moments with professional photography',
     imageUrl: '/categories/photography.jpg',
-    vendorCount: 45,
   },
   {
     id: '3',
@@ -25,7 +26,6 @@ const MOCK_CATEGORIES = [
     slug: 'catering',
     description: 'Delicious food and tailored menus for any occasion',
     imageUrl: '/categories/catering.jpg',
-    vendorCount: 32,
   },
   {
     id: '4',
@@ -33,7 +33,6 @@ const MOCK_CATEGORIES = [
     slug: 'florist',
     description: 'Beautiful floral arrangements and bouquets',
     imageUrl: '/categories/flowers.jpg',
-    vendorCount: 18,
   },
   {
     id: '5',
@@ -41,7 +40,6 @@ const MOCK_CATEGORIES = [
     slug: 'event-planner',
     description: 'Expert planning to make your event stress-free',
     imageUrl: '/categories/planning.jpg',
-    vendorCount: 15,
   },
   {
     id: '6',
@@ -49,7 +47,6 @@ const MOCK_CATEGORIES = [
     slug: 'videographer',
     description: 'Cinematic video coverage of your special day',
     imageUrl: '/categories/video.jpg',
-    vendorCount: 28,
   },
   {
     id: '7',
@@ -57,7 +54,6 @@ const MOCK_CATEGORIES = [
     slug: 'venue',
     description: 'Perfect locations for weddings, parties, and corporate events',
     imageUrl: '/categories/venue.jpg',
-    vendorCount: 50,
   },
   {
     id: '8',
@@ -65,7 +61,6 @@ const MOCK_CATEGORIES = [
     slug: 'decor',
     description: 'Stunning decorations to transform your venue',
     imageUrl: '/categories/decor.jpg',
-    vendorCount: 36,
   },
   {
     id: '9',
@@ -73,14 +68,47 @@ const MOCK_CATEGORIES = [
     slug: 'engagements',
     description: 'Everything you need for a perfect engagement party',
     imageUrl: '/categories/partners.jpg',
-    vendorCount: 12,
   },
 ];
 
 export async function GET(request: NextRequest) {
   try {
-    // Simulate API delay if needed, or just return immediately
-    return NextResponse.json(MOCK_CATEGORIES);
+    // Fetch vendor counts for each category from the database
+    const categoriesWithCounts = await Promise.all(
+      CATEGORY_TEMPLATES.map(async (category) => {
+        try {
+          // Count vendors that have services matching this category
+          const result = await db
+            .select({
+              count: sql<number>`COUNT(DISTINCT ${vendorProfiles.id})`,
+            })
+            .from(vendorProfiles)
+            .leftJoin(vendorServices, eq(vendorProfiles.id, vendorServices.vendorId))
+            .where(
+              or(
+                ilike(vendorServices.name, `%${category.slug.replace('-', ' ')}%`),
+                ilike(vendorServices.name, `%${category.name}%`),
+                ilike(vendorProfiles.businessName, `%${category.name}%`)
+              )
+            );
+
+          const vendorCount = result[0]?.count ? Number(result[0].count) : 0;
+
+          return {
+            ...category,
+            vendorCount,
+          };
+        } catch (error) {
+          console.error(`Error counting vendors for category ${category.slug}:`, error);
+          return {
+            ...category,
+            vendorCount: 0,
+          };
+        }
+      })
+    );
+
+    return NextResponse.json(categoriesWithCounts);
   } catch (error) {
     console.error('Get categories error:', error);
     return NextResponse.json(
