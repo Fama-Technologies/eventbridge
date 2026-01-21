@@ -188,6 +188,10 @@ export const vendorProfiles = pgTable('vendor_profiles', {
   state: text('state'),
   zipCode: text('zip_code'),
 
+  // ✅ ADDED: Category field for vendors
+  categoryId: integer('category_id')
+    .references(() => eventCategories.id, { onDelete: 'set null' }),
+
   serviceRadius: integer('service_radius'),
   yearsExperience: integer('years_experience'),
   hourlyRate: integer('hourly_rate'),
@@ -212,6 +216,8 @@ export const vendorProfiles = pgTable('vendor_profiles', {
     userIdIdx: index('vendor_profiles_user_id_idx').on(table.userId),
     verificationStatusIdx: index('vendor_profiles_verification_status_idx').on(table.verificationStatus),
     isVerifiedIdx: index('vendor_profiles_is_verified_idx').on(table.isVerified),
+    // ✅ ADDED: Index for category filtering
+    categoryIdIdx: index('vendor_profiles_category_id_idx').on(table.categoryId),
   };
 });
 
@@ -623,6 +629,11 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
     fields: [vendorProfiles.userId],
     references: [users.id],
   }),
+  // ✅ ADDED: Category relation
+  category: one(eventCategories, {
+    fields: [vendorProfiles.categoryId],
+    references: [eventCategories.id],
+  }),
   availability: one(vendorAvailability),
   services: many(vendorServices),
   packages: many(vendorPackages),
@@ -634,6 +645,11 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
   bookings: many(bookings),
   reviews: many(reviews),
   uploads: many(userUploads),
+}));
+
+// ✅ ADDED: eventCategories relations with vendors
+export const eventCategoriesRelations = relations(eventCategories, ({ many }) => ({
+  vendors: many(vendorProfiles),
 }));
 
 export const vendorServicesRelations = relations(vendorServices, ({ one, many }) => ({
@@ -786,21 +802,4 @@ export type NewVerificationDocument = typeof verificationDocuments.$inferInsert;
 export type UserUpload = typeof userUploads.$inferSelect;
 export type NewUserUpload = typeof userUploads.$inferInsert;
 
-export type Booking = typeof bookings.$inferSelect;
-export type NewBooking = typeof bookings.$inferInsert;
-
-export type Review = typeof reviews.$inferSelect;
-export type NewReview = typeof reviews.$inferInsert;
-
-// Types removed for Mocked features
-// export type Conversation = typeof conversations.$inferSelect;
-// export type NewConversation = typeof conversations.$inferInsert;
-// export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
-// export type NewConversationParticipant = typeof conversationParticipants.$inferInsert;
-// export type Message = typeof messages.$inferSelect;
-// export type NewMessage = typeof messages.$inferInsert;
-// export type Notification = typeof notifications.$inferSelect;
-// export type NewNotification = typeof notifications.$inferInsert;
-
-export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
-export type NewOnboardingProgress = typeof onboardingProgress.$inferInsert;
+export type Booking = typeof bookings

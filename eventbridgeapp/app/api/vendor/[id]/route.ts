@@ -14,22 +14,21 @@ import { formatAvailability } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 
-// GET vendor profile by ID
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const vendorId = parseInt(params.id);
-    
-    if (isNaN(vendorId)) {
+    const vendorId = Number(params.id);
+
+    if (Number.isNaN(vendorId)) {
       return NextResponse.json(
         { error: 'Invalid vendor ID' },
         { status: 400 }
       );
     }
 
-    // Fetch vendor profile with user details
+    /* ---------------- Vendor profile ---------------- */
     const vendorData = await db
       .select({
         id: vendorProfiles.id,
@@ -42,16 +41,11 @@ export async function GET(
         city: vendorProfiles.city,
         state: vendorProfiles.state,
         zipCode: vendorProfiles.zipCode,
-        serviceRadius: vendorProfiles.serviceRadius,
         yearsExperience: vendorProfiles.yearsExperience,
         hourlyRate: vendorProfiles.hourlyRate,
         isVerified: vendorProfiles.isVerified,
-        rating: vendorProfiles.rating,
-        reviewCount: vendorProfiles.reviewCount,
         profileImage: vendorProfiles.profileImage,
         coverImage: vendorProfiles.coverImage,
-        verificationStatus: vendorProfiles.verificationStatus,
-        createdAt: vendorProfiles.createdAt,
         userFirstName: users.firstName,
         userLastName: users.lastName,
         userEmail: users.email,
@@ -70,24 +64,25 @@ export async function GET(
 
     const vendor = vendorData[0];
 
-    // Fetch vendor services
+    /* ---------------- Services ---------------- */
     const services = await db
       .select()
       .from(vendorServices)
       .where(eq(vendorServices.vendorId, vendorId));
 
-    // Fetch vendor packages
+    /* ---------------- Packages ---------------- */
     const packages = await db
       .select()
       .from(vendorPackages)
       .where(eq(vendorPackages.vendorId, vendorId));
 
-    // Fetch vendor portfolio images
+    /* ---------------- Portfolio images ---------------- */
     const portfolio = await db
       .select()
       .from(vendorPortfolio)
       .where(eq(vendorPortfolio.vendorId, vendorId));
 
+    /* ---------------- Availability ---------------- */
     const [availability] = await db
       .select({
         activeDays: vendorAvailability.activeDays,
@@ -96,6 +91,7 @@ export async function GET(
       .where(eq(vendorAvailability.vendorId, vendorId))
       .limit(1);
 
+    /* ---------------- Reviews ---------------- */
     const [reviewStats] = await db
       .select({
         avgRating: sql<number>`avg(${reviews.rating})`,
@@ -106,58 +102,38 @@ export async function GET(
 
     const rating = Number(reviewStats?.avgRating) || 0;
     const reviewCount = Number(reviewStats?.reviewCount) || 0;
-    const availabilityText = formatAvailability(availability?.activeDays);
 
-    // Format response
-    const response = {
+    /* ---------------- Response shape (matches VendorData) ---------------- */
+    return NextResponse.json({
       id: vendor.id.toString(),
       name: vendor.businessName || `${vendor.userFirstName} ${vendor.userLastName}`,
-      category: services.length > 0 ? services[0].name : 'Event Services',
+      category: services[0]?.name || 'Event Services',
       location: vendor.city || 'Kampala',
       country: vendor.state || 'Uganda',
       rating,
       reviewCount,
-      isVerified: vendor.isVerified || false,
+      isVerified: vendor.isVerified ?? false,
       startingPrice: vendor.hourlyRate || 0,
       priceUnit: 'event',
       yearsExperience: vendor.yearsExperience || 0,
       responseTime: '<1h',
-      availability: availabilityText,
+      availability: formatAvailability(availability?.activeDays),
       guestCapacity: '100+',
       description: vendor.description || '',
-      images: portfolio.length > 0 
-        ? portfolio.map((p: any) => p.imageUrl)
-        : [vendor.coverImage || '/categories/weddings.jpg'],
-      packages: packages.map((pkg: any) => ({
+      images:
+        portfolio.length > 0
+          ? portfolio.map((p: { imageUrl: any; }) => p.imageUrl)
+          : [vendor.coverImage || vendor.profileImage || '/categories/weddings.jpg'],
+      packages: packages.map((pkg: { id: { toString: () => any; }; name: any; description: any; price: number; features: string[]; isPopular: any; }) => ({
         id: pkg.id.toString(),
         name: pkg.name,
         description: pkg.description || '',
-        price: pkg.price,
-        priceType: pkg.price > 0 ? 'fixed' : 'custom',
+        price: pkg.price || 0,
+        priceType: pkg.price && pkg.price > 0 ? 'fixed' : 'custom',
         features: (pkg.features as string[]) || [],
         badge: pkg.isPopular ? 'Popular' : undefined,
       })),
-      services: services.map((svc: any) => ({
-        id: svc.id.toString(),
-        name: svc.name,
-        description: svc.description || '',
-        price: svc.price || 0,
-        duration: svc.duration || 0,
-      })),
-      contact: {
-        phone: vendor.phone,
-        email: vendor.userEmail,
-        website: vendor.website,
-      },
-      address: {
-        street: vendor.address,
-        city: vendor.city,
-        state: vendor.state,
-        zipCode: vendor.zipCode,
-      },
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     console.error('Error fetching vendor:', error);
     return NextResponse.json(
