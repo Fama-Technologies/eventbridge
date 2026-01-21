@@ -1,11 +1,30 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import CategoryCard from './category-card';
-import { CATEGORY_DATA } from '@/lib/categories-data';
 
 export default function ExploreCategories() {
-  const categories = CATEGORY_DATA.slice(0, 4);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await fetch('/api/categories?limit=4');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        const data = await response.json();
+        // Ensure we only show 4 items if the API returns more
+        setCategories(Array.isArray(data) ? data.slice(0, 4) : []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   return (
     <section className="py-12 px-6 bg-background">
@@ -20,7 +39,11 @@ export default function ExploreCategories() {
           </Link>
         </div>
 
-        {categories.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-01"></div>
+          </div>
+        ) : categories.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-neutrals-06 text-lg">No categories found.</p>
           </div>

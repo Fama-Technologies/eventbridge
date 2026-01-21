@@ -1,11 +1,31 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CategoryHeader, CategoryFooter, PlanningEventCTA } from '@/components/category';
-import { CATEGORY_DATA } from '@/lib/categories-data';
 
 export default function CategoriesPage() {
-  const categories = CATEGORY_DATA;
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,7 +38,11 @@ export default function CategoriesPage() {
         <p className="text-neutrals-06 mb-8">Browse through our extensive list of service categories</p>
 
         {/* Categories Grid */}
-        {categories.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-01"></div>
+          </div>
+        ) : categories.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-neutrals-06 text-lg">No categories found at the moment.</p>
           </div>
