@@ -22,8 +22,8 @@
   --neutrals-08: #5e5e5e;
 
   /* Primary Colors */
-  --primary-01: #ff7043;
-  --primary-02: #cb5e21;
+  --primary-01: #ff5e3a;
+  --primary-02: #ff451a;
   --primary012: #FF704366;
 
   /* Errors */
@@ -401,6 +401,7 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

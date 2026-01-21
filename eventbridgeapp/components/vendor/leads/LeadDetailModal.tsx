@@ -94,7 +94,7 @@ export default function LeadDetailModal({
                             <div className="flex items-center gap-2">
                                 <h2 className="text-xl font-bold text-shades-black">{lead.name}</h2>
                             </div>
-                            <p className="text-[#F59E0B] text-sm font-medium mt-0.5">
+                            <p className="text-primary-01 text-sm font-medium mt-0.5">
                                 {lead.eventType} – {lead.eventDate}
                             </p>
 
@@ -125,8 +125,8 @@ export default function LeadDetailModal({
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as 'details' | 'messages' | 'attachments')}
                                 className={`pb-4 text-sm font-medium transition-all relative ${activeTab === tab.id
-                                        ? 'text-[#F59E0B] font-bold'
-                                        : 'text-neutrals-06 hover:text-shades-black'
+                                    ? 'text-primary-01 font-bold'
+                                    : 'text-neutrals-06 hover:text-shades-black'
                                     }`}
                             >
                                 <span className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export default function LeadDetailModal({
                                     )}
                                 </span>
                                 {activeTab === tab.id && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F59E0B]" />
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-01" />
                                 )}
                             </button>
                         ))}
@@ -196,15 +196,15 @@ export default function LeadDetailModal({
                                         <div className="flex flex-wrap gap-2">
                                             {lead.specialRequirements ? (
                                                 lead.specialRequirements.map((req) => (
-                                                    <span key={req} className="px-4 py-1.5 bg-[#FFF7ED] text-[#EA580C] rounded-full text-sm font-medium">
+                                                    <span key={req} className="px-4 py-1.5 bg-errors-bg text-primary-01 rounded-full text-sm font-medium">
                                                         {req}
                                                     </span>
                                                 ))
                                             ) : (
                                                 <>
-                                                    <span className="px-4 py-1.5 bg-[#FFF7ED] text-[#EA580C] rounded-full text-sm font-medium">Decor</span>
-                                                    <span className="px-4 py-1.5 bg-[#FFF7ED] text-[#EA580C] rounded-full text-sm font-medium">Catering</span>
-                                                    <span className="px-4 py-1.5 bg-[#FFF7ED] text-[#EA580C] rounded-full text-sm font-medium">DJ</span>
+                                                    <span className="px-4 py-1.5 bg-errors-bg text-primary-01 rounded-full text-sm font-medium">Decor</span>
+                                                    <span className="px-4 py-1.5 bg-errors-bg text-primary-01 rounded-full text-sm font-medium">Catering</span>
+                                                    <span className="px-4 py-1.5 bg-errors-bg text-primary-01 rounded-full text-sm font-medium">DJ</span>
                                                 </>
                                             )}
                                         </div>
@@ -231,17 +231,17 @@ export default function LeadDetailModal({
                     </div>
 
                     {/* Right Sidebar - Actions */}
-                    <div className="w-full lg:w-[320px] bg-[#FAFAFA] p-6 lg:p-8 flex flex-col gap-6">
+                    <div className="w-full lg:w-[320px] bg-neutrals-01 p-6 lg:p-8 flex flex-col gap-6">
 
                         {/* Response Timer */}
                         {lead.status === 'new' && (
-                            <div className="flex items-center gap-3 p-4 bg-[#FEF2F2] rounded-xl border border-[#FECACA]">
-                                <div className="p-2 bg-white rounded-full text-[#EF4444]">
+                            <div className="flex items-center gap-3 p-4 bg-errors-bg rounded-xl border border-errors-main/20">
+                                <div className="p-2 bg-white rounded-full text-errors-main">
                                     <Clock size={18} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-[#EF4444] uppercase tracking-wide">RESPONSE NEEDED</p>
-                                    <p className="text-[#EF4444] font-bold text-sm">{lead.responseTime || '1h 42m remaining'}</p>
+                                    <p className="text-[10px] font-bold text-errors-main uppercase tracking-wide">RESPONSE NEEDED</p>
+                                    <p className="text-errors-main font-bold text-sm">{lead.responseTime || '1h 42m remaining'}</p>
                                 </div>
                             </div>
                         )}
@@ -250,7 +250,7 @@ export default function LeadDetailModal({
                         <div className="space-y-3">
                             <button
                                 onClick={handleSendInvoice}
-                                className="w-full py-3.5 bg-[#ff5e3a] hover:bg-[#ff451a] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02]"
+                                className="w-full py-3.5 bg-primary-01 hover:bg-primary-02 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all transform hover:scale-[1.02]"
                             >
                                 <Receipt size={18} />
                                 Send Invoice
@@ -258,7 +258,7 @@ export default function LeadDetailModal({
 
                             <button
                                 onClick={handleChatClick}
-                                className="w-full py-3.5 bg-white border border-neutrals-03 hover:border-text-shades-black text-shades-black rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                                className="w-full py-3.5 bg-shades-white border border-neutrals-03 hover:border-text-shades-black text-shades-black rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
                             >
                                 <MessageSquare size={18} />
                                 Chat with {lead.name.split(' ')[0]}
@@ -285,7 +285,7 @@ export default function LeadDetailModal({
                             </button>
                             <button
                                 onClick={() => onDecline?.(lead)}
-                                className="w-full py-3 px-2 flex items-center gap-3 text-[#EF4444] hover:bg-[#FEF2F2] rounded-lg transition-colors text-sm font-medium"
+                                className="w-full py-3 px-2 flex items-center gap-3 text-errors-main hover:bg-errors-bg rounded-lg transition-colors text-sm font-medium"
                             >
                                 <Ban size={18} />
                                 Decline Lead
@@ -293,10 +293,10 @@ export default function LeadDetailModal({
                         </div>
 
                         {/* Pro Tip */}
-                        <div className="mt-auto p-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl">
+                        <div className="mt-auto p-4 bg-neutrals-01 border border-accents-link/20 rounded-xl">
                             <div className="flex gap-2">
-                                <Info size={16} className="text-[#2563EB] shrink-0 mt-0.5" />
-                                <p className="text-xs text-[#1E40AF] leading-relaxed">
+                                <Info size={16} className="text-accents-link shrink-0 mt-0.5" />
+                                <p className="text-xs text-accents-link leading-relaxed">
                                     <span className="font-bold">Pro Tip:</span> Responding within 2 hours increases booking probability by 40%.
                                 </p>
                             </div>

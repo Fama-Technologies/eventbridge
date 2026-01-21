@@ -41,7 +41,7 @@ export default function CategoriesPage() {
 
                   {/* Vendor count badge */}
                   <div className="absolute bottom-3 right-3 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
-                    <span className="text-white text-xs font-medium">{category.vendorCount} vendors</span>
+                    <span className="text-shades-white text-xs font-medium">{category.vendorCount} vendors</span>
                   </div>
                 </div>
                 <h3 className="text-foreground font-semibold text-lg mb-1 group-hover:text-primary-01 transition-colors">

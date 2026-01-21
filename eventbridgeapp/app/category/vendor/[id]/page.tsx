@@ -277,8 +277,8 @@ export default function VendorProfilePage() {
                     setTimeout(() => setShowFloatingHearts(true), 50); // Then trigger
                   }}
                   className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isFavorite
-                      ? 'bg-primary-01 text-white'
-                      : 'bg-shades-white text-neutrals-07 hover:bg-white'
+                    ? 'bg-primary-01 text-white'
+                    : 'bg-shades-white text-neutrals-07 hover:bg-white'
                     }`}
                 >
                   <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
@@ -368,20 +368,7 @@ export default function VendorProfilePage() {
               </div>
 
               {/* Badges */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="inline-flex items-center gap-1.5 bg-neutrals-02 dark:bg-neutrals-08 text-foreground text-xs px-3 py-1.5 rounded-full">
-                  <Clock size={14} />
-                  {vendor.yearsExperience}+ years experience
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-neutrals-02 dark:bg-neutrals-08 text-foreground text-xs px-3 py-1.5 rounded-full">
-                  <MessageSquare size={14} />
-                  Replies in {vendor.responseTime}
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-neutrals-02 dark:bg-neutrals-08 text-foreground text-xs px-3 py-1.5 rounded-full">
-                  <Calendar size={14} />
-                  {vendor.availability}
-                </span>
-              </div>
+
             </div>
 
             {/* Tabs */}
@@ -392,8 +379,8 @@ export default function VendorProfilePage() {
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={`pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.key
-                        ? 'text-primary-01 border-primary-01'
-                        : 'text-neutrals-06 border-transparent hover:text-foreground'
+                      ? 'text-primary-01 border-primary-01'
+                      : 'text-neutrals-06 border-transparent hover:text-foreground'
                       }`}
                   >
                     {tab.label}
@@ -437,8 +424,8 @@ export default function VendorProfilePage() {
                         <h3 className="font-semibold text-foreground">{pkg.name}</h3>
                         {pkg.badge && (
                           <span className={`text-xs px-2 py-0.5 rounded ${pkg.badge === 'Best Value'
-                              ? 'bg-primary-01 text-white'
-                              : 'bg-primary-01/20 text-primary-01'
+                            ? 'bg-primary-01 text-white'
+                            : 'bg-primary-01/20 text-primary-01'
                             }`}>
                             {pkg.badge}
                           </span>
@@ -614,8 +601,8 @@ function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
             setIsFavorite(!isFavorite);
           }}
           className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFavorite
-              ? 'bg-primary-01 text-white'
-              : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
+            ? 'bg-primary-01 text-white'
+            : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
             }`}
         >
           <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
@@ -639,8 +626,8 @@ function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
                   setCurrentImageIndex(index);
                 }}
                 className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex
-                    ? 'bg-white w-3'
-                    : 'bg-white/50 hover:bg-white/70'
+                  ? 'bg-white w-3'
+                  : 'bg-white/50 hover:bg-white/70'
                   }`}
               />
             ))}
@@ -806,8 +793,8 @@ function PortfolioTab() {
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat
-                ? 'bg-primary-01 text-white'
-                : 'bg-neutrals-02 dark:bg-neutrals-08 text-foreground hover:bg-neutrals-03 dark:hover:bg-neutrals-07'
+              ? 'bg-primary-01 text-white'
+              : 'bg-neutrals-02 dark:bg-neutrals-08 text-foreground hover:bg-neutrals-03 dark:hover:bg-neutrals-07'
               }`}
           >
             {cat}

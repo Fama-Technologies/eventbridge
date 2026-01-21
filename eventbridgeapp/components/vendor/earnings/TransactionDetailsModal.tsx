@@ -24,13 +24,13 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
             />
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-lg md:max-w-xl lg:max-w-2xl bg-shades-white dark:bg-shades-black rounded-2xl shadow-xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-lg md:max-w-xl lg:max-w-2xl bg-shades-white bg-shades-black rounded-2xl shadow-xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
                 {/* Header Section */}
-                <div className="relative flex-shrink-0 p-6 border-b border-neutrals-03 dark:border-neutrals-08 bg-neutrals-02 dark:bg-[#111]">
+                <div className="relative flex-shrink-0 p-6 border-b border-neutrals-03 border-neutrals-08 bg-neutrals-02 bg-[#111]">
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 text-neutrals-07 hover:text-shades-black dark:hover:text-shades-white hover:bg-neutrals-03 dark:hover:bg-neutrals-08 rounded-full transition-colors z-10"
+                        className="absolute top-4 right-4 p-2 text-neutrals-07 hover:text-shades-black hover:text-shades-white hover:bg-neutrals-03 hover:bg-neutrals-08 rounded-full transition-colors z-10"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -53,19 +53,19 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                     <div className="flex flex-col sm:flex-row gap-4 items-start pt-2">
                         {/* Avatar */}
                         <div className="relative">
-                            <div className="w-16 h-16 rounded-full bg-neutrals-03 dark:bg-neutrals-07 flex items-center justify-center text-xl font-medium text-shades-black dark:text-shades-white overflow-hidden border-2 border-neutrals-03 dark:border-neutrals-08">
+                            <div className="w-16 h-16 rounded-full bg-neutrals-03 bg-neutrals-07 flex items-center justify-center text-xl font-medium text-shades-black text-shades-white overflow-hidden border-2 border-neutrals-03 border-neutrals-08">
                                 <img
                                     src={`https://ui-avatars.com/api/?name=${transaction.clientName}&background=random`}
                                     alt={transaction.clientName}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-shades-white dark:border-shades-black" />
+                            <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-shades-white border-shades-black" />
                         </div>
 
                         {/* Title & Info */}
                         <div className="flex-1">
-                            <h2 className="text-xl font-bold text-shades-black dark:text-shades-white mb-1 pr-8 sm:pr-0">
+                            <h2 className="text-xl font-bold text-shades-black text-shades-white mb-1 pr-8 sm:pr-0">
                                 {transaction.title}
                             </h2>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-neutrals-07">
@@ -83,19 +83,19 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                         <button className="pb-3 text-sm font-semibold text-primary-01 border-b-2 border-primary-01 whitespace-nowrap">
                             Details
                         </button>
-                        <button className="pb-3 text-sm font-medium text-neutrals-07 hover:text-shades-black dark:hover:text-shades-white transition-colors whitespace-nowrap">
+                        <button className="pb-3 text-sm font-medium text-neutrals-07 hover:text-shades-black hover:text-shades-white transition-colors whitespace-nowrap">
                             Messages (1)
                         </button>
-                        <button className="pb-3 text-sm font-medium text-neutrals-07 hover:text-shades-black dark:hover:text-shades-white transition-colors whitespace-nowrap">
+                        <button className="pb-3 text-sm font-medium text-neutrals-07 hover:text-shades-black hover:text-shades-white transition-colors whitespace-nowrap">
                             Attachments
                         </button>
                     </div>
                 </div>
 
                 {/* Body Content - Scrollable */}
-                <div className="p-6 space-y-6 bg-shades-white dark:bg-[#1A1A1A] overflow-y-auto custom-scrollbar text-shades-black dark:text-shades-white">
+                <div className="p-6 space-y-6 bg-shades-white bg-shades-white overflow-y-auto custom-scrollbar text-shades-black text-shades-white">
                     {/* Transaction Note */}
-                    <div className="p-4 rounded-xl bg-neutrals-02 dark:bg-neutrals-08/50 border border-neutrals-03 dark:border-neutrals-08">
+                    <div className="p-4 rounded-xl bg-neutrals-02 bg-neutrals-08/50 border border-neutrals-03 border-neutrals-08">
                         <h4 className="text-xs font-bold text-neutrals-07 uppercase tracking-wider mb-2">
                             Transaction Note
                         </h4>
@@ -110,21 +110,21 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                             Event Requirements
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="p-4 rounded-xl border border-neutrals-03 dark:border-neutrals-08 bg-transparent">
+                            <div className="p-4 rounded-xl border border-neutrals-03 border-neutrals-08 bg-transparent">
                                 <span className="block text-xs text-neutrals-07 mb-1">Type</span>
-                                <span className="block text-base font-semibold text-shades-black dark:text-shades-white">Wedding</span>
+                                <span className="block text-base font-semibold text-shades-blacktext-shades-white">Wedding</span>
                             </div>
-                            <div className="p-4 rounded-xl border border-neutrals-03 dark:border-neutrals-08 bg-transparent">
+                            <div className="p-4 rounded-xl border border-neutrals-03 border-neutrals-08 bg-transparent">
                                 <span className="block text-xs text-neutrals-07 mb-1">Duration</span>
-                                <span className="block text-base font-semibold text-shades-black dark:text-shades-white">1 Day</span>
+                                <span className="block text-base font-semibold text-shades-black text-shades-white">1 Day</span>
                             </div>
                         </div>
 
-                        <div className="mt-4 p-4 rounded-xl border border-neutrals-03 dark:border-neutrals-08 bg-transparent">
+                        <div className="mt-4 p-4 rounded-xl border border-neutrals-03 border-neutrals-08 bg-transparent">
                             <span className="block text-xs text-neutrals-07 mb-3">Requirements</span>
                             <div className="flex flex-wrap gap-2">
                                 {['Decor', 'Catering', 'DJ'].map((req) => (
-                                    <span key={req} className="px-3 py-1 rounded-full bg-neutrals-03 dark:bg-neutrals-08 text-xs font-bold text-shades-black dark:text-shades-white uppercase tracking-wider">
+                                    <span key={req} className="px-3 py-1 rounded-full bg-neutrals-03 bg-neutrals-08 text-xs font-bold text-shades-black text-shades-white uppercase tracking-wider">
                                         {req}
                                     </span>
                                 ))}
@@ -137,24 +137,23 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
                         <h4 className="text-xs font-bold text-neutrals-07 uppercase tracking-wider mb-3">
                             Financial Breakdown
                         </h4>
-                        <div className="space-y-3 pb-4 border-b border-neutrals-03 dark:border-neutrals-08">
+                        <div className="space-y-3 pb-4 border-b border-neutrals-03 border-neutrals-08">
                             <div className="flex justify-between text-sm">
                                 <span className="text-neutrals-07">Gross Amount</span>
-                                <span className="text-shades-black dark:text-shades-white font-medium">UGX {transaction.amount.toLocaleString()}</span>
+                                <span className="text-shades-black text-shades-white font-medium">UGX {transaction.amount.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-neutrals-07">Service Fee (5%)</span>
-                                <span className="text-shades-black dark:text-shades-white font-medium">- UGX {(transaction.amount * 0.05).toLocaleString()}</span>
+                                <span className="text-shades-black text-shades-white font-medium">- UGX {(transaction.amount * 0.05).toLocaleString()}</span>
                             </div>
                         </div>
                         <div className="flex justify-between items-center pt-3">
-                            <span className="text-sm font-semibold text-shades-black dark:text-shades-white">Total Payout</span>
+                            <span className="text-sm font-semibold text-shades-black text-shades-white">Total Payout</span>
                             <span className="text-lg font-bold text-primary-01">UGX {(transaction.amount * 0.95).toLocaleString()}</span>
                         </div>
                     </div>
 
                     {/* Receipt Action */}
-
                     <Link
                         href={`/vendor/earnings/receipt/${transaction.id}`}
                         className="w-full py-3.5 bg-primary-01 hover:bg-primary-02 text-shades-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -165,23 +164,23 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction }
 
                     {/* Footer Actions */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button className="py-3 px-4 border border-neutrals-07 rounded-xl text-sm font-semibold text-shades-black dark:text-shades-white hover:bg-neutrals-03 dark:hover:bg-neutrals-08 transition-colors">
+                        <button className="py-3 px-4 border border-neutrals-07 rounded-xl text-sm font-semibold text-shades-black text-shades-white hover:bg-neutrals-03 hover:bg-neutrals-08 transition-colors">
                             Chat with Client
                         </button>
-                        <button className="py-3 px-4 border border-neutrals-07 rounded-xl text-sm font-semibold text-shades-black dark:text-shades-white hover:bg-neutrals-03 dark:hover:bg-neutrals-08 transition-colors">
+                        <button className="py-3 px-4 border border-neutrals-07 rounded-xl text-sm font-semibold text-shades-black text-shades-white hover:bg-neutrals-03 hover:bg-neutrals-08 transition-colors">
                             Cancel Transaction
                         </button>
                     </div>
 
                     {/* Chat Input Area (Visual only as per design) */}
-                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-neutrals-03 dark:border-neutrals-08">
-                        <Paperclip className="w-5 h-5 text-neutrals-07 cursor-pointer hover:text-shades-black dark:hover:text-shades-white" />
-                        <Smile className="w-5 h-5 text-neutrals-07 cursor-pointer hover:text-shades-black dark:hover:text-shades-white" />
-                        <div className="flex-1 bg-neutrals-02 dark:bg-neutrals-09 rounded-lg px-4 py-2.5">
+                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-neutrals-03 border-neutrals-08">
+                        <Paperclip className="w-5 h-5 text-neutrals-07 cursor-pointer hover:text-shades-black hover:text-shades-white" />
+                        <Smile className="w-5 h-5 text-neutrals-07 cursor-pointer hover:text-shades-black hover:text-shades-white" />
+                        <div className="flex-1 bg-neutrals-02 bg-neutrals-09 rounded-lg px-4 py-2.5">
                             <input
                                 type="text"
                                 placeholder="Type a message..."
-                                className="w-full bg-transparent border-none outline-none text-sm text-shades-black dark:text-shades-white placeholder:text-neutrals-07"
+                                className="w-full bg-transparent border-none outline-none text-sm text-shades-black text-shades-white placeholder:text-neutrals-07"
                             />
                         </div>
                         <button className="p-2.5 bg-primary-01 rounded-lg hover:bg-primary-02 transition-colors">
