@@ -51,6 +51,8 @@ interface VendorData {
   description: string;
   images: string[];
   packages: VendorPackage[];
+  reviews: Review[];
+  portfolio: { id: number; src: string; category: string }[];
 }
 
 // MOCK_VENDOR and SIMILAR_VENDORS removed. Data will be fetched from API.
@@ -487,11 +489,11 @@ export default function VendorProfilePage() {
             )}
 
             {activeTab === 'reviews' && (
-              <ReviewsTab reviewCount={vendor.reviewCount} />
+              <ReviewsTab reviews={vendor.reviews} reviewCount={vendor.reviewCount} />
             )}
 
             {activeTab === 'portfolio' && (
-              <PortfolioTab />
+              <PortfolioTab portfolio={vendor.portfolio} />
             )}
           </div>
 
@@ -674,10 +676,10 @@ function OverviewTab({ vendor }: { vendor: VendorData }) {
     <div className="space-y-4">
       <div className={`text-neutrals-07 leading-relaxed ${!expanded ? 'line-clamp-6' : ''}`}>
         <p className="mb-4">
-          Royal Touch Décor specializes in transforming spaces into breathtaking experiences. With over {vendor.yearsExperience} years of styling premium weddings in Kampala and beyond, we bring a sophisticated blend of modern elegance and timeless tradition to every event. From intimate garden ceremonies to grand ballroom receptions, our team ensures every petal and drape is perfectly placed.
+          {vendor.description}
         </p>
         <p>
-          We offer full-service floral design, custom backdrops, lighting, and furniture rentals. Our mission is to tell your unique love story through exquisite design.
+          With over {vendor.yearsExperience} years of experience, {vendor.name} is dedicated to making your event special.
         </p>
       </div>
       <button
@@ -702,55 +704,38 @@ interface Review {
   rating: number;
 }
 
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: '1',
-    author: 'Sarah K.',
-    avatar: '/avatars/avatar1.jpg',
-    location: 'Kampala',
-    date: 'October 2023',
-    text: 'Absolutely stunning! The team went above and beyond for our reception. The flowers were fresh and the lighting transformed the entire hall. Highly...',
-    rating: 5,
-  },
-  {
-    id: '2',
-    author: 'James M.',
-    avatar: '/avatars/avatar2.jpg',
-    location: 'Kampala',
-    date: 'August 2023',
-    text: 'Professional and timely. They handled our corporate gala decor with such class. The branding integration was seamless.',
-    rating: 5,
-  },
-];
-
-function ReviewsTab({ reviewCount }: { reviewCount: number }) {
+function ReviewsTab({ reviews = [], reviewCount }: { reviews?: Review[]; reviewCount: number }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Reviews List */}
       <div className="space-y-6">
-        {MOCK_REVIEWS.map((review) => (
-          <div key={review.id} className="border border-neutrals-03  rounded-xl p-5">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-neutrals-03 overflow-hidden relative">
-                <Image
-                  src={review.avatar}
-                  alt={review.author}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
-                />
+        {reviews.length > 0 ? (
+          reviews.map((review) => (
+            <div key={review.id} className="border border-neutrals-03 rounded-xl p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-neutrals-03 overflow-hidden relative">
+                  <Image
+                    src={review.avatar}
+                    alt={review.author}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground text-sm">{review.author}</h4>
+                  <p className="text-neutrals-06 text-xs">{review.location} • {review.date}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">{review.author}</h4>
-                <p className="text-neutrals-06 text-xs">{review.location} • {review.date}</p>
-              </div>
+              <p className="text-neutrals-07 text-sm leading-relaxed">&ldquo;{review.text}&rdquo;</p>
             </div>
-            <p className="text-neutrals-07 text-sm leading-relaxed">&ldquo;{review.text}&rdquo;</p>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-neutrals-06">No reviews yet.</p>
+        )}
 
         {/* Load More Button */}
         <button className="w-full py-3 border border-neutrals-03  rounded-lg text-foreground text-sm font-medium hover:border-foreground transition-colors">
@@ -781,31 +766,27 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
 }
 
 // Portfolio Tab Component
-const PORTFOLIO_CATEGORIES = ['All Photos', 'Weddings', 'Corporate', 'Birthdays', 'Bridal Showers', 'Baby Showers'];
+// Portfolio Tab Component
+interface PortfolioItem {
+  id: number;
+  src: string;
+  category: string;
+}
 
-const PORTFOLIO_IMAGES = [
-  { src: '/categories/weddings.jpg', category: 'Weddings' },
-  { src: '/categories/Corporate.jpg', category: 'Corporate' },
-  { src: '/categories/Birthdays.jpg', category: 'Birthdays' },
-  { src: '/categories/Parties.jpg', category: 'Weddings' },
-  { src: '/categories/weddings.jpg', category: 'Bridal Showers' },
-  { src: '/categories/Corporate.jpg', category: 'Corporate' },
-  { src: '/categories/Birthdays.jpg', category: 'Baby Showers' },
-  { src: '/categories/Parties.jpg', category: 'Weddings' },
-];
-
-function PortfolioTab() {
+function PortfolioTab({ portfolio = [] }: { portfolio?: PortfolioItem[] }) {
+  // Extract unique categories from portfolio or default to empty
+  const categories = ['All Photos', ...Array.from(new Set(portfolio.map((item) => item.category)))];
   const [activeCategory, setActiveCategory] = useState('All Photos');
 
   const filteredImages = activeCategory === 'All Photos'
-    ? PORTFOLIO_IMAGES
-    : PORTFOLIO_IMAGES.filter(img => img.category === activeCategory);
+    ? portfolio
+    : portfolio.filter(img => img.category === activeCategory);
 
   return (
     <div>
       {/* Category Pills */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {PORTFOLIO_CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
@@ -820,22 +801,29 @@ function PortfolioTab() {
       </div>
 
       {/* Masonry Grid */}
-      <div className="columns-2 md:columns-3 gap-4 space-y-4">
-        {filteredImages.map((image, index) => (
-          <div
-            key={index}
-            className={`break-inside-avoid relative rounded-xl overflow-hidden ${index % 3 === 0 ? 'aspect-3/4' : index % 3 === 1 ? 'aspect-square' : 'aspect-4/3'
-              }`}
-          >
-            <Image
-              src={image.src}
-              alt={`Portfolio ${index + 1}`}
-              fill
-              className="object-cover hover:scale-105 transition-transform duration-300"
-            />
-          </div>
-        ))}
-      </div>
+      {filteredImages.length > 0 ? (
+        <div className="columns-2 md:columns-3 gap-4 space-y-4">
+          {filteredImages.map((image, index) => (
+            <div
+              key={image.id || index}
+              className={`break-inside-avoid relative rounded-xl overflow-hidden ${index % 3 === 0 ? 'aspect-3/4' : index % 3 === 1 ? 'aspect-square' : 'aspect-4/3'
+                }`}
+            >
+              <Image
+                src={image.src}
+                alt={`Portfolio ${index + 1}`}
+                fill
+                className="object-cover hover:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-white text-xs font-medium">{image.category}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-neutrals-06">No photos available.</p>
+      )}
     </div>
   );
 }

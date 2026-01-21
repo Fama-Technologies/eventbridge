@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { 
-  vendorProfiles, 
-  users, 
-  vendorServices, 
+import {
+  vendorProfiles,
+  users,
+  vendorServices,
   vendorPackages,
   vendorPortfolio,
   vendorAvailability,
@@ -103,6 +103,24 @@ export async function GET(
     const rating = Number(reviewStats?.avgRating) || 0;
     const reviewCount = Number(reviewStats?.reviewCount) || 0;
 
+    // Fetch actual reviews with user data
+    const recentReviews = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        text: reviews.comment,
+        date: reviews.createdAt,
+        author: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+        avatar: users.image,
+        location: vendorProfiles.city, // Using vendor city as proxy or we could join with user profile if separate
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.clientId, users.id))
+      .leftJoin(vendorProfiles, eq(reviews.vendorId, vendorProfiles.id))
+      .where(eq(reviews.vendorId, vendorId))
+      .orderBy(sql`${reviews.createdAt} desc`)
+      .limit(5);
+
     /* ---------------- Response shape (matches VendorData) ---------------- */
     return NextResponse.json({
       id: vendor.id.toString(),
@@ -122,9 +140,23 @@ export async function GET(
       description: vendor.description || '',
       images:
         portfolio.length > 0
-          ? portfolio.map((p: { imageUrl: any; }) => p.imageUrl)
+          ? portfolio.map((p: any) => p.imageUrl)
           : [vendor.coverImage || vendor.profileImage || '/categories/weddings.jpg'],
-      packages: packages.map((pkg: { id: { toString: () => any; }; name: any; description: any; price: number; features: string[]; isPopular: any; }) => ({
+      portfolio: portfolio.map((p: any) => ({
+        id: p.id,
+        src: p.imageUrl,
+        category: p.category || 'All Photos',
+      })),
+      reviews: recentReviews.map((r: any) => ({
+        id: r.id.toString(),
+        author: r.author || 'Anonymous',
+        avatar: r.avatar || '/avatars/default.jpg',
+        location: r.location || 'Kampala',
+        date: r.date ? new Date(r.date).toLocaleDateString() : '',
+        text: r.text || '',
+        rating: r.rating || 5,
+      })),
+      packages: packages.map((pkg: any) => ({
         id: pkg.id.toString(),
         name: pkg.name,
         description: pkg.description || '',
