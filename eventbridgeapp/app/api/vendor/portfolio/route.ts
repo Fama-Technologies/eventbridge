@@ -25,6 +25,30 @@ async function getCurrentUser() {
   return user || null;
 }
 
+// Helper to get vendor profile
+async function getVendorProfile(vendorId?: number) {
+  if (vendorId) {
+    // Get vendor profile by ID
+    const [vendorProfile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.id, vendorId))
+      .limit(1);
+    return vendorProfile;
+  } else {
+    // Get vendor profile for current user
+    const user = await getCurrentUser();
+    if (!user) return null;
+    
+    const [vendorProfile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.userId, user.id))
+      .limit(1);
+    return vendorProfile;
+  }
+}
+
 // GET: Fetch portfolio items
 export async function GET(request: NextRequest) {
   try {
@@ -106,37 +130,47 @@ export async function GET(request: NextRequest) {
 // POST: Create new portfolio item
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get vendor profile for current user
-    const [vendorProfile] = await db
-      .select()
-      .from(vendorProfiles)
-      .where(eq(vendorProfiles.userId, user.id))
-      .limit(1);
-
-    if (!vendorProfile) {
-      return NextResponse.json(
-        { error: 'Vendor profile not found' },
-        { status: 404 }
-      );
-    }
-
     const body = await request.json();
-    const { imageUrl, title, description, category, pathname, size, type } = body;
+    const { imageUrl, title, description, category, pathname, size, type, vendorId } = body;
 
     // Validate required fields
     if (!imageUrl) {
       return NextResponse.json(
         { error: 'Image URL is required' },
         { status: 400 }
+      );
+    }
+
+    // Get vendor profile - either from vendorId in request or current user
+    let vendorProfile;
+    
+    if (vendorId) {
+      // Use vendorId from request (for admin or API usage)
+      vendorProfile = await getVendorProfile(vendorId);
+    } else {
+      // Get from current user session
+      const user = await getCurrentUser();
+      
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+
+      const [profile] = await db
+        .select()
+        .from(vendorProfiles)
+        .where(eq(vendorProfiles.userId, user.id))
+        .limit(1);
+
+      vendorProfile = profile;
+    }
+
+    if (!vendorProfile) {
+      return NextResponse.json(
+        { error: 'Vendor profile not found' },
+        { status: 404 }
       );
     }
 
@@ -171,20 +205,23 @@ export async function POST(request: NextRequest) {
     // Also save to user_uploads table for tracking (if pathname exists)
     if (pathname) {
       const fileName = pathname.split('/').pop() || 'portfolio.jpg';
+      const user = await getCurrentUser();
       
-      await db.insert(userUploads).values({
-        userId: user.id,
-        vendorId: vendorProfile.id,
-        fileKey: pathname,
-        fileUrl: imageUrl,
-        fileName: fileName,
-        fileType: type || 'image/jpeg',
-        fileSize: size || 0,
-        uploadType: 'gallery',
-        width: null,
-        height: null,
-        createdAt: new Date(),
-      });
+      if (user) {
+        await db.insert(userUploads).values({
+          userId: user.id,
+          vendorId: vendorProfile.id,
+          fileKey: pathname,
+          fileUrl: imageUrl,
+          fileName: fileName,
+          fileType: type || 'image/jpeg',
+          fileSize: size || 0,
+          uploadType: 'gallery',
+          width: null,
+          height: null,
+          createdAt: new Date(),
+        });
+      }
     }
 
     return NextResponse.json({
@@ -201,6 +238,169 @@ export async function POST(request: NextRequest) {
     console.error('Error creating portfolio item:', error);
     return NextResponse.json(
       { error: 'Failed to create portfolio item' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: Update portfolio item
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const itemId = Number(params.id);
+    if (!itemId) {
+      return NextResponse.json(
+        { error: 'Invalid item ID' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { title, description, category } = body;
+
+    // Verify the item belongs to the current user's vendor profile
+    const [vendorProfile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.userId, user.id))
+      .limit(1);
+
+    if (!vendorProfile) {
+      return NextResponse.json(
+        { error: 'Vendor profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if item exists and belongs to this vendor
+    const [existingItem] = await db
+      .select()
+      .from(vendorPortfolio)
+      .where(
+        and(
+          eq(vendorPortfolio.id, itemId),
+          eq(vendorPortfolio.vendorId, vendorProfile.id)
+        )
+      )
+      .limit(1);
+
+    if (!existingItem) {
+      return NextResponse.json(
+        { error: 'Portfolio item not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update the item
+    const [updatedItem] = await db
+      .update(vendorPortfolio)
+      .set({
+        title: title !== undefined ? title : existingItem.title,
+        description: description !== undefined ? description : existingItem.description,
+        category: category !== undefined ? category : existingItem.category,
+      })
+      .where(eq(vendorPortfolio.id, itemId))
+      .returning();
+
+    return NextResponse.json({
+      success: true,
+      portfolioItem: {
+        id: updatedItem.id,
+        imageUrl: updatedItem.imageUrl,
+        title: updatedItem.title,
+        description: updatedItem.description,
+        category: updatedItem.category,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating portfolio item:', error);
+    return NextResponse.json(
+      { error: 'Failed to update portfolio item' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Remove portfolio item
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const itemId = Number(params.id);
+    if (!itemId) {
+      return NextResponse.json(
+        { error: 'Invalid item ID' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the item belongs to the current user's vendor profile
+    const [vendorProfile] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.userId, user.id))
+      .limit(1);
+
+    if (!vendorProfile) {
+      return NextResponse.json(
+        { error: 'Vendor profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if item exists and belongs to this vendor
+    const [existingItem] = await db
+      .select()
+      .from(vendorPortfolio)
+      .where(
+        and(
+          eq(vendorPortfolio.id, itemId),
+          eq(vendorPortfolio.vendorId, vendorProfile.id)
+        )
+      )
+      .limit(1);
+
+    if (!existingItem) {
+      return NextResponse.json(
+        { error: 'Portfolio item not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete the item
+    await db
+      .delete(vendorPortfolio)
+      .where(eq(vendorPortfolio.id, itemId));
+
+    return NextResponse.json({
+      success: true,
+      message: 'Portfolio item deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting portfolio item:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete portfolio item' },
       { status: 500 }
     );
   }

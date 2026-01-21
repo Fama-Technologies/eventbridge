@@ -123,32 +123,44 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
             setUploadProgress(100);
 
             if (response.ok && data.url) {
+                // Prepare the portfolio item data
+                const portfolioData: any = {
+                    imageUrl: data.url,
+                    pathname: data.pathname,  // From Vercel Blob response
+                    size: data.size,          // From Vercel Blob response  
+                    type: data.type,          // From Vercel Blob response
+                };
+
+                // Add vendorId if available
+                if (vendorId) {
+                    portfolioData.vendorId = vendorId;
+                }
+
                 const portfolioResponse = await fetch('/api/vendor/portfolio', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        imageUrl: data.url,
-                        pathname: data.pathname,  // From Vercel Blob response
-                        size: data.size,          // From Vercel Blob response  
-                        type: data.type,          // From Vercel Blob response
-                    }),
+                    body: JSON.stringify(portfolioData),
                 });
 
-                const portfolioData = await portfolioResponse.json();
+                const portfolioResult = await portfolioResponse.json();
 
-                if (portfolioData.success && portfolioData.portfolioItem) {
-                    const newItem: PortfolioItem = portfolioData.portfolioItem;
+                if (portfolioResult.success && portfolioResult.portfolioItem) {
+                    const newItem: PortfolioItem = portfolioResult.portfolioItem;
                     setImages([...images, newItem]);
 
-                    // Show success message
+                    // Reset upload state
                     setTimeout(() => {
                         setIsUploading(false);
                         setUploadProgress(0);
+                        
+                        // Clear the file input to allow uploading the same file again
+                        const fileInput = document.getElementById('portfolio-upload') as HTMLInputElement;
+                        if (fileInput) fileInput.value = '';
                     }, 500);
                 } else {
-                    console.error('Failed to save portfolio item:', portfolioData.error);
+                    console.error('Failed to save portfolio item:', portfolioResult.error || 'Unknown error');
                     setIsUploading(false);
                     setUploadProgress(0);
                 }
@@ -252,7 +264,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                     type="file"
                     id="portfolio-upload"
                     className="hidden"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     onChange={handleFileUpload}
                     disabled={isUploading}
                     multiple
@@ -281,11 +293,19 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                     {images.map((image) => (
                         <div key={image.id} className="group">
                             <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-3 border border-neutrals-02">
-                                <img
-                                    src={image.imageUrl}
-                                    alt={image.title || "Portfolio"}
-                                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                />
+                                {image.imageUrl.endsWith('.mp4') ? (
+                                    <video
+                                        src={image.imageUrl}
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                        controls
+                                    />
+                                ) : (
+                                    <img
+                                        src={image.imageUrl}
+                                        alt={image.title || "Portfolio"}
+                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                    />
+                                )}
                                 <button
                                     onClick={() => handleDeleteImage(image.id)}
                                     className="absolute top-2 right-2 p-1.5 bg-shades-black/50 text-shades-white rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-errors-main hover:scale-110"
@@ -316,7 +336,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                         <input
                             type="file"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/*,video/*"
                             onChange={handleFileUpload}
                             disabled={isUploading}
                         />
@@ -333,7 +353,7 @@ export default function PortfolioMedia({ vendorId }: PortfolioMediaProps = {}) {
                         <input
                             type="file"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/*,video/*"
                             onChange={handleFileUpload}
                             disabled={isUploading}
                         />
