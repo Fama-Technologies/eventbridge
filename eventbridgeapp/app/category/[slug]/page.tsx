@@ -9,6 +9,7 @@ import {
   CategoryFooter
 } from '@/components/category';
 import type { ServiceCardProps } from '@/components/category';
+import Footer from '@/components/footer';
 
 // Category title mapping
 const CATEGORY_TITLES: Record<string, string> = {
@@ -95,14 +96,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           </div>
         </div>
 
-        {/* Planning Event CTA */}
-        <div className="mt-16">
-          <PlanningEventCTA />
-        </div>
+
       </main>
 
       {/* Footer */}
-      <CategoryFooter />
+      <Footer />
     </div>
   );
 }
