@@ -9,7 +9,7 @@ const CATEGORY_TEMPLATES = [
   {
     id: '1',
     name: 'DJ & Music',
-    slug: 'dj-music',
+    slug: 'dj',
     description: 'Professional DJs and music services for your events',
     imageUrl: '/categories/djs.jpg',
   },
