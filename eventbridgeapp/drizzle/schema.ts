@@ -9,6 +9,9 @@ import {
   jsonb,
   index,
   unique,
+  decimal,
+  bigint,
+  varchar,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -88,6 +91,82 @@ export const sessions = pgTable('sessions', {
     tokenIdx: index('sessions_token_idx').on(table.token),
     userIdIdx: index('sessions_user_id_idx').on(table.userId),
     expiresAtIdx: index('sessions_expires_at_idx').on(table.expiresAt),
+  };
+});
+
+/* ===================== SUBSCRIPTION PLANS ===================== */
+export const subscriptionPlans = pgTable('subscription_plans', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 50 }).notNull(),
+  displayName: varchar('display_name', { length: 100 }).notNull(),
+  description: text('description'),
+  priceMonthly: decimal('price_monthly', { precision: 10, scale: 2 }),
+  priceYearly: decimal('price_yearly', { precision: 10, scale: 2 }),
+  currency: varchar('currency', { length: 3 }).default('UGX'),
+  billingCycle: varchar('billing_cycle', { length: 20 }),
+  isActive: boolean('is_active').default(true),
+  features: jsonb('features').default({}).notNull(),
+  limits: jsonb('limits').default({}).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => {
+  return {
+    nameIdx: index('subscription_plans_name_idx').on(table.name),
+    isActiveIdx: index('subscription_plans_is_active_idx').on(table.isActive),
+  };
+});
+
+/* ===================== VENDOR SUBSCRIPTIONS ===================== */
+export const vendorSubscriptions = pgTable('vendor_subscriptions', {
+  id: serial('id').primaryKey(),
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+  planId: integer('plan_id')
+    .notNull()
+    .references(() => subscriptionPlans.id),
+  status: varchar('status', { length: 20 }).default('active'),
+  billingCycle: varchar('billing_cycle', { length: 20 }).notNull(),
+  currentPeriodStart: timestamp('current_period_start').notNull(),
+  currentPeriodEnd: timestamp('current_period_end').notNull(),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  metadata: jsonb('metadata').default({}),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_subscriptions_vendor_id_idx').on(table.vendorId),
+    statusIdx: index('vendor_subscriptions_status_idx').on(table.status),
+    planIdIdx: index('vendor_subscriptions_plan_id_idx').on(table.planId),
+    currentPeriodEndIdx: index('vendor_subscriptions_current_period_end_idx').on(table.currentPeriodEnd),
+  };
+});
+
+/* ===================== VENDOR USAGE ===================== */
+export const vendorUsage = pgTable('vendor_usage', {
+  id: serial('id').primaryKey(),
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+  subscriptionId: integer('subscription_id')
+    .references(() => vendorSubscriptions.id),
+  monthYear: varchar('month_year', { length: 7 }).notNull(),
+  usageData: jsonb('usage_data').default({
+    leadsUsed: 0,
+    invoicesUsed: 0,
+    packagesCreated: 0,
+    imagesUploaded: 0,
+    videosUploaded: 0
+  }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('vendor_usage_vendor_id_idx').on(table.vendorId),
+    monthYearIdx: index('vendor_usage_month_year_idx').on(table.monthYear),
+    uniqueVendorMonth: unique('vendor_usage_unique_vendor_month').on(table.vendorId, table.monthYear),
   };
 });
 
@@ -209,6 +288,10 @@ export const vendorProfiles = pgTable('vendor_profiles', {
   profileImage: text('profile_image'),
   coverImage: text('cover_image'),
 
+  // ✅ ADDED: Subscription status
+  subscriptionStatus: varchar('subscription_status', { length: 20 }).default('free_trial'),
+  trialEndsAt: timestamp('trial_ends_at'),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => {
@@ -216,8 +299,8 @@ export const vendorProfiles = pgTable('vendor_profiles', {
     userIdIdx: index('vendor_profiles_user_id_idx').on(table.userId),
     verificationStatusIdx: index('vendor_profiles_verification_status_idx').on(table.verificationStatus),
     isVerifiedIdx: index('vendor_profiles_is_verified_idx').on(table.isVerified),
-    // ✅ ADDED: Index for category filtering
     categoryIdIdx: index('vendor_profiles_category_id_idx').on(table.categoryId),
+    subscriptionStatusIdx: index('vendor_profiles_subscription_status_idx').on(table.subscriptionStatus),
   };
 });
 
@@ -276,8 +359,8 @@ export const vendorPackages = pgTable('vendor_packages', {
 
   name: text('name').notNull(),
   description: text('description'),
-  price: integer('price').notNull(),
-  priceMax: integer('price_max'),
+  price: bigint('price', { mode: 'number' }).notNull(), // Changed to bigint
+  priceMax: bigint('price_max', { mode: 'number' }), // Changed to bigint
   duration: integer('duration'),
 
   capacityMin: integer('capacity_min'),
@@ -550,6 +633,37 @@ export const bookings = pgTable('bookings', {
   };
 });
 
+/* ===================== INVOICES ===================== */
+export const invoices = pgTable('invoices', {
+  id: serial('id').primaryKey(),
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+  bookingId: integer('booking_id')
+    .references(() => bookings.id, { onDelete: 'cascade' }),
+  invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(),
+  clientId: integer('client_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  currency: varchar('currency', { length: 3 }).default('UGX'),
+  status: varchar('status', { length: 20 }).default('pending'),
+  dueDate: timestamp('due_date'),
+  paidAt: timestamp('paid_at'),
+  notes: text('notes'),
+  metadata: jsonb('metadata').default({}),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => {
+  return {
+    vendorIdIdx: index('invoices_vendor_id_idx').on(table.vendorId),
+    bookingIdIdx: index('invoices_booking_id_idx').on(table.bookingId),
+    clientIdIdx: index('invoices_client_id_idx').on(table.clientId),
+    statusIdx: index('invoices_status_idx').on(table.status),
+    invoiceNumberIdx: index('invoices_invoice_number_idx').on(table.invoiceNumber),
+  };
+});
+
 /* ===================== REVIEWS ===================== */
 export const reviews = pgTable('reviews', {
   id: serial('id').primaryKey(),
@@ -582,10 +696,6 @@ export const reviews = pgTable('reviews', {
   };
 });
 
-/* ===================== MESSAGING & NOTIFICATIONS (Removed due to db constraints) ===================== */
-// Tables removed as they cannot be pushed to DB currently.
-// Using mock API responses instead.
-
 /* ===================== RELATIONS ===================== */
 export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
@@ -597,6 +707,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   reviewsGiven: many(reviews),
   onboardingProgress: one(onboardingProgress),
   uploads: many(userUploads),
+  invoices: many(invoices),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -610,6 +721,33 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields: [sessions.userId],
     references: [users.id],
+  }),
+}));
+
+export const subscriptionPlansRelations = relations(subscriptionPlans, ({ many }) => ({
+  vendorSubscriptions: many(vendorSubscriptions),
+}));
+
+export const vendorSubscriptionsRelations = relations(vendorSubscriptions, ({ one, many }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorSubscriptions.vendorId],
+    references: [vendorProfiles.id],
+  }),
+  plan: one(subscriptionPlans, {
+    fields: [vendorSubscriptions.planId],
+    references: [subscriptionPlans.id],
+  }),
+  usage: many(vendorUsage),
+}));
+
+export const vendorUsageRelations = relations(vendorUsage, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [vendorUsage.vendorId],
+    references: [vendorProfiles.id],
+  }),
+  subscription: one(vendorSubscriptions, {
+    fields: [vendorUsage.subscriptionId],
+    references: [vendorSubscriptions.id],
   }),
 }));
 
@@ -629,7 +767,6 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
     fields: [vendorProfiles.userId],
     references: [users.id],
   }),
-  // ✅ ADDED: Category relation
   category: one(eventCategories, {
     fields: [vendorProfiles.categoryId],
     references: [eventCategories.id],
@@ -645,6 +782,9 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
   bookings: many(bookings),
   reviews: many(reviews),
   uploads: many(userUploads),
+  subscriptions: many(vendorSubscriptions),
+  usage: many(vendorUsage),
+  invoices: many(invoices),
 }));
 
 // ✅ ADDED: eventCategories relations with vendors
@@ -730,6 +870,25 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
     fields: [bookings.packageId],
     references: [vendorPackages.id],
   }),
+  invoice: one(invoices, {
+    fields: [bookings.id],
+    references: [invoices.bookingId],
+  }),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one }) => ({
+  vendor: one(vendorProfiles, {
+    fields: [invoices.vendorId],
+    references: [vendorProfiles.id],
+  }),
+  booking: one(bookings, {
+    fields: [invoices.bookingId],
+    references: [bookings.id],
+  }),
+  client: one(users, {
+    fields: [invoices.clientId],
+    references: [users.id],
+  }),
 }));
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
@@ -759,6 +918,15 @@ export type NewAccount = typeof accounts.$inferInsert;
 
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type NewSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+
+export type VendorSubscription = typeof vendorSubscriptions.$inferSelect;
+export type NewVendorSubscription = typeof vendorSubscriptions.$inferInsert;
+
+export type VendorUsage = typeof vendorUsage.$inferSelect;
+export type NewVendorUsage = typeof vendorUsage.$inferInsert;
 
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
@@ -802,4 +970,11 @@ export type NewVerificationDocument = typeof verificationDocuments.$inferInsert;
 export type UserUpload = typeof userUploads.$inferSelect;
 export type NewUserUpload = typeof userUploads.$inferInsert;
 
-export type Booking = typeof bookings
+export type Booking = typeof bookings.$inferSelect;
+export type NewBooking = typeof bookings.$inferInsert;
+
+export type Invoice = typeof invoices.$inferSelect;
+export type NewInvoice = typeof invoices.$inferInsert;
+
+export type Review = typeof reviews.$inferSelect;
+export type NewReview = typeof reviews.$inferInsert;

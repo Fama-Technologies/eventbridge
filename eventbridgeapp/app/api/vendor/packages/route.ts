@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { users, sessions, vendorProfiles, vendorPackages } from '@/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { 
+  users, 
+  sessions, 
+  vendorProfiles, 
+  vendorPackages,
+  subscriptionPlans,
+  vendorSubscriptions,
+  vendorUsage 
+} from '@/drizzle/schema';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import { verifyToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +56,130 @@ async function getCurrentUser() {
   return null;
 }
 
+// Helper function to get vendor's current subscription
+async function getVendorSubscription(vendorId: number) {
+  const now = new Date();
+  
+  const subscription = await db
+    .select({
+      subscription: vendorSubscriptions,
+      plan: subscriptionPlans,
+    })
+    .from(vendorSubscriptions)
+    .innerJoin(subscriptionPlans, eq(vendorSubscriptions.planId, subscriptionPlans.id))
+    .where(
+      and(
+        eq(vendorSubscriptions.vendorId, vendorId),
+        eq(vendorSubscriptions.status, 'active'),
+        lte(vendorSubscriptions.currentPeriodStart, now),
+        gte(vendorSubscriptions.currentPeriodEnd, now)
+      )
+    )
+    .limit(1);
+
+  return subscription[0] || null;
+}
+
+// Helper function to get vendor's current usage
+async function getVendorUsage(vendorId: number) {
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  
+  const usage = await db
+    .select()
+    .from(vendorUsage)
+    .where(
+      and(
+        eq(vendorUsage.vendorId, vendorId),
+        eq(vendorUsage.monthYear, currentMonth)
+      )
+    )
+    .limit(1);
+
+  return usage[0] || null;
+}
+
+// Helper function to increment usage
+async function incrementUsage(
+  vendorId: number, 
+  field: 'leadsUsed' | 'invoicesUsed' | 'packagesCreated' | 'imagesUploaded' | 'videosUploaded',
+  amount: number = 1
+) {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  
+  const existingUsage = await getVendorUsage(vendorId);
+  
+  if (existingUsage) {
+    const currentValue = (existingUsage.usageData as any)[field] || 0;
+    await db
+      .update(vendorUsage)
+      .set({
+        usageData: {
+          ...existingUsage.usageData,
+          [field]: currentValue + amount
+        },
+        updatedAt: new Date(),
+      })
+      .where(eq(vendorUsage.id, existingUsage.id));
+  } else {
+    await db.insert(vendorUsage).values({
+      vendorId,
+      monthYear: currentMonth,
+      usageData: {
+        [field]: amount
+      },
+    });
+  }
+}
+
+// Check if vendor can create more packages
+async function canCreatePackage(vendorId: number): Promise<{ allowed: boolean; reason?: string }> {
+  const subscriptionData = await getVendorSubscription(vendorId);
+  const usage = await getVendorUsage(vendorId);
+  
+  // Default to free plan if no subscription
+  if (!subscriptionData) {
+    const freePlan = await db
+      .select()
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.name, 'free'))
+      .limit(1);
+    
+    if (!freePlan[0]) {
+      return { allowed: true }; // If no free plan exists, allow creation
+    }
+    
+    const limits = freePlan[0].limits as any;
+    const currentPackages = (usage?.usageData as any)?.packagesCreated || 0;
+    
+    if (limits.maxPackages !== null && currentPackages >= (limits.maxPackages || 0)) {
+      return {
+        allowed: false,
+        reason: `You have reached the maximum limit of ${limits.maxPackages} packages on the free plan. Upgrade to Pro for unlimited packages.`
+      };
+    }
+    
+    return { allowed: true };
+  }
+
+  const { plan } = subscriptionData;
+  const limits = plan.limits as any;
+  const currentPackages = (usage?.usageData as any)?.packagesCreated || 0;
+  
+  if (limits.maxPackages === null) {
+    // Unlimited packages
+    return { allowed: true };
+  }
+  
+  if (currentPackages >= (limits.maxPackages || 0)) {
+    return {
+      allowed: false,
+      reason: `You have reached the maximum limit of ${limits.maxPackages} packages on your current plan. Upgrade to ${plan.name === 'pro' ? 'Business Pro' : 'Pro'} for more packages.`
+    };
+  }
+  
+  return { allowed: true };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -76,7 +208,26 @@ export async function GET(request: NextRequest) {
       .where(eq(vendorPackages.vendorId, vendorProfile.id))
       .orderBy(vendorPackages.displayOrder);
 
-    return NextResponse.json({ success: true, packages });
+    // Get subscription info for the frontend
+    const subscriptionData = await getVendorSubscription(vendorProfile.id);
+    const usage = await getVendorUsage(vendorProfile.id);
+    
+    let remainingPackages = null;
+    if (subscriptionData) {
+      const limits = subscriptionData.plan.limits as any;
+      const currentPackages = (usage?.usageData as any)?.packagesCreated || 0;
+      if (limits.maxPackages !== null) {
+        remainingPackages = Math.max(0, (limits.maxPackages || 0) - currentPackages);
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      packages,
+      subscription: subscriptionData,
+      usage: usage?.usageData || {},
+      remainingPackages
+    });
   } catch (error) {
     console.error('Get packages error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
@@ -109,6 +260,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Vendor profile not found' }, { status: 404 });
     }
 
+    // Check subscription limits
+    const packageCheck = await canCreatePackage(vendorProfile.id);
+    if (!packageCheck.allowed) {
+      return NextResponse.json({ 
+        success: false, 
+        error: packageCheck.reason,
+        upgradeRequired: true 
+      }, { status: 403 });
+    }
+
     const body = await request.json();
     console.log('Request body:', body);
 
@@ -135,9 +296,9 @@ export async function POST(request: Request) {
         vendorId: vendorProfile.id,
         name,
         description: body.description || null,
-        price: Number(body.price) || 0,
+        price: BigInt(body.price) || 0n, // Using BigInt for large UGX amounts
         priceMax: body.priceMax && Number.isFinite(Number(body.priceMax)) && Number(body.priceMax) > 0 
-          ? Number(body.priceMax) 
+          ? BigInt(body.priceMax) 
           : null,
         duration: body.duration && Number.isFinite(Number(body.duration)) && Number(body.duration) > 0
           ? Number(body.duration)
@@ -164,6 +325,10 @@ export async function POST(request: Request) {
       .returning();
 
     console.log('Package created successfully:', pkg);
+
+    // Increment usage counter
+    await incrementUsage(vendorProfile.id, 'packagesCreated');
+
     return NextResponse.json({ 
       success: true, 
       package: pkg 
@@ -173,7 +338,7 @@ export async function POST(request: Request) {
     console.error('Error details:', error.message, error.stack);
     return NextResponse.json({ 
       success: false, 
-      error: 'Internal server error',
+      error: 'Failed to create package. Please check the values and try again.',
       details: error.message 
     }, { status: 500 });
   }
@@ -241,9 +406,9 @@ export async function PATCH(request: NextRequest) {
       .set({
         name,
         description: body.description || null,
-        price: Number(body.price) || 0,
+        price: BigInt(body.price) || 0n, // Using BigInt for large UGX amounts
         priceMax: body.priceMax && Number.isFinite(Number(body.priceMax)) && Number(body.priceMax) > 0 
-          ? Number(body.priceMax) 
+          ? BigInt(body.priceMax) 
           : null,
         duration: body.duration && Number.isFinite(Number(body.duration)) && Number(body.duration) > 0
           ? Number(body.duration)

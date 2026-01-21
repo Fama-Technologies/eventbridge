@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Plus, Rocket, X, Trash2, Package, ShieldCheck, Loader2 } from "lucide-react";
+import { Check, Plus, Rocket, X, Trash2, Package, ShieldCheck, Loader2, CreditCard, Zap, Star } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { Switch } from "@/components/ui/switch";
 
@@ -21,6 +21,40 @@ export interface ServicePackage {
   tags?: string[];
   isPopular: boolean;
   isActive: boolean;
+}
+
+interface SubscriptionData {
+  currentSubscription: {
+    subscription: any;
+    plan: {
+      id: number;
+      name: string;
+      displayName: string;
+      limits: {
+        maxPackages: number | null;
+        [key: string]: any;
+      };
+      [key: string]: any;
+    };
+  } | null;
+  availablePlans: Array<{
+    id: number;
+    name: string;
+    displayName: string;
+    description: string;
+    priceMonthly: string;
+    priceYearly: string;
+    currency: string;
+    features: any;
+    limits: any;
+  }>;
+  usage: {
+    packagesCreated?: number;
+    [key: string]: any;
+  };
+  remainingPackages?: number | null;
+  isFreeTrial?: boolean;
+  trialEndsAt?: string;
 }
 
 interface ServicePackagesProps {
@@ -64,12 +98,14 @@ export default function ServicePackages({
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(!initialPackages);
   const [packages, setPackages] = useState<ServicePackage[]>(initialPackages || []);
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
   const [editingPackage, setEditingPackage] = useState<ServicePackage | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [packageForm, setPackageForm] = useState({ ...DEFAULT_PACKAGE_FORM });
   const [customPricingInput, setCustomPricingInput] = useState("");
   const [showCustomPricingInput, setShowCustomPricingInput] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (!initialPackages) {
@@ -82,10 +118,18 @@ export default function ServicePackages({
       setIsLoading(true);
       const response = await fetch("/api/vendor/packages");
       const data = await response.json();
-      console.log('Fetched packages:', data); // Debug log
+      console.log('Fetched packages:', data);
 
       if (data.success) {
         setPackages(data.packages || []);
+        setSubscriptionData({
+          currentSubscription: data.currentSubscription || null,
+          availablePlans: data.availablePlans || [],
+          usage: data.usage || {},
+          remainingPackages: data.remainingPackages,
+          isFreeTrial: data.isFreeTrial,
+          trialEndsAt: data.trialEndsAt
+        });
       }
     } catch (error) {
       console.error("Failed to fetch packages:", error);
@@ -95,9 +139,85 @@ export default function ServicePackages({
     }
   };
 
+  const fetchSubscriptionData = async () => {
+    try {
+      const response = await fetch("/api/vendor/subscription");
+      const data = await response.json();
+      
+      if (data.success) {
+        setSubscriptionData({
+          currentSubscription: data.currentSubscription || null,
+          availablePlans: data.availablePlans || [],
+          usage: data.usage || {},
+          remainingPackages: calculateRemainingPackages(data),
+          isFreeTrial: data.isFreeTrial,
+          trialEndsAt: data.trialEndsAt
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch subscription data:", error);
+    }
+  };
+
+  const calculateRemainingPackages = (data: any): number | null => {
+    if (!data.currentSubscription?.plan?.limits?.maxPackages) {
+      return null; // Unlimited
+    }
+    
+    const maxPackages = data.currentSubscription.plan.limits.maxPackages;
+    const currentPackages = data.usage?.packagesCreated || 0;
+    
+    return Math.max(0, maxPackages - currentPackages);
+  };
+
+  const canCreateMorePackages = (): { allowed: boolean; reason?: string } => {
+    if (!subscriptionData) {
+      return { allowed: true };
+    }
+
+    const currentPlan = subscriptionData.currentSubscription?.plan;
+    
+    // If no subscription, user is on free plan
+    if (!currentPlan) {
+      const currentPackages = subscriptionData.usage?.packagesCreated || 0;
+      if (currentPackages >= 2) { // Free plan limit
+        return {
+          allowed: false,
+          reason: "You've reached the 2 package limit on the free plan. Upgrade to create more packages."
+        };
+      }
+      return { allowed: true };
+    }
+
+    // Check plan limits
+    if (currentPlan.limits.maxPackages === null) {
+      return { allowed: true }; // Unlimited
+    }
+
+    const currentPackages = subscriptionData.usage?.packagesCreated || 0;
+    const maxPackages = currentPlan.limits.maxPackages;
+    
+    if (currentPackages >= maxPackages) {
+      return {
+        allowed: false,
+        reason: `You've reached the ${maxPackages} package limit on your ${currentPlan.displayName} plan.`
+      };
+    }
+
+    return { allowed: true };
+  };
+
   const handleSavePackage = async () => {
     if (isSaving) return;
     
+    // Check subscription limits
+    const canCreate = canCreateMorePackages();
+    if (!canCreate.allowed) {
+      addToast(canCreate.reason || "Cannot create more packages", "error");
+      setShowUpgradeModal(true);
+      return;
+    }
+
     // Validate required fields
     if (!packageForm.name.trim()) {
       addToast("Package title is required", "error");
@@ -141,7 +261,7 @@ export default function ServicePackages({
       isActive: true
     };
 
-    console.log('Saving package payload:', payload); // Debug log
+    console.log('Saving package payload:', payload);
 
     try {
       setIsSaving(true);
@@ -150,7 +270,7 @@ export default function ServicePackages({
         ? `/api/vendor/packages/${editingPackage?.id}`
         : "/api/vendor/packages";
 
-      console.log('Making request to:', endpoint, 'with method:', isEditing ? 'PATCH' : 'POST'); // Debug log
+      console.log('Making request to:', endpoint, 'with method:', isEditing ? 'PATCH' : 'POST');
 
       const response = await fetch(endpoint, {
         method: isEditing ? "PATCH" : "POST",
@@ -161,7 +281,7 @@ export default function ServicePackages({
       });
 
       const data = await response.json();
-      console.log('Response from server:', data); // Debug log
+      console.log('Response from server:', data);
 
       if (data.success) {
         const newPackage: ServicePackage = data.package;
@@ -175,6 +295,9 @@ export default function ServicePackages({
           onPackagesUpdate(updatedPackages);
         }
 
+        // Refresh subscription data
+        await fetchSubscriptionData();
+
         // Reset form and close modal
         setPackageForm({ ...DEFAULT_PACKAGE_FORM });
         setEditingPackage(null);
@@ -186,6 +309,10 @@ export default function ServicePackages({
           isEditing ? "Package updated successfully" : "Package created successfully", 
           "success"
         );
+      } else if (data.upgradeRequired) {
+        // Show upgrade modal
+        addToast(data.error || "Upgrade required to create more packages", "error");
+        setShowUpgradeModal(true);
       } else {
         // Handle API error response
         const errorMessage = data.error || data.message || "Failed to save package";
@@ -217,6 +344,9 @@ export default function ServicePackages({
           onPackagesUpdate(updatedPackages);
         }
 
+        // Refresh subscription data
+        await fetchSubscriptionData();
+
         addToast("Package deleted successfully", "success");
       } else {
         addToast(data.error || "Failed to delete package", "error");
@@ -243,7 +373,24 @@ export default function ServicePackages({
     return hours % 1 === 0 ? `${hours} hour${hours !== 1 ? "s" : ""}` : `${hours.toFixed(1)} hours`;
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   const openCreateModal = () => {
+    const canCreate = canCreateMorePackages();
+    if (!canCreate.allowed) {
+      addToast(canCreate.reason || "Cannot create more packages", "error");
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setEditingPackage(null);
     setPackageForm({ ...DEFAULT_PACKAGE_FORM });
     setCustomPricingInput("");
@@ -298,6 +445,13 @@ export default function ServicePackages({
     setIsSaving(false);
   };
 
+  const handleUpgrade = (planId: number) => {
+    // In a real implementation, this would redirect to checkout
+    console.log('Upgrading to plan:', planId);
+    addToast("Redirecting to checkout...", "info");
+    // window.location.href = `/checkout?plan=${planId}`;
+  };
+
   const updateFeature = (index: number, value: string) => {
     const newFeatures = [...packageForm.features];
     newFeatures[index] = value;
@@ -341,8 +495,16 @@ export default function ServicePackages({
     setPackageForm({ ...packageForm, tags: next });
   };
 
-  const isFreeTier = packages.length >= 2;
-  const remainingFreePackages = Math.max(0, 2 - packages.length);
+  // Calculate remaining packages based on subscription
+  const remainingPackages = subscriptionData?.remainingPackages;
+  const currentPlan = subscriptionData?.currentSubscription?.plan;
+  const currentPlanName = currentPlan?.displayName || "Free";
+  const maxPackages = currentPlan?.limits?.maxPackages || 2;
+  const currentPackages = subscriptionData?.usage?.packagesCreated || 0;
+  const isUnlimited = maxPackages === null;
+  
+  const isFreeTier = !currentPlan || currentPlan.name === 'free';
+  const canAddMore = isUnlimited || (remainingPackages !== null && remainingPackages !== undefined && remainingPackages > 0);
 
   // Loading state
   if (isLoading && !initialPackages) {
@@ -375,14 +537,22 @@ export default function ServicePackages({
         <div>
           <h2 className="text-xl font-bold text-shades-black">Service Packages</h2>
           <p className="text-sm text-neutrals-06 mt-1">
-            {packages.length} package{packages.length !== 1 ? "s" : ""} created
-            {isFreeTier && " • Free tier limit reached"}
+            {packages.length} package{packages.length !== 1 ? "s" : ""} created • 
+            Current Plan: <span className="font-semibold">{currentPlanName}</span>
+            {!isUnlimited && remainingPackages !== null && remainingPackages !== undefined && (
+              <span className="ml-2">
+                ({remainingPackages} of {maxPackages} remaining)
+              </span>
+            )}
+            {isUnlimited && (
+              <span className="ml-2 text-accents-success">(Unlimited)</span>
+            )}
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          disabled={isFreeTier}
-          className={`flex items-center gap-2 font-semibold transition-colors ${isFreeTier 
+          disabled={!canAddMore}
+          className={`flex items-center gap-2 font-semibold transition-colors ${!canAddMore 
             ? "text-neutrals-05 cursor-not-allowed" 
             : "text-primary-01 hover:text-primary-02"
           }`}
@@ -391,6 +561,19 @@ export default function ServicePackages({
           Add Package
         </button>
       </div>
+
+      {subscriptionData?.isFreeTrial && (
+        <div className="mb-6 p-4 bg-accents-peach/20 rounded-xl border border-accents-peach/30">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-accents-peach" />
+            <span className="text-sm font-semibold text-shades-black">Free Trial Active</span>
+          </div>
+          <p className="text-sm text-neutrals-07 mt-1">
+            Your free trial ends on {formatDate(subscriptionData.trialEndsAt)}. 
+            Upgrade to keep all your packages.
+          </p>
+        </div>
+      )}
 
       <div className="mb-8">
         <h3 className="text-lg font-bold text-shades-black mb-4">Your Packages</h3>
@@ -466,46 +649,47 @@ export default function ServicePackages({
         )}
       </div>
 
-      {isFreeTier && (
+      {!canAddMore && (
         <div className="bg-gradient-to-r from-accents-peach/40 via-accents-peach/20 to-transparent rounded-2xl p-6 md:p-8">
           <div className="flex items-center gap-2 mb-2 text-primary-01 font-bold text-xs tracking-wider uppercase">
             <Rocket className="w-4 h-4" />
-            Boost Your Visibility
+            Upgrade Required
           </div>
-          <h3 className="text-2xl font-bold text-shades-black mb-8">Upgrade to Pro Tier</h3>
+          <h3 className="text-2xl font-bold text-shades-black mb-8">You've Reached Your Package Limit</h3>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Current Plan */}
             <div className="bg-shades-white/60 rounded-xl p-6 border border-neutrals-03 relative">
               <div className="absolute top-4 right-4 px-3 py-1 bg-neutrals-04 rounded text-xs font-semibold text-shades-white">
                 Current
               </div>
-              <h4 className="text-lg font-bold text-shades-black mb-6">Free Tier</h4>
-
+              <h4 className="text-lg font-bold text-shades-black mb-6">{currentPlanName}</h4>
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-3 text-sm text-shades-black">
                   <Check className="w-4 h-4 text-accents-discount" />
-                  2 Service Packages
-                </li>
-                <li className="flex items-center gap-3 text-sm text-shades-black">
-                  <Check className="w-4 h-4 text-accents-discount" />
-                  Standard Search Listing
+                  {maxPackages === null ? 'Unlimited' : maxPackages} Service Packages
                 </li>
                 <li className="flex items-center gap-3 text-sm text-neutrals-06">
                   <X className="w-4 h-4" />
                   No Priority Leads
                 </li>
+                <li className="flex items-center gap-3 text-sm text-neutrals-06">
+                  <X className="w-4 h-4" />
+                  Limited Analytics
+                </li>
               </ul>
             </div>
 
+            {/* Pro Plan */}
             <div className="bg-gradient-to-b from-primary-01/10 to-transparent rounded-xl p-6 border border-primary-01/30 relative">
               <div className="absolute -top-3 right-4 px-3 py-1 bg-primary-01 rounded text-xs font-bold text-shades-white uppercase shadow-sm">
-                Recommended
+                Popular
               </div>
               <div className="flex justify-between items-start mb-6">
-                <h4 className="text-lg font-bold text-shades-black">Pro Tier</h4>
+                <h4 className="text-lg font-bold text-shades-black">Pro</h4>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-primary-01">$29</span>
-                  <span className="text-sm text-shades-black">/mo</span>
+                  <span className="text-2xl font-bold text-primary-01">35,000</span>
+                  <span className="text-sm text-shades-black"> UGX/mo</span>
                 </div>
               </div>
 
@@ -524,27 +708,84 @@ export default function ServicePackages({
                 </li>
               </ul>
 
-              <button className="w-full py-3 bg-primary-01 hover:bg-primary-02 text-shades-white font-bold rounded-xl shadow-lg shadow-primary-01/20 transition-all active:scale-[0.98]">
-                Upgrade Now
+              <button 
+                onClick={() => handleUpgrade(2)} // Assuming Pro plan has ID 2
+                className="w-full py-3 bg-primary-01 hover:bg-primary-02 text-shades-white font-bold rounded-xl shadow-lg shadow-primary-01/20 transition-all active:scale-[0.98]"
+              >
+                Upgrade to Pro
+              </button>
+            </div>
+
+            {/* Business Pro Plan */}
+            <div className="bg-gradient-to-b from-accents-peach/10 to-transparent rounded-xl p-6 border border-accents-peach/30 relative">
+              <div className="absolute -top-3 right-4 px-3 py-1 bg-accents-peach rounded text-xs font-bold text-shades-white uppercase shadow-sm">
+                Premium
+              </div>
+              <div className="flex justify-between items-start mb-6">
+                <h4 className="text-lg font-bold text-shades-black">Business Pro</h4>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-accents-peach">52,500</span>
+                  <span className="text-sm text-shades-black"> UGX/mo</span>
+                </div>
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3 text-sm text-shades-black">
+                  <Check className="w-4 h-4 text-accents-peach" />
+                  Unlimited Packages
+                </li>
+                <li className="flex items-center gap-3 text-sm text-shades-black">
+                  <Check className="w-4 h-4 text-accents-peach" />
+                  Top Search Listing
+                </li>
+                <li className="flex items-center gap-3 text-sm text-shades-black">
+                  <Check className="w-4 h-4 text-accents-peach" />
+                  Customer Insights & Analytics
+                </li>
+              </ul>
+
+              <button 
+                onClick={() => handleUpgrade(3)} // Assuming Business Pro plan has ID 3
+                className="w-full py-3 bg-accents-peach hover:bg-accents-peach/80 text-shades-white font-bold rounded-xl shadow-lg shadow-accents-peach/20 transition-all active:scale-[0.98]"
+              >
+                Upgrade to Business Pro
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {!isFreeTier && packages.length > 0 && (
+      {canAddMore && !isUnlimited && (
         <div className="bg-neutrals-01 rounded-xl p-6 border border-neutrals-03">
           <div className="flex items-center gap-3 mb-2">
             <Package className="w-5 h-5 text-primary-01" />
-            <p className="text-sm font-medium text-shades-black">Free Tier Limits</p>
+            <p className="text-sm font-medium text-shades-black">Package Usage</p>
           </div>
-          <p className="text-sm text-neutrals-06">
-            You can create {remainingFreePackages} more package{remainingFreePackages !== 1 ? "s" : ""} on the free tier.
-            Upgrade to Pro for unlimited packages and premium features.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutrals-06">
+                You have created {currentPackages} of {maxPackages} packages on your {currentPlanName} plan.
+              </p>
+              <p className="text-sm text-neutrals-06 mt-1">
+                {remainingPackages !== null && remainingPackages !== undefined 
+                  ? `${remainingPackages} package${remainingPackages !== 1 ? 's' : ''} remaining.`
+                  : "Unlimited packages available."}
+              </p>
+            </div>
+            {isFreeTier && (
+              <button 
+                onClick={() => setShowUpgradeModal(true)}
+                className="flex items-center gap-2 text-primary-01 hover:text-primary-02 text-sm font-semibold"
+              >
+                <CreditCard className="w-4 h-4" />
+                Upgrade for Unlimited
+              </button>
+            )}
+          </div>
         </div>
       )}
 
+      {/* Package Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
           <div
@@ -835,6 +1076,78 @@ export default function ServicePackages({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 animate-in fade-in">
+          <div className="w-full max-w-2xl bg-shades-white rounded-3xl border border-neutrals-02 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-neutrals-02">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-01/10 rounded-lg">
+                  <Rocket className="w-5 h-5 text-primary-01" />
+                </div>
+                <h3 className="text-lg font-bold text-shades-black">Upgrade Your Plan</h3>
+              </div>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="text-neutrals-06 hover:text-shades-black transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-8">
+              <p className="text-neutrals-07 mb-6">
+                You've reached the package limit on your current plan. Upgrade to create more service packages and unlock premium features.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {subscriptionData?.availablePlans
+                  ?.filter(plan => plan.name !== 'free')
+                  .map((plan) => (
+                    <div key={plan.id} className="bg-neutrals-01 rounded-xl p-6 border border-neutrals-03">
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="text-lg font-bold text-shades-black">{plan.displayName}</h4>
+                        <div className="text-right">
+                          <span className="text-2xl font-bold text-primary-01">{plan.priceMonthly}</span>
+                          <span className="text-sm text-shades-black"> {plan.currency}/mo</span>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm text-neutrals-07 mb-4">{plan.description}</p>
+                      
+                      <ul className="space-y-2 mb-6">
+                        <li className="flex items-center gap-2 text-sm text-shades-black">
+                          <Check className="w-4 h-4 text-accents-discount" />
+                          Unlimited Service Packages
+                        </li>
+                        {plan.features?.topListing && (
+                          <li className="flex items-center gap-2 text-sm text-shades-black">
+                            <Check className="w-4 h-4 text-accents-discount" />
+                            Top Search Listing
+                          </li>
+                        )}
+                        {plan.features?.priorityLeads && (
+                          <li className="flex items-center gap-2 text-sm text-shades-black">
+                            <Check className="w-4 h-4 text-accents-discount" />
+                            Priority Leads
+                          </li>
+                        )}
+                      </ul>
+                      
+                      <button
+                        onClick={() => handleUpgrade(plan.id)}
+                        className="w-full py-3 bg-primary-01 hover:bg-primary-02 text-shades-white font-bold rounded-xl transition-colors"
+                      >
+                        Upgrade to {plan.displayName}
+                      </button>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
