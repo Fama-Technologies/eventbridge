@@ -132,7 +132,7 @@ const CATEGORY_TEMPLATES = [
     name: 'Product Launchers',
     slug: 'product-launchers',
     description: 'Everything you need for a perfect product launch',
-    imageUrl: '/categories/Product Launchers.png',
+    imageUrl: '/categories/Product Launches.png',
   },
   {
     id: '20',
