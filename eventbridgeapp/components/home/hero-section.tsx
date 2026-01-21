@@ -240,14 +240,14 @@ export default function HeroSection() {
         </div>
 
         {/* Popular Categories */}
-        <div className="mt-8 flex items-center justify-center gap-4 text-shades-white">
+        <div className="mt-8 flex items-center justify-center gap-4 text-white">
           <span className="text-sm">Popular:</span>
           <div className="flex gap-3">
             {popularCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setWhat(category)}
-                className="px-4 py-2 rounded-full border border-shades-white/30 hover:bg-shades-primary-01 hover:text-shades-white transition-colors text-sm"
+                className="px-4 py-2 rounded-full border border-shades-white/30 hover:bg-primary-01 hover:text-shades-white transition-colors text-sm"
               >
                 {category}
               </button>
