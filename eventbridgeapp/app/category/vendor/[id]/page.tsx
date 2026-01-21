@@ -107,7 +107,7 @@ function FloatingHearts({ show }: { show: boolean }) {
         .ig-heart {
           position: absolute;
           bottom: 50%;
-          color: #e91e63;
+          color: var(--primary-01);
           animation: igFloat 1.8s ease-out forwards;
         }
         @keyframes igFloat {
@@ -277,7 +277,7 @@ export default function VendorProfilePage() {
                     setTimeout(() => setShowFloatingHearts(true), 50); // Then trigger
                   }}
                   className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isFavorite
-                    ? 'bg-primary-01 text-white'
+                    ? 'bg-primary-01 text-shades-white'
                     : 'bg-shades-white text-neutrals-07 hover:bg-white'
                     }`}
                 >
@@ -372,7 +372,7 @@ export default function VendorProfilePage() {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-neutrals-03 dark:border-neutrals-07 mb-6">
+            <div className="border-b border-neutrals-03  mb-6">
               <div className="flex gap-6 overflow-x-auto">
                 {tabs.map((tab) => (
                   <button
@@ -398,14 +398,14 @@ export default function VendorProfilePage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setPackageScrollIndex(Math.max(0, packageScrollIndex - 1))}
-                      className="w-8 h-8 rounded-full border border-neutrals-04 dark:border-neutrals-07 flex items-center justify-center text-neutrals-06 hover:border-primary-01 hover:text-primary-01 transition-colors disabled:opacity-50"
+                      className="w-8 h-8 rounded-full border border-neutrals-04  flex items-center justify-center text-neutrals-06 hover:border-primary-01 hover:text-primary-01 transition-colors disabled:opacity-50"
                       disabled={packageScrollIndex === 0}
                     >
                       <ChevronLeft size={16} />
                     </button>
                     <button
                       onClick={() => setPackageScrollIndex(Math.min(vendor.packages.length - 1, packageScrollIndex + 1))}
-                      className="w-8 h-8 rounded-full border border-neutrals-04 dark:border-neutrals-07 flex items-center justify-center text-neutrals-06 hover:border-primary-01 hover:text-primary-01 transition-colors disabled:opacity-50"
+                      className="w-8 h-8 rounded-full border border-neutrals-04  flex items-center justify-center text-neutrals-06 hover:border-primary-01 hover:text-primary-01 transition-colors disabled:opacity-50"
                       disabled={packageScrollIndex >= vendor.packages.length - 1}
                     >
                       <ChevronRight size={16} />
@@ -414,53 +414,70 @@ export default function VendorProfilePage() {
                 </div>
 
                 {/* Packages Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendor.packages.map((pkg) => (
-                    <div
-                      key={pkg.id}
-                      className="border border-neutrals-03 dark:border-neutrals-07 rounded-xl p-5 hover:border-primary-01 transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-foreground">{pkg.name}</h3>
-                        {pkg.badge && (
-                          <span className={`text-xs px-2 py-0.5 rounded ${pkg.badge === 'Best Value'
-                            ? 'bg-primary-01 text-white'
-                            : 'bg-primary-01/20 text-primary-01'
-                            }`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {vendor.packages.map((pkg) => {
+                    const isFeatured = pkg.badge === 'Best Value' || pkg.badge === 'Popular';
+                    return (
+                      <div
+                        key={pkg.id}
+                        className={`relative rounded-2xl p-6 flex flex-col transition-all duration-300 ${isFeatured
+                          ? 'border-[2px] border-primary-01 shadow-lg scale-105 z-10'
+                          : 'border border-neutrals-03  hover:border-primary-01/50 hover:shadow-md'
+                          } bg-shades-white `}
+                      >
+                        {/* Featured Badge - Right aligned tab style */}
+                        {isFeatured && pkg.badge && (
+                          <div className="absolute top-0 right-0 bg-primary-01 text-shades-white text-[10px] font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-lg tracking-wider uppercase">
                             {pkg.badge}
-                          </span>
+                          </div>
                         )}
+
+                        <div className="flex items-start justify-between mb-4">
+                          <h3 className="text-xl font-bold text-shades-black  pr-8">{pkg.name}</h3>
+                        </div>
+
+                        <p className="text-neutrals-07 text-sm mb-6 min-h-[3rem] leading-relaxed">
+                          {pkg.description}
+                        </p>
+
+                        <div className="mb-6">
+                          {pkg.priceType === 'custom' ? (
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-3xl font-bold text-shades-black ">Custom</span>
+                              <span className="text-neutrals-06 text-sm">pricing</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-2xl font-bold text-shades-black ">
+                                UGX {formatCurrency(pkg.price)}<span className="text-neutrals-06 text-sm">/ event</span>
+                              </span>
+
+                            </div>
+                          )}
+                        </div>
+
+                        <ul className="space-y-4 mb-8 flex-grow">
+                          {pkg.features.map((feature, index) => (
+                            <li key={index} className="flex items-start gap-3 text-sm text-neutrals-07 font-medium">
+                              <div className="mt-0.5 rounded-full border border-primary-01 p-[1px] shrink-0">
+                                <Check size={10} className="text-primary-01" strokeWidth={3} />
+                              </div>
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+
+                        <button
+                          className={`w-full py-3.5 px-4 rounded-xl text-base font-bold transition-all duration-300 ${isFeatured
+                            ? 'bg-primary-01 text-shades-white hover:bg-primary-02 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                            : 'bg-transparent border border-primary-01 text-primary-01 hover:bg-primary-01 hover:text-shades-white'
+                            }`}
+                        >
+                          Make Request
+                        </button>
                       </div>
-                      <p className="text-neutrals-06 text-sm mb-4">{pkg.description}</p>
-
-                      {pkg.priceType === 'custom' ? (
-                        <div className="mb-4">
-                          <span className="text-lg font-bold text-foreground">Custom</span>
-                          <span className="text-neutrals-06 text-sm"> pricing</span>
-                        </div>
-                      ) : (
-                        <div className="mb-4">
-                          <span className="text-lg font-bold text-foreground">
-                            UGX {formatCurrency(pkg.price)}
-                          </span>
-                          <span className="text-neutrals-06 text-sm">/ event</span>
-                        </div>
-                      )}
-
-                      <ul className="space-y-2 mb-4">
-                        {pkg.features.map((feature, index) => (
-                          <li key={index} className="flex items-center gap-2 text-sm text-neutrals-07">
-                            <Check size={14} className="text-primary-01 shrink-0" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-
-                      <button className="w-full py-2 px-4 border border-primary-01 text-primary-01 rounded-lg text-sm font-medium hover:bg-primary-01 hover:text-white transition-colors">
-                        View Details
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -480,7 +497,7 @@ export default function VendorProfilePage() {
 
           {/* Right Column - Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-4 bg-shades-white dark:bg-shades-black border border-neutrals-03 dark:border-neutrals-07 rounded-xl p-6 shadow-sm">
+            <div className="sticky top-4 bg-shades-white  border border-neutrals-03  rounded-xl p-6 shadow-sm">
               <p className="text-neutrals-06 text-sm mb-1">Starting from</p>
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-2xl font-bold text-foreground">
@@ -496,22 +513,22 @@ export default function VendorProfilePage() {
 
               {/* Date and Guests */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="border border-neutrals-03 dark:border-neutrals-07 rounded-lg p-3">
+                <div className="border border-neutrals-03  rounded-lg p-3">
                   <p className="text-xs text-neutrals-06 mb-1">DATE</p>
                   <p className="text-primary-01 text-sm font-medium">Add Date</p>
                 </div>
-                <div className="border border-neutrals-03 dark:border-neutrals-07 rounded-lg p-3">
+                <div className="border border-neutrals-03  rounded-lg p-3">
                   <p className="text-xs text-neutrals-06 mb-1">GUESTS</p>
                   <p className="text-primary-01 text-sm font-medium">{vendor.guestCapacity}</p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <button className="w-full bg-primary-01 text-white py-3 rounded-lg font-medium mb-3 hover:bg-primary-02 transition-colors">
+              <button className="w-full bg-primary-01 text-shades-white py-3 rounded-lg font-medium mb-3 hover:bg-primary-02 transition-colors">
                 Make Inquiry
               </button>
 
-              <button className="w-full border border-neutrals-03 dark:border-neutrals-07 text-foreground py-3 rounded-lg font-medium mb-4 hover:border-foreground transition-colors flex items-center justify-center gap-2">
+              <button className="w-full border border-neutrals-03  text-foreground py-3 rounded-lg font-medium mb-4 hover:border-foreground transition-colors flex items-center justify-center gap-2">
                 <MessageSquare size={16} />
                 Chat with Vendor
               </button>
@@ -525,7 +542,7 @@ export default function VendorProfilePage() {
                 <span className="text-neutrals-07">Verified by EventBridge</span>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-neutrals-03 dark:border-neutrals-07">
+              <div className="mt-4 pt-4 border-t border-neutrals-03 ">
                 <button className="flex items-center gap-2 text-neutrals-06 text-sm hover:text-foreground transition-colors">
                   <Flag size={14} />
                   Report this listing
@@ -601,17 +618,17 @@ function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
             setIsFavorite(!isFavorite);
           }}
           className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isFavorite
-            ? 'bg-primary-01 text-white'
-            : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
+            ? 'bg-primary-01 text-shades-white'
+            : 'bg-white/20 backdrop-blur-sm text-shades-white hover:bg-white/30'
             }`}
         >
           <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
 
         {/* Rating Badge */}
-        <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-          <Star size={12} className="text-white" fill="white" />
-          <span className="text-white text-xs font-medium">{vendor.rating.toFixed(2)}</span>
+        <div className="absolute bottom-3 right-3 bg-shades-black/60 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+          <Star size={12} className="text-shades-white" fill="white" />
+          <span className="text-shades-white text-xs font-medium">{vendor.rating.toFixed(2)}</span>
         </div>
 
         {/* Image Dots */}
@@ -712,7 +729,7 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
       {/* Reviews List */}
       <div className="space-y-6">
         {MOCK_REVIEWS.map((review) => (
-          <div key={review.id} className="border border-neutrals-03 dark:border-neutrals-07 rounded-xl p-5">
+          <div key={review.id} className="border border-neutrals-03  rounded-xl p-5">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-neutrals-03 overflow-hidden relative">
                 <Image
@@ -736,7 +753,7 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
         ))}
 
         {/* Load More Button */}
-        <button className="w-full py-3 border border-neutrals-03 dark:border-neutrals-07 rounded-lg text-foreground text-sm font-medium hover:border-foreground transition-colors">
+        <button className="w-full py-3 border border-neutrals-03  rounded-lg text-foreground text-sm font-medium hover:border-foreground transition-colors">
           Show all reviews
         </button>
       </div>
@@ -749,9 +766,9 @@ function ReviewsTab({ reviewCount }: { reviewCount: number }) {
           {[5, 4, 3, 2, 1].map((stars) => (
             <div key={stars} className="flex items-center gap-2">
               <span className="text-xs text-neutrals-06 w-3">{stars}</span>
-              <div className="flex-1 h-2 bg-neutrals-03 dark:bg-neutrals-07 rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-neutrals-03  rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-neutrals-08 dark:bg-neutrals-04 rounded-full"
+                  className="h-full bg-neutrals-08  rounded-full"
                   style={{ width: stars === 5 ? '85%' : stars === 4 ? '10%' : '5%' }}
                 />
               </div>
@@ -793,8 +810,8 @@ function PortfolioTab() {
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat
-              ? 'bg-primary-01 text-white'
-              : 'bg-neutrals-02 dark:bg-neutrals-08 text-foreground hover:bg-neutrals-03 dark:hover:bg-neutrals-07'
+              ? 'bg-primary-01 text-shades-white'
+              : 'bg-neutrals-02  text-foreground hover:bg-neutrals-03  '
               }`}
           >
             {cat}

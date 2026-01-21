@@ -83,9 +83,9 @@ export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const popularCategories = [
-    { label: 'Photographer', slug: 'photographer' },
+    { label: 'Photographer', slug: 'photography' },
     { label: 'Catering', slug: 'catering' },
-    { label: 'Venue', slug: 'venue' },
+    { label: 'Venue', slug: 'venues' },
     { label: 'Weddings', slug: 'weddings' },
   ];
   const slideContent = [

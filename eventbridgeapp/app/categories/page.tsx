@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CategoryHeader, CategoryFooter, PlanningEventCTA } from '@/components/category';
+import Footer from '@/components/footer';
 
 export default function CategoriesPage() {
 
@@ -77,14 +78,11 @@ export default function CategoriesPage() {
           </div>
         )}
 
-        {/* Planning Event CTA */}
-        <div className="mt-16">
-          <PlanningEventCTA />
-        </div>
+
       </main>
 
       {/* Footer */}
-      <CategoryFooter />
+      <Footer />
     </div>
   );
 }
