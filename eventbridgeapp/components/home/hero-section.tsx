@@ -145,7 +145,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 transition-all duration-500 min-h-[3.6em] md:min-h-[2.4em] flex items-end justify-center">
+        <h1 className="text-4xl md:text-7xl font-bold text-white mb-4 transition-all duration-500 min-h-[3.6em] md:min-h-[2.4em] flex items-end justify-center">
           <span>{slideContent[currentSlide]?.title}</span>
         </h1>
         <p className="text-white text-base md:text-lg mb-8 transition-all duration-500 min-h-[3em] flex items-start justify-center">
