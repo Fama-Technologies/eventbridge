@@ -96,6 +96,50 @@ const CATEGORY_TEMPLATES = [
     slug: 'graduations',
     description: 'Everything you need for a perfect graduation',
     imageUrl: '/categories/Graduations.jpg',
+  }, {
+    id: '14',
+    name: 'Corporate',
+    slug: 'corporate',
+    description: 'Everything you need for a perfect corporate event',
+    imageUrl: '/categories/Corporate.jpg',
+  }, {
+    id: '15',
+    name: 'Conferences',
+    slug: 'conferences',
+    description: 'Everything you need for a perfect conference',
+    imageUrl: '/categories/Conferences.jpg',
+  }, {
+    id: '16',
+    name: 'Funerals',
+    slug: 'Funerals',
+    description: 'Everything you need for a perfect Funerals for your beloved ones',
+    imageUrl: '/categories/Funerals.jpg',
+  }, {
+    id: '17',
+    name: 'Graduations',
+    slug: 'Graduations',
+    description: 'Let us help you plan your perfect graduation',
+    imageUrl: '/categories/Graduations.jpg',
+  }, {
+    id: '18',
+    name: 'Parties',
+    slug: 'parties',
+    description: 'Everything you need for a perfect party',
+    imageUrl: '/categories/Parties.jpg',
+  },
+  {
+    id: '19',
+    name: 'Product Launchers',
+    slug: 'product-launchers',
+    description: 'Everything you need for a perfect product launch',
+    imageUrl: '/categories/Product Launchers.png',
+  },
+  {
+    id: '20',
+    name: 'Workshops',
+    slug: 'workshops',
+    description: 'Everything you need for a perfect workshop',
+    imageUrl: '/categories/Workshops.jpg',
   }
 
 ];
