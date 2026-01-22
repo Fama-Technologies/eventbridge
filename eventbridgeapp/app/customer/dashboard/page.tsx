@@ -17,6 +17,8 @@ export default function PlannerDashboard() {
                 <p className="text-neutrals-06">Your events are looking spectacular today.</p>
             </div>
 
+            <DashboardBanner />
+
 
             <StatsGrid />
 

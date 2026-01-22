@@ -78,7 +78,7 @@ export default function LoginPage() {
             targetUrl = "/admin/dashboard";
             break;
           case 'customer':
-            targetUrl = "/customer";
+            targetUrl = "/customer/dashboard";
             break;
           case 'planner':
             targetUrl = "/planner/dashboard";

@@ -191,7 +191,7 @@ export const authOptions: NextAuthOptions = {
               id: true,
             },
           });
-          
+
           if (dbUser) {
             token.accountType = dbUser.accountType as AccountType;
             token.id = dbUser.id.toString();
@@ -233,9 +233,9 @@ export const authOptions: NextAuthOptions = {
       if (url.includes('vendor') || url.includes('accountType=VENDOR')) {
         return `${baseUrl}/vendor/dashboard`;
       }
-      
+
       if (url.includes('customer') || url.includes('accountType=CUSTOMER')) {
-        return `${baseUrl}/dashboard`;
+        return `${baseUrl}/customer/dashboard`;
       }
 
       if (url.startsWith('/')) {
@@ -251,11 +251,11 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, isNewUser }) {
-      console.log('Sign in event:', { 
+      console.log('Sign in event:', {
         userId: user.id,
         email: user.email,
         provider: account?.provider,
-        isNewUser 
+        isNewUser
       });
     },
   },
