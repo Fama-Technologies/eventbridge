@@ -118,17 +118,25 @@ export default function ReceiptPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-neutrals-06 uppercase tracking-wider">Amount Paid</label>
-                                    <div className="p-3 bg-accents-discount/5 border border-accents-discount rounded-4xl">
-                                        <p className="text-sm font-bold text-accents-discount">UGX {amountPaid.toLocaleString()}</p>
+                                    <div className="flex items-center gap-2 p-3 bg-accents-discount/5 border border-accents-discount rounded-4xl">
+                                        <span className="text-xs font-semibold text-accents-discount">UGX</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={Number.isNaN(amountPaid) ? '' : amountPaid}
+                                            onChange={(e) => setAmountPaid(Number(e.target.value))}
+                                            className="w-full bg-transparent text-sm font-bold text-accents-discount outline-none"
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-neutrals-06 uppercase tracking-wider">Remaining Balance</label>
                                     <input
-                                        type="text"
-                                        value={remainingBalance > 0 ? `UGX ${remainingBalance.toLocaleString()}` : 'UGX 0'}
-                                        readOnly
-                                        className="w-full p-3 bg-neutrals-01 border border-neutrals-03 rounded-4xl text-neutrals-05 outline-none"
+                                        type="number"
+                                        min="0"
+                                        value={Number.isNaN(remainingBalance) ? '' : remainingBalance}
+                                        onChange={(e) => setRemainingBalance(Number(e.target.value))}
+                                        className="w-full p-3 bg-shades-white border border-neutrals-03 rounded-4xl text-shades-black focus:border-[#ff5e3a] focus:ring-1 focus:ring-[#ff5e3a] outline-none transition-all"
                                     />
                                 </div>
                             </div>
@@ -309,8 +317,14 @@ export default function ReceiptPage() {
                         <div className="bg-neutrals-02/90 p-6 rounded-2xl mb-12 border-1 border-accents-discount">
                             <div className="flex flex-col items-center justify-center gap-2">
                                 <p className="text-[9px] uppercase tracking-widest flex justify-end font-bold text-accents-discount ">TOTAL AMOUNT RECEIVED</p>
-                                <p className="text-2xl font-black text-accents-discount">UGX {transaction.amount.toLocaleString()}</p>
+                                <p className="text-2xl font-black text-accents-discount">UGX {amountPaid.toLocaleString()}</p>
+                                <p className="text-[9px] uppercase tracking-widest font-bold text-neutrals-05">BALANCE REMAINING</p>
+                                <p className="text-sm font-bold text-shades-black">UGX {remainingBalance.toLocaleString()}</p>
                             </div>
+                        </div>
+
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[10px] text-amber-900">
+                            <span className="font-bold uppercase tracking-widest">Warning:</span> Event Bridge does not process or hold funds. Parties must perform their own due diligence and complete payments directly with the vendor.
                         </div>
 
                         {/* Signature */}

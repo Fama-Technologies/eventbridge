@@ -19,6 +19,7 @@ export default function CreateInvoicePage() {
     const leadId = searchParams.get('leadId');
 
     // State for invoice details
+    const [invoiceId, setInvoiceId] = useState(leadId ?? 'TX-1003');
     const [clientName, setClientName] = useState('Sarah Jenkins');
     const [eventName, setEventName] = useState('Wedding Reception');
     const [invoiceDate, setInvoiceDate] = useState('2023-10-24'); // Default from screenshot
@@ -128,6 +129,15 @@ export default function CreateInvoicePage() {
                         <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-neutrals-02">
                             <div className="col-span-2">
                                 <h3 className="text-sm font-bold text-neutrals-06 uppercase tracking-wider mb-4">Vendor Information</h3>
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                                <label className="text-xs font-semibold text-neutrals-06 uppercase tracking-wider">Invoice / Transaction ID</label>
+                                <input
+                                    type="text"
+                                    value={invoiceId}
+                                    onChange={(e) => setInvoiceId(e.target.value)}
+                                    className="w-full p-3 bg-shades-white border border-neutrals-03 rounded-xl text-shades-black focus:border-[#ff5e3a] focus:ring-1 focus:ring-[#ff5e3a] outline-none transition-all"
+                                />
                             </div>
                             <div className="col-span-2 space-y-2">
                                 <label className="text-xs font-semibold text-neutrals-06 uppercase tracking-wider">Business Name</label>
@@ -327,7 +337,7 @@ export default function CreateInvoicePage() {
                         style={{ transform: `scale(${zoomLevel})` }}
                     >
                         <InvoicePreview data={{
-                            invoiceNumber: 'INV-2023-00892',
+                            invoiceNumber: invoiceId,
                             issueDate: new Date(invoiceDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                             dueDate: new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                             clientName: clientName,

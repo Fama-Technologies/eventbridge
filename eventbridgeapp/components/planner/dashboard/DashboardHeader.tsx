@@ -33,7 +33,7 @@ export default function DashboardHeader({ onOpenMobileMenu }: { onOpenMobileMenu
                 {/* Right Section */}
                 <div className="flex items-center gap-3">
                     <Link
-                        href="/planner/providers"
+                        href="/"
                         className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary-01 hover:bg-primary-01/10 transition-colors"
                     >
                         Browse Service Providers

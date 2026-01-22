@@ -15,8 +15,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { signOut } from 'next-auth/react';
 
 const navigation = [
     { name: 'Dashboard', href: '/customer/dashboard', icon: LayoutDashboard },
@@ -40,16 +41,7 @@ export default function PlannerSidebar() {
 
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
-        try {
-            await fetch('/api/logout', { method: 'POST' });
-            toast.success('Logged out successfully');
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 500);
-        } catch (error) {
-            console.error('Logout failed', error);
-            toast.error('Logout failed');
-        }
+        await signOut({ callbackUrl: '/login' });
     };
 
     const secondaryNavigation = [

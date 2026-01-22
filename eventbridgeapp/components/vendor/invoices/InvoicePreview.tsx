@@ -126,6 +126,10 @@ export default function InvoicePreview({ data }: InvoicePreviewProps) {
                 </div>
             </div>
 
+            <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[10px] text-amber-900">
+                <span className="font-bold uppercase tracking-widest">Warning:</span> Event Bridge does not process or hold funds. Please perform your own due diligence before paying the vendor directly.
+            </div>
+
         </div>
     );
 }
