@@ -92,8 +92,8 @@ export default function Header() {
           <Link
             href="/signup?type=vendor"
             className={`hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 ${isHome && !isScrolled
-                ? 'text-white hover:bg-white/10'
-                : 'text-primary-01 hover:opacity-90'
+              ? 'text-white hover:bg-white/10'
+              : 'text-primary-01 hover:opacity-90'
               }`}
           >
             Become a Vendor
@@ -102,8 +102,8 @@ export default function Header() {
           <Link
             href="/login"
             className={`hidden sm:block px-4 py-2 rounded font-semibold border transition-all duration-200 ${isHome && !isScrolled
-                ? 'text-white border-white hover:bg-white/10'
-                : 'text-primary-01 border-primary-01 hover:opacity-90'
+              ? 'text-white border-white hover:bg-white/10'
+              : 'text-primary-01 border-primary-01 hover:opacity-90'
               }`}
           >
             Login
@@ -112,8 +112,8 @@ export default function Header() {
           {/* Language Icon */}
           <button
             className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 ${isHome && !isScrolled
-                ? 'border-white/30 text-white hover:bg-white/10'
-                : 'border-neutrals-04 text-shades-black hover:text-primary-01 hover:border-primary-01'
+              ? 'border-white/30 text-white hover:bg-white/10'
+              : 'border-neutrals-04 text-shades-black hover:text-primary-01 hover:border-primary-01'
               }`}
             aria-label="Language"
           >
@@ -124,8 +124,8 @@ export default function Header() {
           <button
             onClick={toggleTheme}
             className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 ${isHome && !isScrolled
-                ? 'border-white/30 text-white hover:bg-white/10'
-                : 'border-neutrals-04 text-shades-black hover:text-primary-01 hover:border-primary-01'
+              ? 'border-white/30 text-white hover:bg-white/10'
+              : 'border-neutrals-04 text-shades-black hover:text-primary-01 hover:border-primary-01'
               }`}
             aria-label="Toggle theme"
           >
@@ -159,8 +159,8 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             className={`md:hidden w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 ${isHome && !isScrolled
-                ? 'border-white/30 text-white hover:bg-white/10'
-                : 'border-neutrals-04 text-shades-black hover:text-primary-01 hover:border-primary-01'
+              ? 'border-white/30 text-white hover:bg-white/10'
+              : 'border-neutrals-04 text-shades-black hover:text-primary-01 hover:border-primary-01'
               }`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Mobile Menu"

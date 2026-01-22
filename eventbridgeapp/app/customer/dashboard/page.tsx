@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardHeader from '@/components/planner/dashboard/DashboardHeader';
 import DashboardBanner from '@/components/planner/dashboard/DashboardBanner';
 import StatsGrid from '@/components/planner/dashboard/StatsGrid';
 import ActionRequired from '@/components/planner/dashboard/ActionRequired';
@@ -10,7 +9,6 @@ import RecentActivity from '@/components/planner/dashboard/RecentActivity';
 export default function PlannerDashboard() {
     return (
         <div className="container mx-auto max-w-7xl">
-            <DashboardHeader />
 
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-shades-black mb-1">
@@ -19,7 +17,6 @@ export default function PlannerDashboard() {
                 <p className="text-neutrals-06">Your events are looking spectacular today.</p>
             </div>
 
-            <DashboardBanner />
 
             <StatsGrid />
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import PlannerSidebar from '@/components/planner/PlannerSidebar';
+import DashboardHeader from '@/components/planner/dashboard/DashboardHeader';
 import { X } from 'lucide-react';
 
 export default function PlannerLayout({
@@ -41,13 +42,7 @@ export default function PlannerLayout({
 
             {/* Main Content */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                {/* We'll pass the mobile menu handler to the header later if needed, 
-                    or the header can be part of the page content if it's specific. 
-                    For now, the page content handles its own header area or we add a common header here.
-                    The screenshot shows 'Welcome back' which is page specific content, 
-                    BUT there is a top bar with 'Browse Service Providers' + Theme Toggle which looks global.
-                */}
-
+                <DashboardHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
                 <main className="flex-1 overflow-y-auto p-6 scroll-smooth bg-neutrals-01 transition-colors duration-300">
                     {children}
                 </main>
