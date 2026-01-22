@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 
 const navigation = [
     { name: 'Dashboard', href: '/customer/dashboard', icon: LayoutDashboard },
