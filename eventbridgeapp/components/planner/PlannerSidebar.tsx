@@ -19,12 +19,12 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const navigation = [
-    { name: 'Dashboard', href: '/planner/dashboard', icon: LayoutDashboard },
-    { name: 'My Events', href: '/planner/events', icon: Calendar },
-    { name: 'Checklist', href: '/planner/checklist', icon: ListTodo },
-    { name: 'Budget Tracker', href: '/planner/budget', icon: Calculator },
-    { name: 'Bookings & Quotes', href: '/planner/bookings', icon: FileText },
-    { name: 'Favorites', href: '/planner/favorites', icon: Heart },
+    { name: 'Dashboard', href: '/customer/dashboard', icon: LayoutDashboard },
+    { name: 'My Events', href: '/customer/events', icon: Calendar },
+    { name: 'Checklist', href: '/customer/checklist', icon: ListTodo },
+    { name: 'Budget Tracker', href: '/customer/budget', icon: Calculator },
+    { name: 'Bookings & Quotes', href: '/customer/bookings', icon: FileText },
+    { name: 'Favorites', href: '/customer/favorites', icon: Heart },
 ];
 
 export default function PlannerSidebar() {
@@ -53,8 +53,8 @@ export default function PlannerSidebar() {
     };
 
     const secondaryNavigation = [
-        { name: 'Messages', href: '/planner/messages', icon: MessageSquare, badge: messageBadge },
-        { name: 'Settings', href: '/planner/settings', icon: Settings },
+        { name: 'Messages', href: '/customer/messages', icon: MessageSquare, badge: messageBadge },
+        { name: 'Settings', href: '/customer/settings', icon: Settings },
         { name: 'Logout', href: '#', icon: LogOut, onClick: handleLogout },
     ];
 
