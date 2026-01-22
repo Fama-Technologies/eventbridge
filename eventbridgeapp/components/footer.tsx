@@ -36,8 +36,6 @@ export default function Footer() {
   return (
     <footer className="bg-shades-white text-shades-black">
       {/* CTA Section */}
-      {/* background: linear-gradient(90deg, #222222 36.07%, #CB5E21 71.72%); */}
-
       <div className="max-w-7xl mx-auto px-6 pt-12 ">
         <div className="relative overflow-hidden rounded-2xl mb-16 flex flex-col md:flex-row bg-linear-to-r from-[#ffffff] from-40% via-[#CB5E21] via-80% to-[#CB5E21]">
           {/* Left side - Gradient background with text */}
@@ -54,11 +52,9 @@ export default function Footer() {
           {/* Right side - Animated gradient button area */}
           <div className="bg-[#CB5E21] md:rounded-l-[40px] flex justify-center items-center w-full md:w-auto py-6 md:py-0" style={{ boxShadow: '0px 4px 6px -4px var(--primary-01), 0px 10px 15px -3px var(--primary-01)' }}>
             <Link
-              href="/get-started"
+              href="/signup"  // Changed from "/get-started" to "/signup"
               className="group relative flex items-center justify-center px-12 md:px-20 min-w-[200px] md:min-w-[280px] overflow-hidden"
             >
-              {/* Animated gradient background */}
-
               <span className="relative flex items-center gap-6 text-white font-semibold text-lg whitespace-nowrap">
                 Get Started
                 <span
@@ -96,7 +92,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-4">
               <li>
-                <Link href="/find-vendors" className="text-shades-black hover:text-primary-01 transition-colors text-sm">
+                <Link href="/categories" className="text-shades-black hover:text-primary-01 transition-colors text-sm"> {/* Changed from "/find-vendors" to "/categories" */}
                   Find vendors
                 </Link>
               </li>
@@ -112,7 +108,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/success-stories" className="text-shades-black hover:text-primary-01 transition-colors text-sm">
-                  Success Sories
+                  Success Stories
                 </Link>
               </li>
             </ul>
@@ -170,7 +166,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/category/photography" className="text-shades-black hover:text-primary-01 transition-colors text-sm">
-                  Protography
+                  Photography
                 </Link>
               </li>
               <li>
@@ -280,7 +276,6 @@ export default function Footer() {
             </p>
             {/* Dark Mode Toggle */}
             <div className="flex items-center gap-3">
-              {/*lets this will have a toggle button for sun and moon*/}
               <Image src="/icons/moon.svg" alt="sun" width={24} height={24} />
               <span className="text-sm text-neutrals-07">Dark mode</span>
 
