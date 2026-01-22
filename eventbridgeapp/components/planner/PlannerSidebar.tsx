@@ -30,14 +30,10 @@ const navigation = [
 
 export default function PlannerSidebar() {
     const pathname = usePathname();
+    const { data: session } = useSession(); // Access session data
     const [messageBadge, setMessageBadge] = useState(3); // Mocked for now based on screenshot
-    // Mock user for now, or fetch if available
-    const user = {
-        firstName: 'Sarah',
-        lastName: 'Jenkins',
-        email: 'sarah.j@example.com',
-        image: '/bucket/avatar_placeholder.jpg' // Placeholder
-    };
+
+    const user = session?.user; // Use session user
 
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -115,26 +111,29 @@ export default function PlannerSidebar() {
             <div className='shrink-0 px-3 pb-5 border-t border-neutrals-02'>
                 <div className='px-4 py-4 border border-neutrals-03 rounded-xl mt-3 flex items-center gap-3'>
                     <div className="h-10 w-10 overflow-hidden rounded-full bg-neutrals-02 shrink-0 flex items-center justify-center text-sm font-semibold text-shades-black relative">
-                        <Image
-                            src="/bucket/img-avatar-01.png" // Using a likely available avatar or placeholder
-                            alt="Sarah Jenkins"
-                            width={40}
-                            height={40}
-                            className="object-cover"
-                            onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                            }}
-                        />
+                        {user?.image ? (
+                            <Image
+                                src={user.image}
+                                alt={user.name || 'User'}
+                                width={40}
+                                height={40}
+                                className="object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-primary-01 text-white font-bold">
+                                {user?.name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                        )}
                         <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
                     </div>
                     <div className="flex flex-col overflow-hidden flex-1">
                         <div className="flex items-center gap-1">
                             <span className="text-sm font-bold text-shades-black truncate">
-                                Sarah Jenkins
+                                {user?.name || 'Loading...'}
                             </span>
                         </div>
                         <span className="text-[10px] text-primary-01 font-semibold bg-primary-01/10 px-2 py-0.5 rounded w-fit">
-                            PLANNER PRO
+                            {user?.accountType || 'PLANNER'}
                         </span>
                     </div>
                 </div>
