@@ -9,9 +9,23 @@ import { toast } from 'sonner';
 import { signIn, useSession } from 'next-auth/react';
 
 export default function SignupPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<'accountType' | 'details'>('accountType');
   const [accountType, setAccountType] = useState<'VENDOR' | 'CUSTOMER' | null>(null);
+
+  // Redirect already authenticated users away from signup page
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const userAccountType = (session.user as any).accountType;
+      if (userAccountType === 'VENDOR') {
+        router.push('/vendor/onboarding');
+      } else if (userAccountType === 'CUSTOMER') {
+        router.push('/customer/dashboard');
+      }
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     const type = searchParams.get('type');
@@ -205,7 +219,6 @@ function SignupForm({
   initialAgreeToTerms?: boolean;
 }) {
   const router = useRouter();
-  const { data: session, status } = useSession();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -213,30 +226,6 @@ function SignupForm({
   const [agreeToTerms, setAgreeToTerms] = useState(initialAgreeToTerms);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      const userAccountType = (session.user as any).accountType;
-      console.log('User authenticated with account type:', userAccountType);
-      
-      const pendingType = sessionStorage.getItem('pendingAccountType');
-      if (pendingType) {
-        sessionStorage.removeItem('pendingAccountType');
-        
-        if (pendingType === 'VENDOR') {
-          router.push('/vendor/onboarding');
-        } else {
-          router.push('/');
-        }
-      } else {
-        if (userAccountType === 'VENDOR') {
-          router.push('/vendor/onboarding');
-        } else {
-          router.push('/');
-        }
-      }
-    }
-  }, [status, session, router]);
 
   const handleGoogleSignup = async () => {
     if (!agreeToTerms) {
@@ -251,7 +240,9 @@ function SignupForm({
 
       sessionStorage.setItem('pendingAccountType', accountType);
 
-      const callbackUrl = accountType === 'VENDOR' ? '/vendor/onboarding' : '/';
+      const callbackUrl = accountType === 'VENDOR' 
+        ? '/vendor/onboarding' 
+        : '/customer/dashboard';
       
       console.log('Callback URL:', callbackUrl);
 
@@ -323,8 +314,8 @@ function SignupForm({
         console.log('Redirecting vendor to onboarding');
         router.push('/vendor/onboarding');
       } else {
-        console.log('Redirecting customer to home');
-        router.push('/');
+        console.log('Redirecting customer to dashboard');
+        router.push('/customer/dashboard');
       }
     } catch (err) {
       console.error('Signup error:', err);

@@ -54,7 +54,6 @@ export default function Header() {
 
 
   return (
-    // CHANGED: Fixed -> Sticky, setting  dynamic bg-transparent, always white/shadow
     <header className={`${headerPositionClass} top-0 left-0 right-0 z-50 px-6 py-4 border-b transition-all duration-300 ${headerBgClass}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
@@ -67,8 +66,9 @@ export default function Header() {
 
         {/* Navigation - Desktop */}
         <nav className="hidden md:flex items-center gap-8 flex-1 justify-center">
+          {/* Find Vendors links to /categories page */}
           <Link
-            href="/find-vendors"
+            href="/categories"
             className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
           >
             Find Vendors
@@ -79,14 +79,13 @@ export default function Header() {
           >
             Inspiration
           </Link>
-          {/* UPDATED: Become a Planner now goes to signup */}
+          {/* UPDATED: Become a Planner links to signup as a customer */}
           <Link
             href="/signup?type=customer"
             className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
           >
             Become a Planner
           </Link>
-
         </nav>
 
         {/* Right Section */}
@@ -94,7 +93,6 @@ export default function Header() {
           {/* Become a Vendor Button */}
           <Link
             href="/signup?type=vendor"
-            // CHANGED: Always primary text
             className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 text-primary-01 hover:opacity-90"
           >
             Become a Vendor
@@ -102,8 +100,7 @@ export default function Header() {
           {/* Login Button (Right Section, visible on desktop) */}
           <Link
             href="/login"
-            // CHANGED: Always primary border/text
-            className="hidden sm:block px-4 py-2 rounded font-semibold border transition-all duration-200 text-primary-01 border-primary-01 hover:opacity-90 hover:bg-primary-01 hover:text-shades-white "
+            className="hidden sm:block px-4 py-2 rounded font-semibold border transition-all duration-200 text-primary-01 border-primary-01 hover:opacity-90 hover:bg-primary-01 hover:text-shades-white"
           >
             Login
           </Link>
@@ -146,9 +143,6 @@ export default function Header() {
 
           {/* Burger Menu with Dropdown */}
           <div className="relative">
-            {/* CHANGED: Always light variant (which usually means dark icons in this context, assuming 'light' means 'use light mode styles') */}
-            {/* Checking existing usage: isHome && !isScrolled ? 'dark' : 'light' -> 'dark' meant white text for dark bg? */}
-            {/* If 'light' variant was used for scrolled state (white bg), we use 'light' everywhere. */}
             <BurgerMenu variant="light" />
           </div>
 
@@ -163,12 +157,12 @@ export default function Header() {
         </div>
       </div>
 
-
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <nav className="md:hidden mt-4 pb-4 flex flex-col gap-4 border-t border-neutrals-04 pt-4 bg-white rounded-b-lg absolute left-0 right-0 px-6 shadow-xl top-full">
+          {/* Find Vendors links to /categories page */}
           <Link
-            href="/find-vendors"
+            href="/categories"
             className="block py-2 text-shades-black transition-colors hover:text-primary-01"
           >
             Find Vendors
@@ -179,7 +173,7 @@ export default function Header() {
           >
             Inspiration
           </Link>
-          {/* UPDATED: Become a Planner now goes to signup */}
+          {/* UPDATED: Become a Planner links to signup as a customer */}
           <Link
             href="/signup?type=customer"
             className="block py-2 text-shades-black transition-colors hover:text-primary-01"

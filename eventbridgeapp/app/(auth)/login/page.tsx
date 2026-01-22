@@ -269,6 +269,11 @@ export default function LoginPage() {
               <Link
                 href="/signup"
                 className={`text-primary-01 hover:text-primary-02 transition-colors ${anyLoading ? 'pointer-events-none opacity-50' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Force a clean navigation to signup page
+                  window.location.href = '/signup';
+                }}
               >
                 Sign up
               </Link>

@@ -1,9 +1,12 @@
-// app/api/signup/route.ts - COMPLETE FIXED VERSION
+// app/api/signup/route.ts - UPDATED VERSION WITH SESSION SUPPORT
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { signIn } from 'next-auth/react';
 
 // Define allowed account types
 type AccountType = 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN';
@@ -86,7 +89,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        accountType: validatedAccountType, // ✅ No type error!
+        accountType: validatedAccountType,
         provider: 'local',
         isActive: true,
         emailVerified: false,
@@ -99,6 +102,23 @@ export async function POST(req: NextRequest) {
         accountType: users.accountType,
       });
 
+    // Determine redirect path based on account type
+    let redirectPath = '/';
+    switch (validatedAccountType) {
+      case 'CUSTOMER':
+        redirectPath = '/customer/dashboard';
+        break;
+      case 'VENDOR':
+        redirectPath = '/vendor/onboarding';
+        break;
+      case 'PLANNER':
+        redirectPath = '/planner/dashboard'; // If you have this
+        break;
+      case 'ADMIN':
+        redirectPath = '/admin/dashboard'; // If you have this
+        break;
+    }
+
     return NextResponse.json(
       {
         message: 'Account created successfully',
@@ -109,6 +129,8 @@ export async function POST(req: NextRequest) {
           email: newUser.email,
           accountType: newUser.accountType,
         },
+        redirect: redirectPath,
+        successPage: `/signup/success?accountType=${validatedAccountType}`,
       },
       { status: 201 }
     );

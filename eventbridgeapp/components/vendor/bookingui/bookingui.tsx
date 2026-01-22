@@ -56,20 +56,61 @@ export default function BookingUI() {
 
     const handleBookingSubmit = async (bookingData: any) => {
         try {
+            console.log("Original booking data from modal:", bookingData);
+            
+            // Transform the data to match what the API expects
+            // You need to add vendorId and clientId - these should come from your auth/session
+            const transformedData = {
+                clientName: bookingData.clientName,
+                clientEmail: bookingData.clientEmail || '',
+                clientPhone: bookingData.clientPhone || '',
+                eventName: bookingData.eventName || `${bookingData.clientName}'s Event`,
+                startDate: bookingData.startDate,
+                endDate: bookingData.endDate,
+                venue: bookingData.venue,
+                guestCount: bookingData.guestCount || 0,
+                totalAmount: bookingData.totalAmount || 0,
+                status: bookingData.status || 'confirmed',
+                paymentStatus: bookingData.paymentStatus || 'pending',
+                notes: bookingData.notes || '',
+                
+                // TODO: Replace these with actual IDs from your auth/session
+                // For now, using placeholder IDs. In production, get these from:
+                // 1. vendorId: from your logged-in vendor's session
+                // 2. clientId: either from existing client or create a new user
+                vendorId: 1, // Replace with: await getCurrentVendorId()
+                clientId: 2, // Replace with: await getOrCreateClientId(bookingData)
+            };
+
+            console.log("Transformed booking data for API:", transformedData);
+
             const response = await fetch('/api/vendor/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bookingData)
+                body: JSON.stringify(transformedData)
             });
 
+            console.log("Response status:", response.status);
+            
             if (response.ok) {
                 const newBooking = await response.json();
+                console.log("New booking created:", newBooking);
+                
                 setBookings([...bookings, newBooking]);
-                setConfirmedBookings(prev => prev + 1);
+                if (newBooking.status === 'confirmed') {
+                    setConfirmedBookings(prev => prev + 1);
+                }
                 setIsBookingModalOpen(false);
                 addToast("Booking successfully created", "success");
             } else {
-                addToast("Failed to create booking", "error");
+                const errorText = await response.text();
+                console.error("Failed response:", errorText);
+                try {
+                    const errorData = JSON.parse(errorText);
+                    addToast(`Failed to create booking: ${errorData.error || 'Unknown error'}`, "error");
+                } catch {
+                    addToast(`Failed to create booking: ${errorText || 'Unknown error'}`, "error");
+                }
             }
         } catch (error) {
             console.error("Error creating booking:", error);

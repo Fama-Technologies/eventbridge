@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Users, ChevronLeft, ChevronRight, User, Phone, Mail } from 'lucide-react';
 import { isSameDay, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import type { Booking } from './bookingui/data';
 
@@ -21,10 +21,17 @@ export default function BookingModal({
   const [rangeStart, setRangeStart] = useState<Date | null>(null);
   const [rangeEnd, setRangeEnd] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  // Add the missing required fields
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [venue, setVenue] = useState('');
+  
+  // Existing fields
   const [eventName, setEventName] = useState('');
   const [guestCount, setGuestCount] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
-  const [hostContact, setHostContact] = useState('');
   const [notes, setNotes] = useState('');
 
   const monthNames = [
@@ -132,7 +139,8 @@ export default function BookingModal({
   };
 
   const handleSubmit = () => {
-    if (!rangeStart) return;
+    if (!rangeStart || !clientName || !venue) return;
+    
     const selectedDates: Date[] = [];
     const current = new Date(rangeStart);
     const end = rangeEnd || rangeStart;
@@ -142,13 +150,35 @@ export default function BookingModal({
     }
 
     const bookingData = {
-      eventName,
+      // REQUIRED FIELDS
+      clientName: clientName,
+      startDate: rangeStart.toISOString(),
+      endDate: (rangeEnd || rangeStart).toISOString(),
+      venue: venue,
+      
+      // Client contact info
+      clientEmail: clientEmail,
+      clientPhone: clientPhone,
+      
+      // Event details
+      eventName: eventName || `${clientName}'s Event`,
       guestCount: parseInt(guestCount) || 0,
       totalAmount: parseFloat(totalAmount) || 0,
-      hostContact,
-      notes,
-      selectedDates
+      notes: notes,
+      
+      // Status defaults
+      status: 'confirmed',
+      paymentStatus: 'pending',
+      
+      // IDs (you'll need to get these from session)
+      vendorId: 1, // TODO: Replace with actual vendor ID from session
+      clientId: 2, // TODO: Replace with actual client ID or create new
+      
+      // Additional data
+      selectedDates: selectedDates
     };
+    
+    console.log("Sending booking data:", bookingData);
     onSubmit(bookingData);
   };
 
@@ -196,7 +226,7 @@ export default function BookingModal({
 
             // Selection Styling (Orange)
             if (inSelection) {
-              if (isSelMiddle) wrapperClasses += ' bg-primary-01/30'; // Translucent orange
+              if (isSelMiddle) wrapperClasses += ' bg-primary-01/30';
               else if (isSelStart && rangeEnd) wrapperClasses += ' bg-gradient-to-r from-transparent via-primary-01/30 to-primary-01/30';
               else if (isSelEnd) wrapperClasses += ' bg-gradient-to-r from-primary-01/30 via-primary-01/30 to-transparent';
 
@@ -207,29 +237,18 @@ export default function BookingModal({
             else if (existingBooking) {
               const isBookedStart = isSameDay(day, existingBooking.startDate);
               const isBookedEnd = isSameDay(day, existingBooking.endDate);
-              const isBookedMiddle = !isBookedStart && !isBookedEnd;
               const isBlocked = existingBooking.status === 'blocked';
 
               const bgClass = isBlocked ? 'bg-errors-main/20' : 'bg-accents-discount/20';
               const solidBgClass = isBlocked ? 'bg-errors-main' : 'bg-accents-discount';
               const textClass = isBlocked ? 'text-errors-main' : 'text-accents-discount';
 
-              // Background range logic
-              if (isBookedMiddle) {
-                wrapperClasses += ` ${bgClass}`;
-              } else if (isBookedStart && !isSameDay(existingBooking.startDate, existingBooking.endDate)) {
-                wrapperClasses += ` bg-gradient-to-r from-transparent via-${isBlocked ? 'errors-main/20' : 'accents-discount/20'} to-${isBlocked ? 'errors-main/20' : 'accents-discount/20'}`;
-                // Note: tailwind arbitrary values in gradient might not interpolate well with dynamic strings? 
-                // Using style tag or fixed classes is safer. 
-                // I'll use inline styles or specific classes. 
-                // 'bg-gradient-to-r' works if I use full class names.
-                // But simply "rounded-l-full" on wrapper might be easier if I just fill it.
-                // Let's stick to the gradient logic but hardcode the classes based on status.
-                if (isBlocked) wrapperClasses += ' bg-gradient-to-r from-transparent via-errors-main/20 to-errors-main/20';
-                else wrapperClasses += ' bg-gradient-to-r from-transparent via-accents-discount/20 to-accents-discount/20';
+              if (isBookedStart && !isSameDay(existingBooking.startDate, existingBooking.endDate)) {
+                wrapperClasses += isBlocked ? ' bg-gradient-to-r from-transparent via-errors-main/20 to-errors-main/20' : ' bg-gradient-to-r from-transparent via-accents-discount/20 to-accents-discount/20';
               } else if (isBookedEnd && !isSameDay(existingBooking.startDate, existingBooking.endDate)) {
-                if (isBlocked) wrapperClasses += ' bg-gradient-to-r from-errors-main/20 via-errors-main/20 to-transparent';
-                else wrapperClasses += ' bg-gradient-to-r from-accents-discount/20 via-accents-discount/20 to-transparent';
+                wrapperClasses += isBlocked ? ' bg-gradient-to-r from-errors-main/20 via-errors-main/20 to-transparent' : ' bg-gradient-to-r from-accents-discount/20 via-accents-discount/20 to-transparent';
+              } else if (!isBookedStart && !isBookedEnd) {
+                wrapperClasses += ` ${bgClass}`;
               }
 
               if (isBookedStart || isBookedEnd) {
@@ -296,43 +315,137 @@ export default function BookingModal({
             </div>
 
             <div className="space-y-5">
+              {/* REQUIRED: Client Name */}
+              <div>
+                <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">
+                  CLIENT NAME *
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutrals-06" />
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Enter client name"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Client Contact Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">CLIENT EMAIL</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutrals-06" />
+                    <input
+                      type="email"
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      placeholder="client@example.com"
+                      className="w-full pl-10 pr-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">CLIENT PHONE</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutrals-06" />
+                    <input
+                      type="tel"
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      placeholder="+256 XXX XXX XXX"
+                      className="w-full pl-10 pr-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* REQUIRED: Venue */}
+              <div>
+                <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">
+                  VENUE *
+                </label>
+                <input
+                  type="text"
+                  value={venue}
+                  onChange={(e) => setVenue(e.target.value)}
+                  placeholder="Enter venue location"
+                  className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">EVENT NAME</label>
-                <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. Corporate Annual Gala" className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm" />
+                <input
+                  type="text"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  placeholder="e.g. Corporate Annual Gala"
+                  className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                />
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">GUEST COUNT</label>
                   <div className="relative">
                     <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutrals-06" />
-                    <input type="number" value={guestCount} onChange={(e) => setGuestCount(e.target.value)} placeholder="0" className="w-full pl-10 pr-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm" />
+                    <input
+                      type="number"
+                      value={guestCount}
+                      onChange={(e) => setGuestCount(e.target.value)}
+                      placeholder="0"
+                      className="w-full pl-10 pr-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                    />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">TOTAL AMOUNT</label>
-                  <input type="text" value={totalAmount} onChange={(e) => setTotalAmount(e.target.value)} placeholder="UGX 0.00" className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm" />
+                  <input
+                    type="text"
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(e.target.value)}
+                    placeholder="UGX 0.00"
+                    className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm"
+                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">HOST CONTACT</label>
-                <div className="relative">
-                  <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutrals-06" />
-                  <input type="text" value={hostContact} onChange={(e) => setHostContact(e.target.value)} placeholder="Name, Email or Phone Number" className="w-full pl-10 pr-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors text-sm" />
-                </div>
-              </div>
+
               <div>
                 <label className="block text-xs font-medium text-shades-black mb-2 tracking-wide">NOTES / DESCRIPTION</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any specific details about this booking..." rows={3} className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors resize-none text-sm" />
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add any specific details about this booking..."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-lg bg-neutrals-01 border border-neutrals-03 text-shades-black placeholder:text-neutrals-06 focus:border-primary-01 focus:outline-none transition-colors resize-none text-sm"
+                />
               </div>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-neutrals-03">
-          <button onClick={onClose} className="text-sm font-medium text-shades-black hover:text-neutrals-07 transition-colors">Cancel</button>
+          <button onClick={onClose} className="text-sm font-medium text-shades-black hover:text-neutrals-07 transition-colors">
+            Cancel
+          </button>
           <div className="flex items-center gap-4">
-            {rangeStart && <div className="text-sm text-neutrals-06">Selected Range <span className="text-shades-black font-medium ml-1">{getSelectedRange()}</span></div>}
-            <button onClick={handleSubmit} disabled={!eventName || !hostContact || !rangeStart} className="px-5 py-2.5 rounded-lg bg-primary-01 text-white text-sm font-medium hover:bg-primary-02 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Create Booking</button>
+            {rangeStart && (
+              <div className="text-sm text-neutrals-06">
+                Selected Range <span className="text-shades-black font-medium ml-1">{getSelectedRange()}</span>
+              </div>
+            )}
+            <button
+              onClick={handleSubmit}
+              disabled={!rangeStart || !clientName || !venue}
+              className="px-5 py-2.5 rounded-lg bg-primary-01 text-white text-sm font-medium hover:bg-primary-02 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Create Booking
+            </button>
           </div>
         </div>
       </div>

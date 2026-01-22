@@ -1,6 +1,5 @@
-// lib/auth.ts
+// lib/auth.ts - UPDATED VERSION (no type declarations)
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { verifyToken, createToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { users, accounts } from '@/drizzle/schema';
@@ -74,7 +73,7 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60,
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
 
   secret: process.env.NEXTAUTH_SECRET,
@@ -89,6 +88,13 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider !== 'google' || !user.email) return true;
 
       const email = user.email.toLowerCase();
+      let accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN' = 'CUSTOMER';
+
+      // Check for pending account type from sessionStorage (passed from frontend)
+      const pendingAccountType = (user as any).pendingAccountType;
+      if (pendingAccountType && ['VENDOR', 'CUSTOMER', 'PLANNER', 'ADMIN'].includes(pendingAccountType)) {
+        accountType = pendingAccountType;
+      }
 
       const existing = await db
         .select()
@@ -117,7 +123,7 @@ export const authOptions: NextAuthOptions = {
             lastName,
             image: user.image ?? null,
             provider: 'google',
-            accountType: 'CUSTOMER',
+            accountType,
             emailVerified: true,
             isActive: true,
           })
@@ -126,6 +132,12 @@ export const authOptions: NextAuthOptions = {
         userId = created.id;
       } else {
         userId = existing[0].id;
+        // Update account type if it was passed
+        if (pendingAccountType) {
+          await db.update(users)
+            .set({ accountType })
+            .where(eq(users.id, userId));
+        }
       }
 
       const linked = await db
@@ -153,8 +165,16 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, user }) {
-      if (user?.email) {
+    async jwt({ token, user, account }) {
+      if (user) {
+        // Add account type from user object
+        token.accountType = (user as any).accountType || 'CUSTOMER';
+        
+        // If this is a Google sign-in and we have pending account type
+        if (account?.provider === 'google' && (user as any).pendingAccountType) {
+          token.accountType = (user as any).pendingAccountType;
+        }
+
         const [dbUser] = await db
           .select({
             id: users.id,
@@ -169,7 +189,7 @@ export const authOptions: NextAuthOptions = {
           .limit(1);
 
         if (dbUser) {
-          token.userId = dbUser.id;
+          token.userId = String(dbUser.id);
           token.email = dbUser.email;
           token.name = `${dbUser.firstName} ${dbUser.lastName}`;
           token.picture = dbUser.image;
@@ -181,20 +201,30 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      if (session.user && token.userId) {
-        session.user.id = String(token.userId);
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.image = token.picture as string;
-        (session.user as any).accountType = token.accountType;
+      if (session.user && token.userId && token.email && token.name && token.accountType) {
+        session.user.id = token.userId;
+        session.user.email = token.email;
+        session.user.name = token.name;
+        session.user.image = token.picture;
+        session.user.accountType = token.accountType;
       }
 
       return session;
     },
 
     async redirect({ url, baseUrl }) {
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      // Handle redirects based on account type
+      if (url.startsWith('/')) {
+        // Check if it's a specific redirect
+        if (url.includes('callbackUrl')) {
+          return url;
+        }
+        return `${baseUrl}${url}`;
+      }
+      
       if (new URL(url).origin === baseUrl) return url;
+      
+      // Default redirect
       return `${baseUrl}/dashboard`;
     },
   },
@@ -214,30 +244,28 @@ export async function getAuthUser(
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (token && token.userId) {
-    const [firstName, ...rest] = (token.name as string)?.split(' ') ?? [];
+  if (token && token.userId && token.email && token.name && token.accountType) {
+    const name = token.name;
+    const [firstName, ...rest] = name?.split(' ') ?? [];
+    
     return {
       id: Number(token.userId),
-      email: token.email as string,
-      firstName: firstName ?? '',
+      email: token.email,
+      firstName: firstName || '',
       lastName: rest.join(' '),
-      accountType: token.accountType as AuthUser['accountType'],
+      accountType: token.accountType,
     };
   }
 
   // Fallback: Check for custom auth-token
-  // Handle different cookie types (NextRequest vs next/headers cookies)
   let customToken: string | undefined;
 
   if (req.cookies.get && typeof req.cookies.get === 'function') {
-    // NextRequest or Map-like
     const cookie = req.cookies.get('auth-token');
     customToken = cookie?.value || cookie;
   } else if (req.cookies['auth-token']) {
-    // Plain object
     customToken = req.cookies['auth-token'];
   } else if (Array.isArray(req.cookies)) {
-    // Array of cookies (sometimes happens in older Next.js mocks, though less likely here)
     const cookie = req.cookies.find((c: any) => c.name === 'auth-token');
     customToken = cookie?.value;
   }
@@ -245,9 +273,10 @@ export async function getAuthUser(
   if (customToken) {
     const payload = await verifyToken(customToken);
     if (payload) {
-      const [firstName, ...rest] = (payload.name as string || '').split(' '); // jwt.ts payload might not have name, check definition
-      // validPayload has: userId, email, accountType, firstName, lastName
-
+      // Extract name from token or use separate firstName/lastName
+      const name = (payload as any).name || '';
+      const [firstName, ...rest] = name.split(' ');
+      
       return {
         id: payload.userId,
         email: payload.email,
