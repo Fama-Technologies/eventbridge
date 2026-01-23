@@ -5,6 +5,7 @@ import { Shield, Clock, FileText, ArrowRight, X, Upload, Loader2 } from 'lucide-
 import type { OnboardingStepProps } from './types';
 import PDFPreview from './PDFPreview';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function VerifyStep({
   data,
@@ -14,6 +15,7 @@ export default function VerifyStep({
   onSaveDraft,
   isLoading,
 }: OnboardingStepProps) {
+  const router = useRouter();
   const businessLicenseRef = useRef<HTMLInputElement>(null);
   const tinDocumentRef = useRef<HTMLInputElement>(null);
   const locationProofRef = useRef<HTMLInputElement>(null);
@@ -27,6 +29,7 @@ export default function VerifyStep({
   const [locationProofPreviews, setLocationProofPreviews] = useState<string[]>([]);
 
   const [uploadingDocs, setUploadingDocs] = useState<boolean>(false);
+  const [skipping, setSkipping] = useState<boolean>(false);
 
   const [dragActive, setDragActive] = useState<{
     businessLicense: boolean;
@@ -257,6 +260,68 @@ export default function VerifyStep({
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const handleSkipAndFinish = async () => {
+    try {
+      setSkipping(true);
+      
+      console.log('Skipping onboarding...');
+      
+      const response = await fetch('/api/vendors/onboarding/skip', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Skip API response status:', response.status);
+      
+      const result = await response.json();
+      console.log('Skip API response data:', result);
+
+      if (!response.ok) {
+        throw new Error(result.error || result.details || 'Failed to skip onboarding');
+      }
+
+      toast.success(result.message || 'Onboarding completed successfully!');
+      
+      // Redirect to /vendor 
+      console.log('Redirecting to /vendor');
+      
+      if (result.redirectTo) {
+        // Use the router for clean navigation
+        router.push(result.redirectTo);
+      } else {
+        // Redirect to /vendor
+        router.push('/vendor');
+      }
+
+    } catch (error) {
+      console.error('Skip onboarding error:', error);
+      
+      // Fix for TypeScript: error is of type unknown
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to skip onboarding';
+      
+      // More user-friendly error messages
+      let displayMessage = errorMessage;
+      if (errorMessage.includes('Unauthorized')) {
+        displayMessage = 'Please log in again to continue';
+      } else if (errorMessage.includes('Invalid user ID')) {
+        displayMessage = 'Session expired. Please refresh the page';
+      }
+      
+      toast.error(displayMessage);
+    } finally {
+      setSkipping(false);
+    }
+  };
+
+  const handleSubmitForReview = () => {
+    // Call the original onNext for submitting with documents
+    onNext();
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-10 flex items-start justify-between">
@@ -277,11 +342,11 @@ export default function VerifyStep({
         </div>
         <button
           type="button"
-          onClick={onNext}
-          disabled={isLoading || uploadingDocs}
+          onClick={handleSkipAndFinish}
+          disabled={skipping || uploadingDocs}
           className="flex items-center gap-2 text-sm text-neutrals-07 hover:text-primary-01 transition-colors disabled:opacity-50"
         >
-          Skip
+          {skipping ? 'Skipping...' : 'Skip'}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -299,10 +364,12 @@ export default function VerifyStep({
         </div>
       </div>
 
-      {uploadingDocs && (
+      {(uploadingDocs || skipping) && (
         <div className="flex items-center justify-center gap-2 p-4 bg-primary-01/10 rounded-lg mb-6">
           <Loader2 className="w-5 h-5 text-primary-01 animate-spin" />
-          <span className="text-sm text-primary-01 font-medium">Uploading documents...</span>
+          <span className="text-sm text-primary-01 font-medium">
+            {skipping ? 'Completing onboarding...' : 'Uploading documents...'}
+          </span>
         </div>
       )}
 
@@ -524,7 +591,7 @@ export default function VerifyStep({
         <button
           type="button"
           onClick={onBack}
-          disabled={isLoading || uploadingDocs}
+          disabled={isLoading || uploadingDocs || skipping}
           className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
         >
           Back
@@ -532,16 +599,16 @@ export default function VerifyStep({
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={onNext}
-            disabled={isLoading || uploadingDocs}
+            onClick={handleSkipAndFinish}
+            disabled={isLoading || uploadingDocs || skipping}
             className="px-6 py-3 text-sm font-medium text-neutrals-07 hover:text-shades-black transition-colors disabled:opacity-50"
           >
-            Skip & Finish
+            {skipping ? 'Skipping...' : 'Skip & Finish'}
           </button>
           <button
             type="button"
-            onClick={onNext}
-            disabled={isLoading || uploadingDocs}
+            onClick={handleSubmitForReview}
+            disabled={isLoading || uploadingDocs || skipping}
             className="flex items-center gap-2 px-6 py-3 rounded-[50px] bg-primary-01 text-white font-medium hover:bg-primary-02 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading || uploadingDocs ? (

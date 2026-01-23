@@ -231,7 +231,7 @@ export const authOptions: NextAuthOptions = {
 
       // For other vendor URLs, go to dashboard
       if (url.includes('vendor') || url.includes('accountType=VENDOR')) {
-        return `${baseUrl}/vendor/dashboard`;
+        return `${baseUrl}/vendor`;
       }
 
       if (url.includes('customer') || url.includes('accountType=CUSTOMER')) {
