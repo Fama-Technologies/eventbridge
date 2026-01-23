@@ -167,7 +167,7 @@ export default function UpgradePage() {
                                 </tr>
                                 <tr className="border-b border-neutrals-02">
                                     <td className="py-4 px-6 text-sm text-neutrals-07">Service packages</td>
-                                    <td className="py-4 px-6 text-center text-sm text-neutrals-06">Up to 3</td>
+                                    <td className="py-4 px-6 text-center text-sm text-neutrals-06">Up to 2</td>
                                     <td className="py-4 px-6 text-center text-sm text-primary-01 font-semibold">Unlimited</td>
                                     <td className="py-4 px-6 text-center text-sm text-primary-01 font-semibold bg-primary-01/5">Unlimited</td>
                                 </tr>
@@ -180,25 +180,25 @@ export default function UpgradePage() {
                                 <tr className="border-b border-neutrals-02">
                                     <td className="py-4 px-6 text-sm text-neutrals-07">Top listing & recommendation</td>
                                     <td className="py-4 px-6 text-center"><span className="text-neutrals-04">—</span></td>
-                                    <td className="py-4 px-6 text-center"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
+                                    <td className="py-4 px-6 text-center"><span className="text-neutrals-04">—</span></td>
                                     <td className="py-4 px-6 text-center bg-primary-01/5"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
                                 </tr>
                                 <tr className="border-b border-neutrals-02">
                                     <td className="py-4 px-6 text-sm text-neutrals-07">Boost portfolio & packages</td>
                                     <td className="py-4 px-6 text-center"><span className="text-neutrals-04">—</span></td>
-                                    <td className="py-4 px-6 text-center"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
+                                    <td className="py-4 px-6 text-center"><span className="text-neutrals-04">—</span></td>
                                     <td className="py-4 px-6 text-center bg-primary-01/5"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
                                 </tr>
                                 <tr className="border-b border-neutrals-02">
                                     <td className="py-4 px-6 text-sm text-neutrals-07">Trends & customer insights</td>
                                     <td className="py-4 px-6 text-center"><span className="text-neutrals-04">—</span></td>
-                                    <td className="py-4 px-6 text-center"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
+                                    <td className="py-4 px-6 text-center"><span className="text-neutrals-04">—</span></td>
                                     <td className="py-4 px-6 text-center bg-primary-01/5"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
                                 </tr>
                                 <tr className="border-b border-neutrals-02">
                                     <td className="py-4 px-6 text-sm text-neutrals-07">Full bookings calendar</td>
                                     <td className="py-4 px-6 text-center text-sm text-neutrals-06">Limited</td>
-                                    <td className="py-4 px-6 text-center"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
+                                    <td className="py-4 px-6 text-center text-sm text-neutrals-06">Limited</td>
                                     <td className="py-4 px-6 text-center bg-primary-01/5"><Check className="w-5 h-5 text-primary-01 mx-auto" /></td>
                                 </tr>
                                 <tr className="border-b border-neutrals-02">

@@ -33,13 +33,13 @@ export default function PaymentMethodSelection({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-shades-black/90 backdrop-blur-sm">
-            <div className="bg-shades-white rounded-3xl w-full max-w-lg mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="bg-neutrals-02 rounded-3xl w-full max-w-lg mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="p-4 flex-shrink-0">
-                    <button onClick={onClose} className="p-2 hover:bg-neutrals-07 rounded-lg transition-colors mb-6">
+                    <button onClick={onClose} className="p-2 hover:bg-neutrals-07 rounded-lg transition-colors mb-2">
                         <ArrowLeft size={20} className="text-shades-black" />
                     </button>
-                    <h2 className="text-xl font-bold text-shades-black text-center mb-8">Choose your payment method</h2>
+                    <h2 className="text-xl font-bold text-shades-black text-center mb-2">Choose your payment method</h2>
                 </div>
 
                 {/* Scrollable Content */}
@@ -50,8 +50,8 @@ export default function PaymentMethodSelection({
                         <button
                             onClick={() => handleMethodClick('momo')}
                             className={`relative p-6 rounded-2xl border-2 transition-all ${selectedMethod === 'momo'
-                                ? 'border-primary-01 bg-primary-01/10'
-                                : 'border-neutrals-04 bg-neutrals-07 hover:bg-neutrals-06'
+                                ? 'border-primary-01 border-2 bg-primary-01/10'
+                                : 'border-neutrals-04 border-2 bg-neutrals-07 hover:bg-neutrals-06'
                                 }`}
                         >
                             {selectedMethod === 'momo' && (
@@ -59,7 +59,7 @@ export default function PaymentMethodSelection({
                                     <Check size={14} className="text-shades-white" />
                                 </div>
                             )}
-                            <div className="absolute top-2 left-2 px-2 py-1 bg-primary-01 text-shades-white text-[10px] font-bold rounded">
+                            <div className="absolute top-1 left-2 px-2 py-1 bg-primary-01 text-shades-white text-[10px] font-bold rounded">
                                 MOST POPULAR IN UGANDA
                             </div>
                             <div className="flex flex-col items-center pt-6">
