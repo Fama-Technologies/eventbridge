@@ -3,14 +3,46 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import Link from 'next/link';
+import PaymentMethodSelection from '@/components/vendor/upgrade/overlays/PaymentMethodSelection';
+import PaymentProcessing from '@/components/vendor/upgrade/overlays/PaymentProcessing';
 
 export default function UpgradePage() {
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [paymentStep, setPaymentStep] = useState<'none' | 'method' | 'processing'>('none');
+    const [selectedPlan, setSelectedPlan] = useState<{ name: string; amount: number } | null>(null);
+    const [selectedMethod, setSelectedMethod] = useState<'momo' | 'airtel' | 'card' | 'bank' | null>(null);
+    const [phoneNumber, setPhoneNumber] = useState('+256 772 123 456');
 
     const pricing = {
         free: { monthly: 0, yearly: 0 },
         pro: { monthly: 35000, yearly: 336000 },
         business: { monthly: 52500, yearly: 504000 }
+    };
+
+    const handleUpgradeClick = (plan: 'pro' | 'business') => {
+        const planName = plan === 'pro' ? 'Pro' : 'Business Pro';
+        const amount = pricing[plan][billingCycle];
+        setSelectedPlan({ name: planName, amount });
+        setPaymentStep('method');
+    };
+
+    const handleMethodSelect = (method: 'momo' | 'airtel' | 'card' | 'bank') => {
+        setSelectedMethod(method);
+        setPaymentStep('processing');
+    };
+
+    const handleCardSubmit = () => {
+        setPaymentStep('processing');
+    };
+
+    const handleClosePayment = () => {
+        setPaymentStep('none');
+        setSelectedPlan(null);
+        setSelectedMethod(null);
+    };
+
+    const handleBackToMethods = () => {
+        setPaymentStep('method');
     };
 
     return (
@@ -75,7 +107,10 @@ export default function UpgradePage() {
                                 <p className="text-xs text-primary-01 mt-1">Billed annually (UGX {(pricing.pro.monthly * 12).toLocaleString()}/yr)</p>
                             )}
                         </div>
-                        <button className="w-full py-3 rounded-xl text-center font-semibold transition-colors mb-6 border-2 border-neutrals-06 text-shades-black hover:bg-neutrals-02">
+                        <button
+                            onClick={() => handleUpgradeClick('pro')}
+                            className="w-full py-3 rounded-xl text-center font-semibold transition-colors mb-6 border-2 border-neutrals-06 text-shades-black hover:bg-neutrals-02"
+                        >
                             Start Pro Trial
                         </button>
                     </div>
@@ -94,7 +129,10 @@ export default function UpgradePage() {
                                 <p className="text-xs text-primary-01 mt-1">Billed annually (UGX {(pricing.business.monthly * 12).toLocaleString()}/yr)</p>
                             )}
                         </div>
-                        <button className="w-full py-3 rounded-xl text-center font-semibold transition-colors mb-6 bg-primary-01 text-white hover:bg-primary-02">
+                        <button
+                            onClick={() => handleUpgradeClick('business')}
+                            className="w-full py-3 rounded-xl text-center font-semibold transition-colors mb-6 bg-primary-01 text-white hover:bg-primary-02"
+                        >
                             Go Business Pro
                         </button>
                     </div>
@@ -204,6 +242,26 @@ export default function UpgradePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Payment Overlays */}
+            {paymentStep === 'method' && selectedPlan && (
+                <PaymentMethodSelection
+                    onClose={handleClosePayment}
+                    onSelectMethod={handleMethodSelect}
+                    amount={selectedPlan.amount}
+                    plan={selectedPlan.name}
+                />
+            )}
+
+            {paymentStep === 'processing' && selectedPlan && selectedMethod && (
+                <PaymentProcessing
+                    onCancel={handleClosePayment}
+                    onResend={() => console.log('Resending prompt')}
+                    onChangeNumber={handleBackToMethods}
+                    phoneNumber={phoneNumber}
+                    paymentMethod={selectedMethod === 'momo' ? 'MTN MoMo' : selectedMethod === 'airtel' ? 'Airtel Money' : 'Card Payment'}
+                />
+            )}
         </div>
     );
 }
