@@ -104,8 +104,8 @@ export default function Header() {
             Inspiration
           </Link>
 
-          {/* "Become a Planner" - Hide for Customers/Planners */}
-          {(!user || user.accountType === 'VENDOR') && (
+          {/* "Become a Planner" - Hide for signed-in users */}
+          {!user && (
             <Link
               href="/signup?type=customer"
               className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
@@ -117,8 +117,8 @@ export default function Header() {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* "Become a Vendor" - Hide for Vendors */}
-          {(!user || user.accountType !== 'VENDOR') && (
+          {/* "Become a Vendor" - Hide for signed-in users */}
+          {!user && (
             <Link
               href="/signup?type=vendor"
               className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 text-primary-01 hover:opacity-90"
@@ -264,7 +264,7 @@ export default function Header() {
           </Link>
 
           {/* Become a Planner */}
-          {(!user || user.accountType === 'VENDOR') && (
+          {!user && (
             <Link
               href="/signup?type=customer"
               className="block py-2 text-shades-black transition-colors hover:text-primary-01"
@@ -274,7 +274,7 @@ export default function Header() {
           )}
 
           {/* Become a Vendor Button */}
-          {(!user || user.accountType !== 'VENDOR') && (
+          {!user && (
             <Link
               href="/signup?type=vendor"
               className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
