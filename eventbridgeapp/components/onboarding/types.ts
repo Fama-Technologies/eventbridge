@@ -13,11 +13,13 @@ export interface OnboardingData {
   profilePhoto: File | null;
   profilePhotoPreview: string;
   businessName: string;
-  serviceCategories: string[];
-  customCategories: string[];
+  eventTypes: string[];
+  customEventTypes: string[];
   primaryLocation: string;
 
   // Step 2: Services
+  serviceCategories: string[];
+  customServiceCategories: string[];
   serviceDescription: string;
   pricingStructure: string[];
   customPricingStructure: string[];
@@ -57,11 +59,13 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   profilePhoto: null,
   profilePhotoPreview: '',
   businessName: '',
-  serviceCategories: [],
-  customCategories: [],
+  eventTypes: [],
+  customEventTypes: [],
   primaryLocation: '',
 
   // Step 2
+  serviceCategories: [],
+  customServiceCategories: [],
   serviceDescription: '',
   pricingStructure: [],
   customPricingStructure: [],
@@ -76,6 +80,20 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   verificationDocuments: [],
   agreedToTerms: false,
 };
+
+export const EVENT_TYPES = [
+  'Wedding',
+  'Birthday',
+  'Corporate',
+  'Engagement',
+  'Baby Shower',
+  'Graduation',
+  'Conference',
+  'Funeral',
+  'Party',
+  'Product Launch',
+  'Workshop',
+];
 
 export const SERVICE_CATEGORIES = [
   'DJ & Music',

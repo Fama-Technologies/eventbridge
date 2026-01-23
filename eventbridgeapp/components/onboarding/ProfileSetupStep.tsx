@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { Camera, MapPin, Plus, X, Check, ArrowRight, Loader2 } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
-import { SERVICE_CATEGORIES } from './types';
+import { EVENT_TYPES } from './types';
 
 export default function ProfileSetupStep({
   data,
@@ -52,19 +52,19 @@ export default function ProfileSetupStep({
   };
 
   const toggleCategory = (category: string) => {
-    const current = data.serviceCategories;
+    const current = data.eventTypes;
     if (current.includes(category)) {
-      updateData({ serviceCategories: current.filter((c) => c !== category) });
+      updateData({ eventTypes: current.filter((c) => c !== category) });
     } else {
-      updateData({ serviceCategories: [...current, category] });
+      updateData({ eventTypes: [...current, category] });
     }
   };
 
   const addCustomCategory = () => {
-    if (customCategoryInput.trim() && !data.customCategories.includes(customCategoryInput.trim())) {
+    if (customCategoryInput.trim() && !data.customEventTypes.includes(customCategoryInput.trim())) {
       updateData({
-        customCategories: [...data.customCategories, customCategoryInput.trim()],
-        serviceCategories: [...data.serviceCategories, customCategoryInput.trim()],
+        customEventTypes: [...data.customEventTypes, customCategoryInput.trim()],
+        eventTypes: [...data.eventTypes, customCategoryInput.trim()],
       });
       setCustomCategoryInput('');
       setShowCustomInput(false);
@@ -73,16 +73,16 @@ export default function ProfileSetupStep({
 
   const removeCustomCategory = (category: string) => {
     updateData({
-      customCategories: data.customCategories.filter((c) => c !== category),
-      serviceCategories: data.serviceCategories.filter((c) => c !== category),
+      customEventTypes: data.customEventTypes.filter((c) => c !== category),
+      eventTypes: data.eventTypes.filter((c) => c !== category),
     });
   };
 
   const displayedCategories = showAllCategories
-    ? SERVICE_CATEGORIES
-    : SERVICE_CATEGORIES.slice(0, 5);
+    ? EVENT_TYPES
+    : EVENT_TYPES.slice(0, 5);
 
-  const isValid = data.businessName.trim() && data.serviceCategories.length > 0;
+  const isValid = data.businessName.trim() && data.eventTypes.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -168,7 +168,7 @@ export default function ProfileSetupStep({
       {/* Service Categories */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-shades-black">Service Categories</label>
+          <label className="text-sm font-semibold text-shades-black">Event Types You Cater For</label>
           <button
             type="button"
             onClick={() => setShowAllCategories(!showAllCategories)}
@@ -180,7 +180,7 @@ export default function ProfileSetupStep({
 
         <div className="flex flex-wrap gap-2">
           {displayedCategories.map((category) => {
-            const isSelected = data.serviceCategories.includes(category);
+            const isSelected = data.eventTypes.includes(category);
             return (
               <button
                 key={category}
@@ -198,7 +198,7 @@ export default function ProfileSetupStep({
             );
           })}
 
-          {data.customCategories.map((category) => (
+          {data.customEventTypes.map((category) => (
             <div
               key={category}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-01 text-white"
@@ -222,7 +222,7 @@ export default function ProfileSetupStep({
                 value={customCategoryInput}
                 onChange={(e) => setCustomCategoryInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addCustomCategory()}
-                placeholder="Custom category"
+                placeholder="Custom event type"
                 className="px-3 py-2 rounded-full text-sm bg-neutrals-02 dark:bg-neutrals-03 border border-neutrals-04 focus:border-primary-01 focus:outline-none"
                 autoFocus
               />

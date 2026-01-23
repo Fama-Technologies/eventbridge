@@ -7,6 +7,19 @@ import CategoryCard from './category-card';
 export default function ExploreCategories() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const eventTypeSlugs = new Set([
+    'weddings',
+    'birthdays',
+    'corporate',
+    'engagements',
+    'baby-showers',
+    'graduations',
+    'conferences',
+    'funerals',
+    'parties',
+    'product-launchers',
+    'workshops',
+  ]);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -14,8 +27,13 @@ export default function ExploreCategories() {
         const response = await fetch('/api/categories?limit=4');
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
-        // Ensure we only show 4 items if the API returns more
-        setCategories(Array.isArray(data) ? data.slice(0, 4) : []);
+        const filtered =
+          Array.isArray(data)
+            ? data.filter((category) =>
+                eventTypeSlugs.has(String(category.slug || '').toLowerCase())
+              )
+            : [];
+        setCategories(filtered.slice(0, 4));
       } catch (error) {
         console.error('Error fetching categories:', error);
       } finally {
@@ -30,7 +48,7 @@ export default function ExploreCategories() {
     <section className="py-12 px-6 bg-background">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-shades-black">Find the vendors for every ocassion</h2>
+          <h2 className="text-2xl font-bold text-shades-black">Explore services by event type</h2>
           <Link
             href="/categories"
             className="flex items-center gap-2 text-shades-black hover:text-primary-01 font-medium transition-colors text-sm"

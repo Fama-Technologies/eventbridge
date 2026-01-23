@@ -138,8 +138,9 @@ export default function Onboarding({ userId, userEmail }: OnboardingProps) {
         credentials: 'include',
         body: JSON.stringify({
           businessName: data.businessName,
+          eventTypes: data.eventTypes,
           serviceCategories: data.serviceCategories,
-          customCategories: data.customCategories,
+          customServiceCategories: data.customServiceCategories,
           primaryLocation: data.primaryLocation,
           serviceDescription: data.serviceDescription,
           pricingStructure: data.pricingStructure,
