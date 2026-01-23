@@ -33,7 +33,7 @@ export default function PaymentMethodSelection({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-shades-black/90 backdrop-blur-sm">
-            <div className="bg-neutrals-02 rounded-3xl w-full max-w-lg mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="bg-neutrals-01 rounded-3xl w-full max-w-lg mx-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
                 {/* Header */}
                 <div className="p-4 flex-shrink-0">
                     <button onClick={onClose} className="p-2 hover:bg-neutrals-07 rounded-lg transition-colors mb-2">
@@ -49,9 +49,9 @@ export default function PaymentMethodSelection({
                         {/* MTN MoMo */}
                         <button
                             onClick={() => handleMethodClick('momo')}
-                            className={`relative p-6 rounded-2xl border-2 transition-all ${selectedMethod === 'momo'
+                            className={`relative p-2 rounded-2xl border-2 transition-all ${selectedMethod === 'momo'
                                 ? 'border-primary-01 border-2 bg-primary-01/10'
-                                : 'border-neutrals-04 border-2 bg-neutrals-07 hover:bg-neutrals-06'
+                                : 'border-neutrals-07 border-2 bg-neutrals-01 hover:bg-neutrals-02'
                                 }`}
                         >
                             {selectedMethod === 'momo' && (
@@ -59,14 +59,14 @@ export default function PaymentMethodSelection({
                                     <Check size={14} className="text-shades-white" />
                                 </div>
                             )}
-                            <div className="absolute top-1 left-2 px-2 py-1 bg-primary-01 text-shades-white text-[10px] font-bold rounded">
-                                MOST POPULAR IN UGANDA
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-01 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
+                                Most Popular in Uganda
                             </div>
                             <div className="flex flex-col items-center pt-6">
-                                <div className="w-16 h-16 mb-3 flex items-center justify-center">
+                                <div className="w-16 h-16 mb-1 flex items-center justify-center rounded-full">
                                     <Image src="/icons/mtn.svg" alt="MTN" width={48} height={48} />
                                 </div>
-                                <p className="font-bold text-shades-white text-sm">MTN MoMo</p>
+                                <p className="font-bold text-shades-black text-sm">MTN MoMo</p>
                                 <p className="text-xs text-primary-01">Instant prompt on phone</p>
                             </div>
                         </button>
@@ -76,7 +76,7 @@ export default function PaymentMethodSelection({
                             onClick={() => handleMethodClick('airtel')}
                             className={`relative p-6 rounded-2xl border-2 transition-all ${selectedMethod === 'airtel'
                                 ? 'border-primary-01 bg-primary-01/10'
-                                : 'border-neutrals-04 bg-neutrals-07 hover:bg-neutrals-06'
+                                : 'border-neutrals-07 bg-neutrals-01 hover:bg-neutrals-02'
                                 }`}
                         >
                             {selectedMethod === 'airtel' && (
@@ -88,54 +88,27 @@ export default function PaymentMethodSelection({
                                 <div className="w-16 h-16 mb-3 flex items-center justify-center">
                                     <Image src="/icons/airtel.svg" alt="Airtel" width={48} height={48} />
                                 </div>
-                                <p className="font-bold text-shades-white text-sm">Airtel Money</p>
-                                <p className="text-xs text-neutrals-05">Instant prompt on phone</p>
+                                <p className="font-bold text-shades-black text-sm">Airtel Money</p>
+                                <p className="text-xs text-primary-01">Instant prompt on phone</p>
                             </div>
                         </button>
                     </div>
 
                     {/* Card Payment or Bank Transfer */}
-                    <div className="space-y-4">
-                        <button
-                            onClick={() => handleMethodClick('card')}
-                            className={`w-full p-6 rounded-2xl border-2 transition-all ${selectedMethod === 'card'
-                                ? 'border-primary-01 bg-primary-01/10'
-                                : 'border-neutrals-04 bg-neutrals-07 hover:bg-neutrals-06'
-                                }`}
-                        >
-                            <div className="flex items-center justify-between relative">
-                                {selectedMethod === 'card' && (
-                                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-primary-01 rounded-full flex items-center justify-center">
-                                        <Check size={14} className="text-white" />
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-neutrals-06 rounded-lg flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-shades-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                        </svg>
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-bold text-shades-white">Visa / Mastercard</p>
-                                        <p className="text-xs text-neutrals-05">Credit/Debit or Virtual</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </button>
-
+                    <div className="space-y-2 flex items-center justify-center" >
                         {/* Bank Transfer Option */}
                         <button
                             onClick={() => onSelectMethod('bank')}
-                            className="w-full p-5 rounded-2xl border-2 border-neutrals-04 bg-neutrals-07 hover:bg-neutrals-06 transition-all"
+                            className=" py-5 px-15 rounded-2xl border-2 border-neutrals-07 bg-neutrals-01 hover:bg-neutrals-02 transition-all"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-neutrals-06 rounded-lg flex items-center justify-center">
-                                    <svg className="w-6 h-6 text-shades-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="flex items-center gap-4 flex-col">
+                                <div className="w-12 h-12 flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-shades-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
                                     </svg>
                                 </div>
                                 <div className="text-left">
-                                    <p className="font-bold text-shades-white">Bank Transfer</p>
+                                    <p className="font-bold text-shades-black">Bank Transfer</p>
                                     <p className="text-xs text-neutrals-05">Other options</p>
                                 </div>
                             </div>
@@ -144,8 +117,8 @@ export default function PaymentMethodSelection({
 
                     {/* Phone Number Input for MoMo/Airtel */}
                     {(selectedMethod === 'momo' || selectedMethod === 'airtel') && (
-                        <div className="mt-6 p-6 bg-neutrals-07 rounded-2xl border border-neutrals-04">
-                            <label className="block text-sm font-semibold text-shades-white mb-3">MoMo Phone Number</label>
+                        <div className="mt-6 p-6 bg-neutrals-01 rounded-2xl border border-neutrals-07">
+                            <label className="block text-sm font-semibold text-shades-black mb-3">MoMo Phone Number</label>
                             <div className="relative">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                     <span className="text-lg">🇺🇬</span>
@@ -168,7 +141,7 @@ export default function PaymentMethodSelection({
                     {selectedMethod === 'card' && (
                         <div className="mt-6 p-6 bg-neutrals-07 rounded-2xl border border-neutrals-04 space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-shades-white mb-2">Card Number</label>
+                                <label className="block text-sm font-semibold text-shades-black mb-2">Card Number</label>
                                 <input
                                     type="text"
                                     placeholder="0000 0000 0000 0000"

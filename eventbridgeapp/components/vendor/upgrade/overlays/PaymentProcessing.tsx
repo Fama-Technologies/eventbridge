@@ -36,7 +36,7 @@ export default function PaymentProcessing({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-shades-black/90 backdrop-blur-sm">
-            <div className="bg-neutrals-08 rounded-3xl w-full max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 p-8 text-center">
+            <div className="bg-neutrals-01 rounded-3xl w-full max-w-md mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 p-8 text-center">
                 {/* Animated Phone Icon */}
                 <div className="relative w-32 h-32 mx-auto mb-8">
                     {/* Outer pulsing ring */}
@@ -44,7 +44,7 @@ export default function PaymentProcessing({
                     {/* Middle ring */}
                     <div className="absolute inset-4 border-2 border-primary-01/30 rounded-full"></div>
                     {/* Inner circle */}
-                    <div className="absolute inset-8 bg-neutrals-07 rounded-full border border-primary-01/50 flex items-center justify-center">
+                    <div className="absolute inset-8 bg-primary-01/50 rounded-full border border-primary-01/50 flex items-center justify-center">
                         <Smartphone size={40} className="text-primary-01" />
                     </div>
                     {/* Small dot indicator */}
@@ -52,24 +52,24 @@ export default function PaymentProcessing({
                 </div>
 
                 {/* Title */}
-                <h2 className="text-2xl font-bold text-shades-white mb-3">
+                <h2 className="text-2xl font-bold text-shades-black mb-3">
                     We're waiting for your approval
                 </h2>
 
                 {/* Description */}
                 <p className="text-neutrals-05 text-sm mb-1">
-                    Check your phone for the <span className="font-semibold text-shades-white">{paymentMethod}</span> prompt
+                    Check your phone for the <span className="font-semibold text-shades-black">{paymentMethod}</span> prompt
                 </p>
                 <p className="text-neutrals-05 text-sm mb-8">
                     Enter your PIN • Usually takes 30–60 seconds
                 </p>
 
                 {/* Timer */}
-                <div className="inline-flex items-center gap-2 px-5 py-2 bg-neutrals-07 rounded-full border border-neutrals-04 mb-10">
+                <div className="inline-flex items-center gap-2 px-5 py-2 bg-neutrals-01 rounded-full border border-neutrals-04 mb-10">
                     <svg className="w-4 h-4 text-neutrals-05" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm font-semibold text-shades-white">Expires in {formatTime(timeLeft)}</span>
+                    <span className="text-sm font-semibold text-shades-black">Expires in {formatTime(timeLeft)}</span>
                 </div>
 
                 {/* Action Links */}
@@ -83,27 +83,28 @@ export default function PaymentProcessing({
                     <span className="text-neutrals-06">|</span>
                     <button
                         onClick={onChangeNumber}
-                        className="text-neutrals-05 hover:text-shades-white transition-colors"
+                        className="text-neutrals-05 hover:text-shades-black transition-colors"
                     >
                         Wrong number? Change
                     </button>
                 </div>
+                {/* Cancel Button */}
+                <button
+                    onClick={onCancel}
+                    className="text-neutrals-05 text-sm hover:text-shades-black font-semibold underline transition-colors"
+                >
+                    Cancel
+                </button>
 
                 {/* Progress Bar */}
-                <div className="w-full bg-neutrals-06 rounded-full h-1.5 mb-6 overflow-hidden">
+                <div className="w-full bg-neutrals-06 rounded-full h-1.5 mt-6 overflow-hidden">
                     <div
                         className="h-full bg-primary-01 transition-all duration-1000 ease-linear"
                         style={{ width: `${(timeLeft / 300) * 100}%` }}
                     ></div>
                 </div>
 
-                {/* Cancel Button */}
-                <button
-                    onClick={onCancel}
-                    className="text-neutrals-05 text-sm hover:text-shades-white font-semibold underline transition-colors"
-                >
-                    Cancel
-                </button>
+
             </div>
         </div>
     );
