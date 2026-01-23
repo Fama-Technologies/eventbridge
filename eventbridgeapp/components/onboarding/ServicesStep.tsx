@@ -11,7 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
-import { PRICING_STRUCTURES } from './types';
+import { PRICING_STRUCTURES, SERVICE_CATEGORIES } from './types';
 import { toast } from 'sonner';
 
 export default function ServicesStep({
@@ -26,6 +26,9 @@ export default function ServicesStep({
   const [customPricingInput, setCustomPricingInput] = useState('');
   const [showCustomPricingInput, setShowCustomPricingInput] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -141,7 +144,40 @@ export default function ServicesStep({
     });
   };
 
+  const toggleCategory = (category: string) => {
+    const current = data.serviceCategories;
+    if (current.includes(category)) {
+      updateData({ serviceCategories: current.filter((c) => c !== category) });
+    } else {
+      updateData({ serviceCategories: [...current, category] });
+    }
+  };
+
+  const addCustomCategory = () => {
+    const value = customCategoryInput.trim();
+    if (!value || data.customServiceCategories.includes(value)) return;
+
+    updateData({
+      customServiceCategories: [...data.customServiceCategories, value],
+      serviceCategories: [...data.serviceCategories, value],
+    });
+    setCustomCategoryInput('');
+    setShowCustomInput(false);
+  };
+
+  const removeCustomCategory = (category: string) => {
+    updateData({
+      customServiceCategories: data.customServiceCategories.filter((c) => c !== category),
+      serviceCategories: data.serviceCategories.filter((c) => c !== category),
+    });
+  };
+
+  const displayedCategories = showAllCategories
+    ? SERVICE_CATEGORIES
+    : SERVICE_CATEGORIES.slice(0, 5);
+
   const isValid =
+    data.serviceCategories.length > 0 &&
     (data.pricingStructure || []).length > 0 &&
     (data.workingDays || []).length > 0;
 
@@ -151,8 +187,8 @@ export default function ServicesStep({
         <div>
           <h1 className="text-4xl font-bold text-shades-black mb-3">Tell us about your services</h1>
           <p className="text-neutrals-07">
-            Provide details that help organizers understand what you offer and match with the right
-            events.
+            Tell us which services you offer for the event types you selected so organizers can
+            match with the right providers.
           </p>
         </div>
         <button
@@ -164,6 +200,97 @@ export default function ServicesStep({
           Skip
           <ArrowRight className="w-4 h-4" />
         </button>
+      </div>
+
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-semibold text-shades-black">Services You Offer</label>
+          <button
+            type="button"
+            onClick={() => setShowAllCategories(!showAllCategories)}
+            className="text-sm text-primary-01 hover:text-primary-02 transition-colors"
+          >
+            {showAllCategories ? 'Show less' : 'View all'}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {displayedCategories.map((category) => {
+            const isSelected = data.serviceCategories.includes(category);
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => toggleCategory(category)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  isSelected
+                    ? 'bg-primary-01 text-white'
+                    : 'bg-neutrals-03 text-shades-black border border-neutrals-04 hover:bg-neutrals-04'
+                }`}
+              >
+                {isSelected && <Check className="w-4 h-4" />}
+                {category}
+              </button>
+            );
+          })}
+
+          {data.customServiceCategories.map((category) => (
+            <div
+              key={category}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-primary-01 text-white"
+            >
+              <Check className="w-4 h-4" />
+              {category}
+              <button
+                type="button"
+                onClick={() => removeCustomCategory(category)}
+                className="ml-1 hover:bg-primary-02 rounded-full p-0.5"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+
+          {showCustomInput ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={customCategoryInput}
+                onChange={(e) => setCustomCategoryInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addCustomCategory()}
+                placeholder="Custom service"
+                className="px-3 py-2 rounded-full text-sm bg-neutrals-02 border border-neutrals-04"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={addCustomCategory}
+                className="p-2 rounded-full bg-primary-01 text-white hover:bg-primary-02"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCustomInput(false);
+                  setCustomCategoryInput('');
+                }}
+                className="p-2 rounded-full bg-neutrals-04 text-shades-black hover:bg-neutrals-05"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowCustomInput(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-neutrals-02 border border-dashed border-neutrals-05 text-neutrals-07 hover:border-primary-01 hover:text-primary-01 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Custom
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mb-8">
