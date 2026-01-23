@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, AlertTriangle, FileText, Download, CreditCard, Loader2 } from "lucide-react";
+import { Check, AlertTriangle, FileText, Download, CreditCard, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import DeleteAccountWarning from "./overlays/DeleteAccountWarning";
+import DeleteAccountFeedback from "./overlays/DeleteAccountFeedback";
+import DeleteAccountSuccess from "./overlays/DeleteAccountSuccess";
 
 export default function AccountSecurity() {
     const { addToast } = useToast();
@@ -26,6 +29,20 @@ export default function AccountSecurity() {
         google: false,
         facebook: false
     });
+
+    // Delete Account State
+    const [deleteStep, setDeleteStep] = useState(0); // 0: Closed, 1: Warning, 2: Feedback, 3: Success
+    const [deleteChecks, setDeleteChecks] = useState({
+        assets: false,
+        leads: false,
+        history: false
+    });
+    const [deleteFeedback, setDeleteFeedback] = useState({
+        reason: "",
+        details: ""
+    });
+
+    const canContinueDelete = deleteChecks.assets && deleteChecks.leads && deleteChecks.history;
 
     useEffect(() => {
         async function fetchProfile() {
@@ -86,8 +103,26 @@ export default function AccountSecurity() {
         addToast(`${platform === 'google' ? 'Google' : 'Facebook'} ${newState ? 'connected' : 'disconnected'}`, "info");
     };
 
+    // Delete Flow Handlers
+    const startDeleteFlow = () => setDeleteStep(1);
+    const cancelDelete = () => {
+        setDeleteStep(0);
+        setDeleteChecks({ assets: false, leads: false, history: false });
+        setDeleteFeedback({ reason: "", details: "" });
+    };
+    const proceedToFeedback = () => setDeleteStep(2);
+    const submitFeedback = async () => {
+        // Simulate API call to delete account and submit feedback
+        await new Promise(r => setTimeout(r, 1000));
+        setDeleteStep(3);
+    };
+    const completeDeletion = () => {
+        // Redirect to home or logout
+        window.location.href = "/";
+    };
+
     return (
-        <div className="bg-shades-white p-6 md:p-8 rounded-b-2xl border-t border-neutrals-02">
+        <div className="bg-shades-white p-6 md:p-8 rounded-b-2xl border-t border-neutrals-02 relative">
 
             {/* Personal Information */}
             <div className="flex justify-between items-center mb-6">
@@ -162,6 +197,29 @@ export default function AccountSecurity() {
                     >
                         {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                         {isLoading ? "Uploading..." : "Resubmit Documents"}
+                    </button>
+                </div>
+            </div>
+
+            <hr className="border-neutrals-02 mb-8" />
+
+            {/* Delete Account Section */}
+            <div className="bg-shades-black/5 rounded-2xl p-6 border border-transparent mb-8">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+                            <Trash2 size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-shades-black">Delete Account</h3>
+                            <p className="text-sm text-neutrals-06">When you want to remove your account</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={startDeleteFlow}
+                        className="px-4 py-2 bg-shades-white border border-neutrals-03 text-shades-black font-semibold rounded-lg hover:bg-neutrals-01 transition-colors text-sm shadow-sm"
+                    >
+                        Delete Account
                     </button>
                 </div>
             </div>
@@ -276,6 +334,32 @@ export default function AccountSecurity() {
                     )}
                 </div>
             </div>
+
+            {/* DELETE ACCOUNT MODALS */}
+            {deleteStep === 1 && (
+                <DeleteAccountWarning
+                    deleteChecks={deleteChecks}
+                    setDeleteChecks={setDeleteChecks}
+                    onCancel={cancelDelete}
+                    onContinue={proceedToFeedback}
+                    canContinue={canContinueDelete}
+                />
+            )}
+
+            {deleteStep === 2 && (
+                <DeleteAccountFeedback
+                    deleteFeedback={deleteFeedback}
+                    setDeleteFeedback={setDeleteFeedback}
+                    onSubmit={submitFeedback}
+                    onSkip={() => setDeleteStep(3)}
+                />
+            )}
+
+            {deleteStep === 3 && (
+                <DeleteAccountSuccess
+                    onComplete={completeDeletion}
+                />
+            )}
         </div>
     );
 }

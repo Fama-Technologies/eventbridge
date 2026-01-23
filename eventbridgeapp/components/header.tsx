@@ -1,22 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { Globe, Sun, Menu } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Globe, Sun, Menu, LayoutDashboard, Settings, LogOut, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
 import { BurgerMenu } from '@/components/category'; // Assuming this component handles its own styling or accepts props
-
+import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { setTheme: updateTheme, resolvedTheme } = useTheme();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const pathname = usePathname();
   const isHome = pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -25,12 +29,27 @@ export default function Header() {
       setIsScrolled(window.scrollY > 0);
     };
 
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const toggleTheme = () => {
     updateTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/login' });
   };
 
   // Determine header styles based on scroll and page
@@ -52,6 +71,11 @@ export default function Header() {
     ? 'bg-white/10 backdrop-blur-sm'
     : 'bg-primary-01/10';
 
+  // Determine dashboard link based on role
+  const getDashboardLink = () => {
+    if (user?.accountType === 'VENDOR') return '/vendor/dashboard';
+    return '/customer/dashboard';
+  };
 
   return (
     <header className={`${headerPositionClass} top-0 left-0 right-0 z-50 px-6 py-4 border-b transition-all duration-300 ${headerBgClass}`}>
@@ -79,31 +103,96 @@ export default function Header() {
           >
             Inspiration
           </Link>
-          {/* UPDATED: Become a Planner links to signup as a customer */}
-          <Link
-            href="/signup?type=customer"
-            className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
-          >
-            Become a Planner
-          </Link>
+
+          {/* "Become a Planner" - Hide for Customers/Planners */}
+          {(!user || user.accountType === 'VENDOR') && (
+            <Link
+              href="/signup?type=customer"
+              className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
+            >
+              Become a Planner
+            </Link>
+          )}
         </nav>
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {/* Become a Vendor Button */}
-          <Link
-            href="/signup?type=vendor"
-            className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 text-primary-01 hover:opacity-90"
-          >
-            Become a Vendor
-          </Link>
-          {/* Login Button (Right Section, visible on desktop) */}
-          <Link
-            href="/login"
-            className="hidden sm:block px-4 py-2 rounded font-semibold border transition-all duration-200 text-primary-01 border-primary-01 hover:opacity-90 hover:bg-primary-01 hover:text-shades-white"
-          >
-            Login
-          </Link>
+          {/* "Become a Vendor" - Hide for Vendors */}
+          {(!user || user.accountType !== 'VENDOR') && (
+            <Link
+              href="/signup?type=vendor"
+              className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 text-primary-01 hover:opacity-90"
+            >
+              Become a Vendor
+            </Link>
+          )}
+
+          {/* Login Button - Hide if logged in */}
+          {!user && (
+            <Link
+              href="/login"
+              className="hidden sm:block px-4 py-2 rounded font-semibold border transition-all duration-200 text-primary-01 border-primary-01 hover:opacity-90 hover:bg-primary-01 hover:text-shades-white"
+            >
+              Login
+            </Link>
+          )}
+
+          {/* User Avatar & Dropdown */}
+          {user && (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-10 h-10 rounded-full bg-neutrals-02 border border-neutrals-03 flex items-center justify-center overflow-hidden focus:outline-none transition-transform active:scale-95"
+              >
+                {user.image ? (
+                  <Image src={user.image} alt={user.name || 'User'} width={40} height={40} className="object-cover w-full h-full" />
+                ) : (
+                  <div className="w-full h-full bg-primary-01 text-white flex items-center justify-center font-bold">
+                    {user.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-neutrals-02 py-2 animate-in fade-in slide-in-from-top-2 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-neutrals-02">
+                    <p className="text-sm font-semibold text-shades-black truncate">{user.name}</p>
+                    <p className="text-xs text-neutrals-06 truncate">{user.email}</p>
+                  </div>
+
+                  <div className="py-1">
+                    <Link
+                      href={getDashboardLink()}
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-shades-black hover:bg-neutrals-01 transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <LayoutDashboard size={16} />
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/settings" // Assuming a general settings page or specific depending on role
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-shades-black hover:bg-neutrals-01 transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Settings size={16} />
+                      Settings
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-neutrals-02 py-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Language Icon */}
           <button
@@ -146,7 +235,7 @@ export default function Header() {
             <BurgerMenu variant="light" />
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Show only if not logged in possibly? Or distinct mobile menu logic */}
           <button
             className={`md:hidden w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -173,27 +262,54 @@ export default function Header() {
           >
             Inspiration
           </Link>
-          {/* UPDATED: Become a Planner links to signup as a customer */}
-          <Link
-            href="/signup?type=customer"
-            className="block py-2 text-shades-black transition-colors hover:text-primary-01"
-          >
-            Become a Planner
-          </Link>
+
+          {/* Become a Planner */}
+          {(!user || user.accountType === 'VENDOR') && (
+            <Link
+              href="/signup?type=customer"
+              className="block py-2 text-shades-black transition-colors hover:text-primary-01"
+            >
+              Become a Planner
+            </Link>
+          )}
+
           {/* Become a Vendor Button */}
-          <Link
-            href="/signup?type=vendor"
-            className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
-          >
-            Become a Vendor
-          </Link>
+          {(!user || user.accountType !== 'VENDOR') && (
+            <Link
+              href="/signup?type=vendor"
+              className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
+            >
+              Become a Vendor
+            </Link>
+          )}
+
           {/* Login Button (Mobile) */}
-          <Link
-            href="/login"
-            className="block py-2 px-4 rounded-lg font-semibold text-center border border-primary-01 text-primary-01 transition-opacity hover:opacity-90"
-          >
-            Login
-          </Link>
+          {!user && (
+            <Link
+              href="/login"
+              className="block py-2 px-4 rounded-lg font-semibold text-center border border-primary-01 text-primary-01 transition-opacity hover:opacity-90"
+            >
+              Login
+            </Link>
+          )}
+
+          {/* Mobile Authenticated Links */}
+          {user && (
+            <>
+              <Link
+                href={getDashboardLink()}
+                className="block py-2 text-shades-black transition-colors hover:text-primary-01"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left py-2 text-red-600 transition-colors hover:text-red-700"
+              >
+                Logout
+              </button>
+            </>
+          )}
         </nav>
       )}
     </header>
