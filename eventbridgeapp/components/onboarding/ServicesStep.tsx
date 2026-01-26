@@ -11,7 +11,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { OnboardingStepProps } from './types';
-import { PRICING_STRUCTURES, SERVICE_CATEGORIES } from './types';
+import {
+  ALL_SERVICE_CATEGORIES,
+  PRICING_STRUCTURES,
+  SERVICE_CATEGORIES_BY_EVENT,
+} from './types';
 import { toast } from 'sonner';
 
 export default function ServicesStep({
@@ -172,9 +176,17 @@ export default function ServicesStep({
     });
   };
 
+  const serviceCategoriesForEvents = data.eventTypes
+    .flatMap((eventType) => SERVICE_CATEGORIES_BY_EVENT[eventType] || [])
+    .filter((category, index, list) => list.indexOf(category) === index);
+
+  const availableCategories = serviceCategoriesForEvents.length
+    ? serviceCategoriesForEvents
+    : ALL_SERVICE_CATEGORIES;
+
   const displayedCategories = showAllCategories
-    ? SERVICE_CATEGORIES
-    : SERVICE_CATEGORIES.slice(0, 5);
+    ? availableCategories
+    : availableCategories.slice(0, 6);
 
   const isValid =
     data.serviceCategories.length > 0 &&
@@ -213,6 +225,12 @@ export default function ServicesStep({
             {showAllCategories ? 'Show less' : 'View all'}
           </button>
         </div>
+
+        {data.eventTypes.length > 0 && (
+          <p className="text-xs text-neutrals-06 mb-3">
+            Showing service types for: {data.eventTypes.join(', ')}
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
           {displayedCategories.map((category) => {
