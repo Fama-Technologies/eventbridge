@@ -225,7 +225,6 @@ export default function Footer() {
             <h3 className="text-lg font-bold text-primary-01 mb-6">EVENT BRIDGE</h3>
             <div className="w-12 h-[2px] bg-neutrals-07 mb-6" />
             <div className="text-right text-sm text-neutrals-07">
-              <p className="mb-1">0394549735</p>
               <p>support@eventbridge.africa</p>
             </div>
           </div>
