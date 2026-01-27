@@ -27,9 +27,12 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
 
-    // Check if app download banner was dismissed
-    const dismissed = localStorage.getItem('appDownloadDismissed');
-    if (!dismissed) {
+    // Check if app download banner was dismissed recently
+    const dismissedTimestamp = localStorage.getItem('appDownloadDismissedAt');
+    const shouldShowBanner = !dismissedTimestamp ||
+      (Date.now() - parseInt(dismissedTimestamp)) > (3 * 60 * 1000); // 3 minutes
+
+    if (shouldShowBanner) {
       // Show banner after a short delay for better UX
       setTimeout(() => setShowAppDownload(true), 1000);
     }
@@ -82,7 +85,7 @@ export default function Header() {
 
     if (outcome === 'accepted') {
       setShowAppDownload(false);
-      localStorage.setItem('appDownloadDismissed', 'true');
+      localStorage.setItem('appDownloadDismissedAt', Date.now().toString());
     }
 
     setDeferredPrompt(null);
@@ -362,7 +365,7 @@ export default function Header() {
               <button
                 onClick={() => {
                   setShowAppDownload(false);
-                  localStorage.setItem('appDownloadDismissed', 'true');
+                  localStorage.setItem('appDownloadDismissedAt', Date.now().toString());
                 }}
                 className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white/80 hover:text-white transition-colors p-1 z-10"
                 aria-label="Dismiss"
