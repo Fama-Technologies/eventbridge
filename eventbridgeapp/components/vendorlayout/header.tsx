@@ -89,12 +89,7 @@ export default function VendorHeader({ onOpenMobileMenu }: VendorHeaderProps) {
                 {/* Right Section */}
                 <div className="flex items-center gap-3">
                     {/* View as Customer Link */}
-                    <Link
-                        href="/"
-                        className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary-01 hover:bg-primary-01/10 transition-colors"
-                    >
-                        <span>View profile as Customer</span>
-                    </Link>
+
 
                     {/* Notification Bell */}
                     <div className="relative">

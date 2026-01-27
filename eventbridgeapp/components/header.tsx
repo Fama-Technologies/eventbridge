@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Globe, Sun, Menu, LayoutDashboard, Settings, LogOut, User } from 'lucide-react';
+import { Globe, Sun, Menu, LayoutDashboard, Settings, LogOut, User, X, Smartphone } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showAppDownload, setShowAppDownload] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { setTheme: updateTheme, resolvedTheme } = useTheme();
   const { data: session } = useSession();
@@ -24,6 +25,13 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
+
+    // Check if app download banner was dismissed
+    const dismissed = localStorage.getItem('appDownloadDismissed');
+    if (!dismissed && !user) {
+      // Show banner after a short delay for better UX
+      setTimeout(() => setShowAppDownload(true), 1000);
+    }
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 0);
@@ -42,7 +50,7 @@ export default function Header() {
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [user]);
 
   const toggleTheme = () => {
     updateTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
@@ -97,12 +105,7 @@ export default function Header() {
           >
             Find Vendors
           </Link>
-          <Link
-            href="/inspiration"
-            className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
-          >
-            Inspiration
-          </Link>
+
 
           {/* "Become a Planner" - Hide for signed-in users */}
           {!user && (
@@ -118,13 +121,17 @@ export default function Header() {
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* "Become a Vendor" - Hide for signed-in users */}
+
+
+
+          {/* Create Account -> App Install Prompt */}
           {!user && (
-            <Link
-              href="/signup?type=vendor"
-              className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 text-primary-01 hover:opacity-90"
+            <button
+              onClick={() => setShowAppDownload(true)}
+              className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 bg-primary-01 text-white hover:opacity-90 shadow-md shadow-primary-01/20"
             >
-              Become a Vendor
-            </Link>
+              Create Account
+            </button>
           )}
 
           {/* Login Button - Hide if logged in */}
@@ -256,12 +263,7 @@ export default function Header() {
           >
             Find Vendors
           </Link>
-          <Link
-            href="/inspiration"
-            className="block py-2 text-shades-black transition-colors hover:text-primary-01"
-          >
-            Inspiration
-          </Link>
+
 
           {/* Become a Planner */}
           {!user && (
@@ -274,13 +276,20 @@ export default function Header() {
           )}
 
           {/* Become a Vendor Button */}
+
+
+
+          {/* Create Account Mobile */}
           {!user && (
-            <Link
-              href="/signup?type=vendor"
-              className="block py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowAppDownload(true);
+              }}
+              className="block w-full py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
             >
-              Become a Vendor
-            </Link>
+              Create Account
+            </button>
           )}
 
           {/* Login Button (Mobile) */}
@@ -311,6 +320,44 @@ export default function Header() {
             </>
           )}
         </nav>
+      )}
+
+      {/* App Download Modal */}
+      {showAppDownload && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowAppDownload(false)}
+              className="absolute top-4 right-4 text-neutrals-06 hover:text-black transition-colors p-1"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary-01/10 text-primary-01 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Smartphone size={32} />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-shades-black">Get the Event Bridge App</h3>
+              <p className="text-neutrals-06 mb-8 text-sm leading-relaxed">
+                Install our mobile app to create your account, chat with verified vendors, and plan your events effortlessly!
+              </p>
+
+              <div className="space-y-3">
+                <button className="w-full bg-shades-black text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-3 hover:opacity-80 transition-opacity shadow-lg">
+                  {/* Apple Icon could go here */}
+                  <span>Download on App Store</span>
+                </button>
+                <button className="w-full bg-shades-black text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-3 hover:opacity-80 transition-opacity shadow-lg">
+                  {/* Play Store Icon */}
+                  <span>Get it on Google Play</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </header>
   );
