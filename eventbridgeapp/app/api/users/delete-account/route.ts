@@ -1,6 +1,7 @@
+// app/api/users/delete-account/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { users } from '@/drizzle/schema';
+import { users, deletedAccounts } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -31,36 +32,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Optional: Get feedback from request body
+    // Get feedback from request body (optional)
     const body = await req.json().catch(() => ({}));
     const { reason, details } = body;
 
-    // Store feedback before deletion (optional)
-    if (reason || details) {
-      console.log('Account deletion feedback:', { 
-        userId: user.id, 
-        email: user.email, 
-        reason, 
-        details 
+    // Log deletion details for monitoring
+    console.log('Account deletion initiated:', { 
+      userId: user.id, 
+      email: user.email,
+      accountType: user.accountType,
+      reason: reason || 'Not provided', 
+      details: details || 'Not provided',
+      timestamp: new Date().toISOString()
+    });
+
+    // Create audit record BEFORE deleting the user
+    // This preserves the deletion history even after the user is gone
+    try {
+      await db.insert(deletedAccounts).values({
+        userId: user.id,
+        email: user.email,
+        accountType: user.accountType,
+        reason: reason || null,
+        details: details || null,
+        deletedAt: new Date(),
       });
-      // You could save this to a separate feedback/audit table
+
+      console.log(`Audit record created for user: ${user.email}`);
+    } catch (auditError) {
+      // Log error but don't fail the deletion
+      console.error('Failed to create audit record:', auditError);
     }
 
-    // Instead of hard deleting, we'll soft delete by marking as inactive
+    // ✅ HARD DELETE - This will cascade and delete all related data
+    // The database will automatically delete:
+    // - accounts, sessions, events, passwordResetTokens
+    // - vendorProfile and all vendor-related data
+    // - userUploads, onboardingProgress, bookings, reviews, invoices
     await db
-      .update(users)
-      .set({
-        isActive: false,
-        email: `deleted_${Date.now()}_${user.email}`, // Anonymize email
-        firstName: 'Deleted',
-        lastName: 'User',
-        phone: null,
-        image: null,
-        updatedAt: new Date(),
-      })
+      .delete(users)
       .where(eq(users.id, user.id));
 
-    console.log(`Account soft-deleted for user: ${user.email}`);
+    console.log(`✅ Account permanently deleted: ${user.email} (ID: ${user.id})`);
+    console.log(`All related data cascaded successfully`);
 
     return NextResponse.json(
       {
@@ -76,9 +90,21 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Delete account error:', error);
+    console.error('❌ Delete account error:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { 
+        success: false, 
+        message: 'Failed to delete account. Please try again or contact support.' 
+      },
       { status: 500 }
     );
   }
