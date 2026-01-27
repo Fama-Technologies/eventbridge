@@ -1,21 +1,28 @@
+// app/api/users/delete-account/route.ts - DEBUG VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { users } from '@/drizzle/schema';
+import { users, deletedAccounts } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
+  console.log('=== DELETE ACCOUNT API CALLED ===');
+  
   try {
     // Get the current session to verify user
     const session = await getServerSession(authOptions);
+    console.log('Session:', session);
     
     if (!session || !session.user?.email) {
+      console.log('ERROR: No session or email');
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    console.log('Looking for user with email:', session.user.email);
 
     // Get the user from the database
     const [user] = await db
@@ -24,43 +31,77 @@ export async function POST(req: NextRequest) {
       .where(eq(users.email, session.user.email))
       .limit(1);
 
+    console.log('User found:', user);
+
     if (!user) {
+      console.log('ERROR: User not found in database');
       return NextResponse.json(
         { success: false, message: 'User not found' },
         { status: 404 }
       );
     }
 
-    // Optional: Get feedback from request body
+    // Get feedback from request body (optional)
     const body = await req.json().catch(() => ({}));
     const { reason, details } = body;
 
-    // Store feedback before deletion (optional)
-    if (reason || details) {
-      console.log('Account deletion feedback:', { 
-        userId: user.id, 
-        email: user.email, 
-        reason, 
-        details 
-      });
-      // You could save this to a separate feedback/audit table
+    console.log('Deletion feedback:', { reason, details });
+
+    // Log deletion details for monitoring
+    console.log('Account deletion initiated:', { 
+      userId: user.id, 
+      email: user.email,
+      accountType: user.accountType,
+      reason: reason || 'Not provided', 
+      details: details || 'Not provided',
+      timestamp: new Date().toISOString()
+    });
+
+    // Create audit record BEFORE deleting the user
+    try {
+      console.log('Creating audit record...');
+      const auditRecord = await db.insert(deletedAccounts).values({
+        userId: user.id,
+        email: user.email,
+        accountType: user.accountType,
+        reason: reason || null,
+        details: details || null,
+        deletedAt: new Date(),
+      }).returning();
+
+      console.log('Audit record created:', auditRecord);
+    } catch (auditError) {
+      console.error('Failed to create audit record:', auditError);
     }
 
-    // Instead of hard deleting, we'll soft delete by marking as inactive
-    await db
-      .update(users)
-      .set({
-        isActive: false,
-        email: `deleted_${Date.now()}_${user.email}`, // Anonymize email
-        firstName: 'Deleted',
-        lastName: 'User',
-        phone: null,
-        image: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
+    // HARD DELETE - This will cascade and delete all related data
+    console.log('Attempting to delete user with ID:', user.id);
+    
+    const deleteResult = await db
+      .delete(users)
+      .where(eq(users.id, user.id))
+      .returning();
 
-    console.log(`Account soft-deleted for user: ${user.email}`);
+    console.log('Delete result:', deleteResult);
+
+    // Verify deletion
+    const [stillExists] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
+    console.log('User still exists after delete?', !!stillExists);
+
+    if (stillExists) {
+      console.error('ERROR: User was not deleted!');
+      return NextResponse.json(
+        { success: false, message: 'Failed to delete account' },
+        { status: 500 }
+      );
+    }
+
+    console.log('SUCCESS: Account permanently deleted:', user.email);
 
     return NextResponse.json(
       {
@@ -76,10 +117,20 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Delete account error:', error);
+    console.error('DELETE ACCOUNT ERROR:', error);
+    
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { 
+        success: false, 
+        message: 'Failed to delete account. Please try again or contact support.',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
-}
+} 

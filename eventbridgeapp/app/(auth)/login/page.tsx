@@ -10,7 +10,7 @@ import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect');
+  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/';
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -26,106 +26,38 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl
       });
 
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
-        console.error('Non-JSON response:', text);
-        toast.error("Server error. Please try again.");
+      if (result?.error) {
+        toast.error(result.error);
         setIsLoading(false);
         return;
       }
 
-      const data = await res.json();
+      if (result?.ok) {
+        toast.success('Login successful! Redirecting...');
 
-      if (!res.ok) {
-        console.error('Login failed:', data);
-        toast.error(data.message || "Login failed");
-        setIsLoading(false);
-        return;
+        // Force a hard navigation to ensure middleware picks up new cookies
+        window.location.href = callbackUrl;
       }
-
-      toast.success(`Login successful! Redirecting...`);
-
-      // Store user data in sessionStorage for immediate access
-      if (data.user) {
-        sessionStorage.setItem('pendingUser', JSON.stringify(data.user));
-      }
-
-      // Determine redirect URL with priority: API response > query param > account type
-      let targetUrl = '/';
-
-      if (data.redirectTo) {
-        targetUrl = data.redirectTo;
-      } else if (redirectUrl) {
-        targetUrl = redirectUrl;
-      } else if (data.user?.accountType) {
-        const accountType = data.user.accountType.toLowerCase();
-        switch (accountType) {
-          case 'vendor':
-            targetUrl = "/vendor";
-            break;
-          case 'admin':
-            targetUrl = "/admin/dashboard";
-            break;
-          case 'customer':
-            targetUrl = "/customer/dashboard";
-            break;
-          case 'planner':
-            targetUrl = "/planner/dashboard";
-            break;
-          default:
-            targetUrl = "/";
-        }
-      }
-
-      console.log('Login successful. Redirect target:', targetUrl);
-      console.log('Current window location:', window.location.href);
-
-      console.log('User account type:', data.user?.accountType);
-      console.log('Redirecting to:', targetUrl);
-
-      setIsLoading(false);
-
-      // Immediate redirect
-      router.push(targetUrl);
-
-      // Force redirect if router push fails
-      setTimeout(() => {
-        if (window.location.pathname === '/login') {
-          console.log('Router redirect failed, forcing redirect');
-          window.location.href = targetUrl;
-        }
-      }, 100);
     } catch (error) {
       console.error("Login error:", error);
-
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        toast.error("Cannot connect to server. Please check your connection.");
-      } else {
-        toast.error("Something went wrong. Please try again.");
-      }
-
+      toast.error("Something went wrong. Please try again.");
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
     try {
-      setIsGoogleLoading(true);
       await signIn('google', {
-        callbackUrl: redirectUrl || '/',
+        callbackUrl: callbackUrl,
       });
-      setIsGoogleLoading(false);
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Failed to sign in with Google");

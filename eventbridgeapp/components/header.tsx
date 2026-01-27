@@ -73,7 +73,7 @@ export default function Header() {
 
   // Determine dashboard link based on role
   const getDashboardLink = () => {
-    if (user?.accountType === 'VENDOR') return '/vendor/dashboard';
+    if (user?.accountType === 'VENDOR') return '/vendor';
     return '/customer/dashboard';
   };
 

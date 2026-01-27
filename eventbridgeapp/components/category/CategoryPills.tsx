@@ -18,9 +18,9 @@ interface CategoryPillsProps {
   onCategorySelect?: (category: string) => void;
 }
 
-export default function CategoryPills({ 
+export default function CategoryPills({
   selectedCategory,
-  onCategorySelect 
+  onCategorySelect
 }: CategoryPillsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,19 +40,26 @@ export default function CategoryPills({
     }
   };
 
+  const ALL_CATEGORIES = [
+    ...CATEGORIES,
+    { id: 'makeup', label: 'Makeup' },
+    { id: 'transport', label: 'Transport' },
+    { id: 'planning', label: 'Planning' },
+    { id: 'security', label: 'Security' },
+  ];
+
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {CATEGORIES.map((category) => {
+    <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 scrollbar-hide">
+      {ALL_CATEGORIES.map((category) => {
         const isSelected = selectedCategory === category.id;
         return (
           <button
             key={category.id}
             onClick={() => handleCategoryClick(category.id)}
-            className={`px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 text-center whitespace-nowrap ${
-              isSelected
-                ? 'bg-primary-01 text-white border border-primary-01'
-                : 'bg-transparent border border-neutrals-05 text-foreground hover:border-primary-01 hover:text-primary-01'
-            }`}
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0 ${isSelected
+              ? 'bg-primary-01 text-white shadow-md'
+              : 'bg-white text-primary-01 border-2 border-primary-01 hover:bg-primary-01/5'
+              }`}
           >
             {category.label}
           </button>

@@ -40,7 +40,7 @@ export default function ServiceCard({
   };
 
   return (
-    <Link href={`/category/vendor/${id}`} className="group block">
+    <Link href={`/customer/vendor-profile/${id}`} className="group block">
       {/* Image Container */}
       <div className="relative aspect-4/3 rounded-xl overflow-hidden mb-3">
         <Image
@@ -53,11 +53,10 @@ export default function ServiceCard({
         {/* Favorite Button */}
         <button
           onClick={handleFavoriteClick}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-            favorite
+          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${favorite
               ? 'bg-primary-01 text-white'
               : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
-          }`}
+            }`}
         >
           <Heart size={16} fill={favorite ? 'currentColor' : 'none'} />
         </button>
@@ -79,11 +78,10 @@ export default function ServiceCard({
                   e.stopPropagation();
                   setCurrentImageIndex(index);
                 }}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  index === currentImageIndex
+                className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex
                     ? 'bg-white w-3'
                     : 'bg-white/50 hover:bg-white/70'
-                }`}
+                  }`}
               />
             ))}
           </div>

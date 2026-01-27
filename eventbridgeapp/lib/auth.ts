@@ -2,7 +2,7 @@
 import { NextRequest } from 'next/server';
 import { verifyToken, createToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
-import { users, accounts } from '@/drizzle/schema';
+import { users, accounts, deletedAccounts } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
@@ -49,13 +49,31 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        const email = credentials.email.toLowerCase();
+
+        // Check if account was deleted
+        const [deletedAccount] = await db
+          .select()
+          .from(deletedAccounts)
+          .where(eq(deletedAccounts.email, email))
+          .limit(1);
+
+        if (deletedAccount) {
+          throw new Error('This account has been deleted. Please contact support if you believe this is an error.');
+        }
+
         const [user] = await db
           .select()
           .from(users)
-          .where(eq(users.email, credentials.email.toLowerCase()))
+          .where(eq(users.email, email))
           .limit(1);
 
         if (!user || !user.password) return null;
+
+        // Check if user is active
+        if (!user.isActive) {
+          throw new Error('Your account has been deactivated.');
+        }
 
         const isValid = await compare(credentials.password, user.password);
         if (!isValid) return null;
@@ -80,14 +98,29 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: '/login',
-    error: '/login',
+    error: '/auth/error',
   },
 
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider !== 'google' || !user.email) return true;
+      if (!user.email) return true;
 
       const email = user.email.toLowerCase();
+
+      // Check if user previously deleted their account
+      const [deletedAccount] = await db
+        .select()
+        .from(deletedAccounts)
+        .where(eq(deletedAccounts.email, email))
+        .limit(1);
+
+      if (deletedAccount) {
+        console.log(`Blocked login attempt for deleted account: ${email}`);
+        return false;
+      }
+
+      if (account?.provider !== 'google') return true;
+
       let accountType: 'VENDOR' | 'CUSTOMER' | 'PLANNER' | 'ADMIN' = 'CUSTOMER';
 
       // Check for pending account type from sessionStorage (passed from frontend)
@@ -131,6 +164,12 @@ export const authOptions: NextAuthOptions = {
 
         userId = created.id;
       } else {
+        // Check if existing user is active
+        if (!existing[0].isActive) {
+          console.log(`Blocked login for inactive account: ${email}`);
+          return false;
+        }
+
         userId = existing[0].id;
         // Update account type if it was passed
         if (pendingAccountType) {
@@ -194,6 +233,20 @@ export const authOptions: NextAuthOptions = {
           token.name = `${dbUser.firstName} ${dbUser.lastName}`;
           token.picture = dbUser.image;
           token.accountType = dbUser.accountType;
+        }
+      }
+
+      // On every token refresh, verify user still exists and is active
+      if (token.email) {
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, token.email as string))
+          .limit(1);
+
+        // If user was deleted or deactivated, invalidate token
+        if (!existingUser || !existingUser.isActive) {
+          return {} as any;
         }
       }
 

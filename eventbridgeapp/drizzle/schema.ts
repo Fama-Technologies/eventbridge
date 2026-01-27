@@ -24,6 +24,7 @@ export const users = pgTable('users', {
 
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
+  phone: text('phone'), // Added for user contact info
 
   image: text('image'),
   provider: text('provider').notNull().default('local'),
@@ -41,6 +42,7 @@ export const users = pgTable('users', {
   return {
     emailIdx: index('users_email_idx').on(table.email),
     accountTypeIdx: index('users_account_type_idx').on(table.accountType),
+    isActiveIdx: index('users_is_active_idx').on(table.isActive),
   };
 });
 
@@ -67,7 +69,6 @@ export const accounts = pgTable('accounts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => {
   return {
-    // Add composite unique constraint (required by auth libraries)
     providerProviderAccountIdUnique: unique('provider_provider_account_id_unique')
       .on(table.provider, table.providerAccountId),
     userIdIdx: index('accounts_user_id_idx').on(table.userId),
@@ -94,6 +95,25 @@ export const sessions = pgTable('sessions', {
   };
 });
 
+/* ===================== DELETED ACCOUNTS AUDIT ===================== */
+export const deletedAccounts = pgTable('deleted_accounts', {
+  id: serial('id').primaryKey(),
+  
+  userId: integer('user_id').notNull(), // Store for reference - no FK constraint
+  email: text('email').notNull(),
+  accountType: text('account_type').notNull(),
+  
+  reason: text('reason'),
+  details: text('details'),
+  
+  deletedAt: timestamp('deleted_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    deletedAtIdx: index('deleted_accounts_deleted_at_idx').on(table.deletedAt),
+    emailIdx: index('deleted_accounts_email_idx').on(table.email),
+  };
+});
+
 /* ===================== SUBSCRIPTION PLANS ===================== */
 export const subscriptionPlans = pgTable('subscription_plans', {
   id: serial('id').primaryKey(),
@@ -116,6 +136,75 @@ export const subscriptionPlans = pgTable('subscription_plans', {
   };
 });
 
+/* ===================== EVENT CATEGORIES ===================== */
+export const eventCategories = pgTable('event_categories', {
+  id: serial('id').primaryKey(),
+
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  icon: text('icon'),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    nameIdx: index('event_categories_name_idx').on(table.name),
+  };
+});
+
+/* ===================== VENDOR PROFILES ===================== */
+export const vendorProfiles = pgTable('vendor_profiles', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  businessName: text('business_name'),
+  description: text('description'),
+  phone: text('phone'),
+  website: text('website'),
+
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zipCode: text('zip_code'),
+
+  categoryId: integer('category_id')
+    .references(() => eventCategories.id, { onDelete: 'set null' }),
+
+  serviceRadius: integer('service_radius'),
+  yearsExperience: integer('years_experience'),
+  hourlyRate: integer('hourly_rate'),
+
+  verificationStatus: text('verification_status').default('pending').notNull(),
+  verificationSubmittedAt: timestamp('verification_submitted_at'),
+  verificationReviewedAt: timestamp('verification_reviewed_at'),
+  verificationNotes: text('verification_notes'),
+  canAccessDashboard: boolean('can_access_dashboard').default(false).notNull(),
+
+  isVerified: boolean('is_verified').default(false),
+  rating: integer('rating').default(0),
+  reviewCount: integer('review_count').default(0),
+
+  profileImage: text('profile_image'),
+  coverImage: text('cover_image'),
+
+  subscriptionStatus: varchar('subscription_status', { length: 20 }).default('free_trial'),
+  trialEndsAt: timestamp('trial_ends_at'),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('vendor_profiles_user_id_idx').on(table.userId),
+    verificationStatusIdx: index('vendor_profiles_verification_status_idx').on(table.verificationStatus),
+    isVerifiedIdx: index('vendor_profiles_is_verified_idx').on(table.isVerified),
+    categoryIdIdx: index('vendor_profiles_category_id_idx').on(table.categoryId),
+    subscriptionStatusIdx: index('vendor_profiles_subscription_status_idx').on(table.subscriptionStatus),
+  };
+});
+
 /* ===================== VENDOR SUBSCRIPTIONS ===================== */
 export const vendorSubscriptions = pgTable('vendor_subscriptions', {
   id: serial('id').primaryKey(),
@@ -124,7 +213,7 @@ export const vendorSubscriptions = pgTable('vendor_subscriptions', {
     .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   planId: integer('plan_id')
     .notNull()
-    .references(() => subscriptionPlans.id),
+    .references(() => subscriptionPlans.id, { onDelete: 'restrict' }), // Don't delete plan if in use
   status: varchar('status', { length: 20 }).default('active'),
   billingCycle: varchar('billing_cycle', { length: 20 }).notNull(),
   currentPeriodStart: timestamp('current_period_start').notNull(),
@@ -151,7 +240,7 @@ export const vendorUsage = pgTable('vendor_usage', {
     .notNull()
     .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
   subscriptionId: integer('subscription_id')
-    .references(() => vendorSubscriptions.id),
+    .references(() => vendorSubscriptions.id, { onDelete: 'set null' }),
   monthYear: varchar('month_year', { length: 7 }).notNull(),
   usageData: jsonb('usage_data').default({
     leadsUsed: 0,
@@ -216,17 +305,7 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
   };
 });
 
-/* ===================== EVENT CATEGORIES ===================== */
-export const eventCategories = pgTable('event_categories', {
-  id: serial('id').primaryKey(),
-
-  name: text('name').notNull().unique(),
-  description: text('description'),
-  icon: text('icon'),
-
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
+/* ===================== EVENT CATEGORY RELATIONS ===================== */
 export const eventCategoryRelations = pgTable('event_category_relations', {
   id: serial('id').primaryKey(),
 
@@ -245,62 +324,6 @@ export const eventCategoryRelations = pgTable('event_category_relations', {
     categoryIdIdx: index('event_category_relations_category_id_idx').on(table.categoryId),
     uniqueEventCategory: unique('event_category_relations_unique_event_category')
       .on(table.eventId, table.categoryId),
-  };
-});
-
-/* ===================== VENDOR PROFILES ===================== */
-export const vendorProfiles = pgTable('vendor_profiles', {
-  id: serial('id').primaryKey(),
-
-  userId: integer('user_id')
-    .notNull()
-    .unique()
-    .references(() => users.id, { onDelete: 'cascade' }),
-
-  businessName: text('business_name'),
-  description: text('description'),
-  phone: text('phone'),
-  website: text('website'),
-
-  address: text('address'),
-  city: text('city'),
-  state: text('state'),
-  zipCode: text('zip_code'),
-
-  // ✅ ADDED: Category field for vendors
-  categoryId: integer('category_id')
-    .references(() => eventCategories.id, { onDelete: 'set null' }),
-
-  serviceRadius: integer('service_radius'),
-  yearsExperience: integer('years_experience'),
-  hourlyRate: integer('hourly_rate'),
-
-  verificationStatus: text('verification_status').default('pending').notNull(),
-  verificationSubmittedAt: timestamp('verification_submitted_at'),
-  verificationReviewedAt: timestamp('verification_reviewed_at'),
-  verificationNotes: text('verification_notes'),
-  canAccessDashboard: boolean('can_access_dashboard').default(false).notNull(),
-
-  isVerified: boolean('is_verified').default(false),
-  rating: integer('rating').default(0),
-  reviewCount: integer('review_count').default(0),
-
-  profileImage: text('profile_image'),
-  coverImage: text('cover_image'),
-
-  // ✅ ADDED: Subscription status
-  subscriptionStatus: varchar('subscription_status', { length: 20 }).default('free_trial'),
-  trialEndsAt: timestamp('trial_ends_at'),
-
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => {
-  return {
-    userIdIdx: index('vendor_profiles_user_id_idx').on(table.userId),
-    verificationStatusIdx: index('vendor_profiles_verification_status_idx').on(table.verificationStatus),
-    isVerifiedIdx: index('vendor_profiles_is_verified_idx').on(table.isVerified),
-    categoryIdIdx: index('vendor_profiles_category_id_idx').on(table.categoryId),
-    subscriptionStatusIdx: index('vendor_profiles_subscription_status_idx').on(table.subscriptionStatus),
   };
 });
 
@@ -359,8 +382,8 @@ export const vendorPackages = pgTable('vendor_packages', {
 
   name: text('name').notNull(),
   description: text('description'),
-  price: bigint('price', { mode: 'number' }).notNull(), // Changed to bigint
-  priceMax: bigint('price_max', { mode: 'number' }), // Changed to bigint
+  price: bigint('price', { mode: 'number' }).notNull(),
+  priceMax: bigint('price_max', { mode: 'number' }),
   duration: integer('duration'),
 
   capacityMin: integer('capacity_min'),
@@ -603,10 +626,10 @@ export const bookings = pgTable('bookings', {
     .references(() => users.id, { onDelete: 'cascade' }),
 
   serviceId: integer('service_id')
-    .references(() => vendorServices.id),
+    .references(() => vendorServices.id, { onDelete: 'set null' }),
 
   packageId: integer('package_id')
-    .references(() => vendorPackages.id),
+    .references(() => vendorPackages.id, { onDelete: 'set null' }),
 
   bookingDate: timestamp('booking_date').notNull(),
   startTime: timestamp('start_time').notNull(),
@@ -692,7 +715,7 @@ export const reviews = pgTable('reviews', {
     clientIdIdx: index('reviews_client_id_idx').on(table.clientId),
     ratingIdx: index('reviews_rating_idx').on(table.rating),
     uniqueBookingReview: unique('reviews_unique_booking_review')
-      .on(table.bookingId), // One review per booking
+      .on(table.bookingId),
   };
 });
 
@@ -787,9 +810,29 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
   invoices: many(invoices),
 }));
 
-// ✅ ADDED: eventCategories relations with vendors
 export const eventCategoriesRelations = relations(eventCategories, ({ many }) => ({
   vendors: many(vendorProfiles),
+  eventRelations: many(eventCategoryRelations),
+}));
+
+export const eventCategoryRelationsRelations = relations(eventCategoryRelations, ({ one }) => ({
+  event: one(events, {
+    fields: [eventCategoryRelations.eventId],
+    references: [events.id],
+  }),
+  category: one(eventCategories, {
+    fields: [eventCategoryRelations.categoryId],
+    references: [eventCategories.id],
+  }),
+}));
+
+export const eventsRelations = relations(events, ({ one, many }) => ({
+  vendor: one(users, {
+    fields: [events.vendorId],
+    references: [users.id],
+  }),
+  bookings: many(bookings),
+  categoryRelations: many(eventCategoryRelations),
 }));
 
 export const vendorServicesRelations = relations(vendorServices, ({ one, many }) => ({
@@ -798,6 +841,7 @@ export const vendorServicesRelations = relations(vendorServices, ({ one, many })
     references: [vendorProfiles.id],
   }),
   gallery: many(serviceGallery),
+  bookings: many(bookings),
 }));
 
 export const vendorAvailabilityRelations = relations(vendorAvailability, ({ one }) => ({
@@ -807,10 +851,18 @@ export const vendorAvailabilityRelations = relations(vendorAvailability, ({ one 
   }),
 }));
 
-export const vendorPackagesRelations = relations(vendorPackages, ({ one }) => ({
+export const vendorPackagesRelations = relations(vendorPackages, ({ one, many }) => ({
   vendor: one(vendorProfiles, {
     fields: [vendorPackages.vendorId],
     references: [vendorProfiles.id],
+  }),
+  bookings: many(bookings),
+}));
+
+export const serviceGalleryRelations = relations(serviceGallery, ({ one }) => ({
+  service: one(vendorServices, {
+    fields: [serviceGallery.serviceId],
+    references: [vendorServices.id],
   }),
 }));
 
@@ -849,7 +901,21 @@ export const verificationDocumentsRelations = relations(verificationDocuments, (
   }),
 }));
 
-export const bookingsRelations = relations(bookings, ({ one }) => ({
+export const onboardingProgressRelations = relations(onboardingProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [onboardingProgress.userId],
+    references: [users.id],
+  }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   event: one(events, {
     fields: [bookings.eventId],
     references: [events.id],
@@ -870,10 +936,8 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
     fields: [bookings.packageId],
     references: [vendorPackages.id],
   }),
-  invoice: one(invoices, {
-    fields: [bookings.id],
-    references: [invoices.bookingId],
-  }),
+  reviews: many(reviews),
+  invoices: many(invoices),
 }));
 
 export const invoicesRelations = relations(invoices, ({ one }) => ({
@@ -906,9 +970,6 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
-// Relations removed
-// Relations removed
-
 /* ===================== TYPES ===================== */
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -918,6 +979,9 @@ export type NewAccount = typeof accounts.$inferInsert;
 
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+
+export type DeletedAccount = typeof deletedAccounts.$inferSelect;
+export type NewDeletedAccount = typeof deletedAccounts.$inferInsert;
 
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type NewSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
@@ -935,7 +999,10 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 
 export type EventCategory = typeof eventCategories.$inferSelect;
+export type NewEventCategory = typeof eventCategories.$inferInsert;
+
 export type EventCategoryRelation = typeof eventCategoryRelations.$inferSelect;
+export type NewEventCategoryRelation = typeof eventCategoryRelations.$inferInsert;
 
 export type VendorProfile = typeof vendorProfiles.$inferSelect;
 export type NewVendorProfile = typeof vendorProfiles.$inferInsert;
@@ -966,6 +1033,9 @@ export type NewVendorDiscount = typeof vendorDiscounts.$inferInsert;
 
 export type VerificationDocument = typeof verificationDocuments.$inferSelect;
 export type NewVerificationDocument = typeof verificationDocuments.$inferInsert;
+
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type NewOnboardingProgress = typeof onboardingProgress.$inferInsert;
 
 export type UserUpload = typeof userUploads.$inferSelect;
 export type NewUserUpload = typeof userUploads.$inferInsert;

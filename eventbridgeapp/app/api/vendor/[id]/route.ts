@@ -138,6 +138,7 @@ export async function GET(
       availability: formatAvailability(availability?.activeDays),
       guestCapacity: '100+',
       description: vendor.description || '',
+      profileImage: vendor.profileImage || '/avatars/default.jpg',
       images:
         portfolio.length > 0
           ? portfolio.map((p: any) => p.imageUrl)
