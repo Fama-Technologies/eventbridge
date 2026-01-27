@@ -29,9 +29,9 @@ export default function CardSection() {
       icon: DollarSign,
     },
     {
-      title: 'Active Events',
-      count: stats?.activeEvents ?? 0,
-      stat: stats ? `${stats.activeEvents}` : '0',
+      title: 'Response Rate',
+      count: stats?.responseRate ?? 0,
+      stat: stats ? `${stats.responseRate}%` : '0%',
       icon: Eye,
     },
   ];

@@ -15,7 +15,7 @@ type DashboardStats = {
   totalBookings: number;
   bookingsGrowth: number;
   pendingRequests: number;
-  activeEvents: number;
+  responseRate: number;
 };
 
 type RecentBooking = {
