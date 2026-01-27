@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 type DashboardStats = {
-  totalRevenue: number;
+  profileviews: number;
   revenueGrowth: number;
   totalBookings: number;
   bookingsGrowth: number;

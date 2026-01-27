@@ -23,9 +23,9 @@ export default function CardSection() {
       icon: MessageSquareText,
     },
     {
-      title: 'Monthly Revenue',
-      count: stats?.totalRevenue ?? 0,
-      stat: stats ? `${stats.revenueGrowth}%` : '0%',
+      title: 'Profile views',
+      count: stats?.profileviews ?? 0,
+      stat: stats ? `${stats.profileviews}` : '0',
       icon: DollarSign,
     },
     {
