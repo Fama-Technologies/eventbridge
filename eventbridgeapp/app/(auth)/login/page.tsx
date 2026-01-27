@@ -30,7 +30,6 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
-        callbackUrl
       });
 
       if (result?.error) {
@@ -42,8 +41,26 @@ export default function LoginPage() {
       if (result?.ok) {
         toast.success('Login successful! Redirecting...');
 
+        // Fetch session to get user's account type
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
+
+        // Determine redirect based on account type or use callback
+        let redirectUrl = callbackUrl;
+
+        if (callbackUrl === '/' && session?.user?.accountType) {
+          // Only override the default '/' redirect
+          if (session.user.accountType === 'CUSTOMER') {
+            redirectUrl = '/customer/dashboard';
+          } else if (session.user.accountType === 'VENDOR') {
+            redirectUrl = '/vendor';
+          } else if (session.user.accountType === 'ADMIN') {
+            redirectUrl = '/admin/dashboard';
+          }
+        }
+
         // Force a hard navigation to ensure middleware picks up new cookies
-        window.location.href = callbackUrl;
+        window.location.href = redirectUrl;
       }
     } catch (error) {
       console.error("Login error:", error);

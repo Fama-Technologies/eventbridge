@@ -96,7 +96,7 @@ export default function CustomerDashboardPage() {
               title={category.name}
               subtitle={category.description}
               image={category.imageUrl}
-              href={`/category/${category.slug}`}
+              href={`/customer/vendor/${category.slug}`}
               categoryId={category.id}
             />
           ))}
