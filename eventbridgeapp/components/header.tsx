@@ -129,9 +129,9 @@ export default function Header() {
           {/* Find Vendors links to /categories page */}
           <Link
             href="/categories"
-            className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100 ${pathname.startsWith('/categories') || pathname.startsWith('/category')
-                ? 'after:scale-x-100'
-                : 'after:scale-x-0'
+            className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100 ${pathname.startsWith('/categories') || pathname.startsWith('/category') || pathname.startsWith('/customer/vendor') || pathname.startsWith('/customer/dashboard/find-vendors')
+              ? 'after:scale-x-100'
+              : 'after:scale-x-0'
               }`}
           >
             Find Vendors
