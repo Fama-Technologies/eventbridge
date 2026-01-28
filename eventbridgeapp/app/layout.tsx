@@ -1,7 +1,7 @@
-﻿export const dynamic = 'force-dynamic';
+﻿// app/layout.tsx
+export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
 import "./globals.css";
-
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -9,13 +9,30 @@ import { LoadingProvider } from "@/components/providers/LoadingProvider";
 import { SonnerProvider } from "@/components/providers/SonnerProvider";
 import { Providers } from "./providers";
 import { NextAuthProvider } from "@/components/providers/session-provider";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export const metadata: Metadata = {
   icons: {
-    icon: "/logo.svg",
+    icon: [
+      { url: "/logo.svg" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: "180x180", type: "image/png" },
+    ],
   },
-  title: "EventBridge",
-  description: "Event planning platform",
+  title: "EventBridge - Event Planning Platform",
+  description: "Find and book the best event vendors in Uganda",
+  manifest: '/manifest.json',
+  themeColor: '#7C3AED',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'EventBridge',
+  },
+  applicationName: 'EventBridge',
+  keywords: ['event planning', 'vendors', 'Uganda', 'events', 'wedding', 'party'],
 };
 
 export default function RootLayout({
@@ -47,10 +64,34 @@ export default function RootLayout({
     })();
   `;
 
+  const swScript = `
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').then(
+          function(registration) {
+            console.log('ServiceWorker registration successful');
+          },
+          function(err) {
+            console.log('ServiceWorker registration failed: ', err);
+          }
+        );
+      });
+    }
+  `;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Theme Script */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        
+        {/* PWA Meta Tags */}
+        <meta name="application-name" content="EventBridge" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="EventBridge" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="antialiased">
         <NextAuthProvider>
@@ -60,12 +101,16 @@ export default function RootLayout({
                 <ToastProvider>
                   <SonnerProvider />
                   {children}
+                  {/* PWA Install Prompt */}
+                  <PWAInstallPrompt />
                 </ToastProvider>
               </LoadingProvider>
             </ThemeProvider>
           </Providers>
         </NextAuthProvider>
         
+        {/* Service Worker Registration */}
+        <script dangerouslySetInnerHTML={{ __html: swScript }} />
       </body>
     </html>
   );
