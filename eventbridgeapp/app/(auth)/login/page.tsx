@@ -47,15 +47,20 @@ export default function LoginPage() {
 
         // Determine redirect based on account type or use callback
         let redirectUrl = callbackUrl;
+        const accountType = session?.user?.accountType;
+        const shouldUseDefaultRedirect =
+          callbackUrl === '/' || callbackUrl === '/dashboard';
 
-        if (callbackUrl === '/' && session?.user?.accountType) {
-          // Only override the default '/' redirect
-          if (session.user.accountType === 'CUSTOMER') {
+        if (accountType && shouldUseDefaultRedirect) {
+          // Only override default or legacy dashboard redirects
+          if (accountType === 'CUSTOMER') {
             redirectUrl = '/customer/dashboard';
-          } else if (session.user.accountType === 'VENDOR') {
+          } else if (accountType === 'VENDOR') {
             redirectUrl = '/vendor';
-          } else if (session.user.accountType === 'ADMIN') {
+          } else if (accountType === 'ADMIN') {
             redirectUrl = '/admin/dashboard';
+          } else if (accountType === 'PLANNER') {
+            redirectUrl = '/planner/dashboard';
           }
         }
 
