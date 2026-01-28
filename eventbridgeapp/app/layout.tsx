@@ -9,7 +9,6 @@ import { LoadingProvider } from "@/components/providers/LoadingProvider";
 import { SonnerProvider } from "@/components/providers/SonnerProvider";
 import { Providers } from "./providers";
 import { NextAuthProvider } from "@/components/providers/session-provider";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export const metadata: Metadata = {
   icons: {
@@ -101,8 +100,6 @@ export default function RootLayout({
                 <ToastProvider>
                   <SonnerProvider />
                   {children}
-                  {/* PWA Install Prompt */}
-                  <PWAInstallPrompt />
                 </ToastProvider>
               </LoadingProvider>
             </ThemeProvider>

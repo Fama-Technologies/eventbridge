@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Globe, Sun, Menu, LayoutDashboard, Settings, LogOut, User, X, Smartphone, Download } from 'lucide-react';
+import { Globe, Sun, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
@@ -12,9 +12,7 @@ import { usePathname } from 'next/navigation';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [showAppDownload, setShowAppDownload] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { setTheme: updateTheme, resolvedTheme } = useTheme();
   const { data: session } = useSession();
   const user = session?.user;
@@ -26,24 +24,6 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
-
-    // Check if app download banner was dismissed recently
-    const dismissedTimestamp = localStorage.getItem('appDownloadDismissedAt');
-    const shouldShowBanner = !dismissedTimestamp ||
-      (Date.now() - parseInt(dismissedTimestamp)) > (3 * 60 * 1000); // 3 minutes
-
-    if (shouldShowBanner) {
-      // Show banner after a short delay for better UX
-      setTimeout(() => setShowAppDownload(true), 1000);
-    }
-
-    // PWA Install Prompt
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 0);
@@ -59,11 +39,10 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [user]);
+  }, []);
 
   const toggleTheme = () => {
     updateTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
@@ -71,24 +50,6 @@ export default function Header() {
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/login' });
-  };
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      // Fallback for browsers that don't support PWA or already installed
-      alert('To install this app:\n\n1. Tap the Share button in your browser\n2. Select "Add to Home Screen"\n3. Tap "Add" to install');
-      return;
-    }
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      setShowAppDownload(false);
-      localStorage.setItem('appDownloadDismissedAt', Date.now().toString());
-    }
-
-    setDeferredPrompt(null);
   };
 
   // Determine header styles based on scroll and page
@@ -158,14 +119,14 @@ export default function Header() {
 
 
 
-          {/* Create Account -> App Install Prompt */}
+          {/* Create Account */}
           {!user && (
-            <button
-              onClick={() => setShowAppDownload(true)}
+            <Link
+              href="/signup"
               className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 bg-primary-01 text-white hover:opacity-90 shadow-md shadow-primary-01/20"
             >
               Create Account
-            </button>
+            </Link>
           )}
 
           {/* Login Button - Hide if logged in */}
@@ -315,15 +276,13 @@ export default function Header() {
 
           {/* Create Account Mobile */}
           {!user && (
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setShowAppDownload(true);
-              }}
+            <Link
+              href="/signup"
               className="block w-full py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Create Account
-            </button>
+            </Link>
           )}
 
           {/* Login Button (Mobile) */}
@@ -356,57 +315,6 @@ export default function Header() {
         </nav>
       )}
 
-      {/* App Download Bottom Banner */}
-      {showAppDownload && (
-        <div className="fixed bottom-0 left-0 right-0 z-[100] animate-in slide-in-from-bottom duration-500">
-          <div className="bg-gradient-to-r from-primary-01 to-primary-02 text-white shadow-2xl">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 relative">
-              {/* Close Button */}
-              <button
-                onClick={() => {
-                  setShowAppDownload(false);
-                  localStorage.setItem('appDownloadDismissedAt', Date.now().toString());
-                }}
-                className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white/80 hover:text-white transition-colors p-1 z-10"
-                aria-label="Dismiss"
-              >
-                <X size={20} />
-              </button>
-
-              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 pr-8 sm:pr-0">
-                {/* Logo & Icon */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                    <Image src="/logo.svg" alt="Event Bridge" width={32} height={32} className="sm:w-10 sm:h-10" />
-                  </div>
-                  <div className="hidden sm:block">
-                    <Download size={36} className="text-white/80" strokeWidth={2.5} />
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 text-center sm:text-left">
-                  <h3 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Install Event Bridge App</h3>
-                  <p className="text-white/90 text-xs sm:text-sm max-w-2xl">
-                    Add to your home screen for quick access. Plan events, chat with vendors, and manage bookings on the go!
-                  </p>
-                </div>
-
-                {/* Install Button */}
-                <div className="w-full sm:w-auto">
-                  <button
-                    onClick={handleInstallClick}
-                    className="w-full sm:w-auto bg-white text-primary-01 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/90 transition-all shadow-lg whitespace-nowrap"
-                  >
-                    <Download size={20} strokeWidth={2.5} />
-                    <span>Install App</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

@@ -8,6 +8,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { signIn, useSession } from 'next-auth/react';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export default function SignupPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -18,6 +23,8 @@ export default function SignupPage() {
   // PWA state
   const [showPWAPrompt, setShowPWAPrompt] = useState(false);
   const [shouldShowInstallPrompt, setShouldShowInstallPrompt] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   // Check if PWA is already installed
   useEffect(() => {
@@ -25,8 +32,9 @@ export default function SignupPage() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     
     // Check for iOS standalone mode
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isInStandaloneMode = isIOS ? 
+    const iosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(iosDevice);
+    const isInStandaloneMode = iosDevice ? 
       ('standalone' in window.navigator && (window.navigator as any).standalone) : 
       false;
     
@@ -35,7 +43,18 @@ export default function SignupPage() {
     // Also check for beforeinstallprompt event support
     const supportsPWA = 'beforeinstallprompt' in window;
     
-    setShouldShowInstallPrompt(supportsPWA && !isInstalled);
+    setShouldShowInstallPrompt(!isInstalled && (supportsPWA || iosDevice));
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   // Redirect already authenticated users away from signup page
@@ -80,22 +99,22 @@ export default function SignupPage() {
   };
 
   // Handle PWA install
-  const handleInstallPWA = () => {
-    const beforeInstallPromptEvent = (window as any).beforeinstallpromptEvent;
-    if (beforeInstallPromptEvent) {
-      beforeInstallPromptEvent.prompt();
-      beforeInstallPromptEvent.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-        } else {
-          console.log('User dismissed the install prompt');
-        }
-        setShowPWAPrompt(false);
-      });
-    } else {
-      // Fallback for browsers that don't support beforeinstallprompt
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
       setShowPWAPrompt(false);
+      router.push('/customer/dashboard');
+      return;
     }
+
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+    if (choiceResult.outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+    setShowPWAPrompt(false);
+    router.push('/customer/dashboard');
   };
 
   return (
@@ -148,69 +167,81 @@ export default function SignupPage() {
       </div>
 
       {/* PWA Install Prompt - Shows after successful account creation */}
-      {showPWAPrompt && shouldShowInstallPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in duration-300">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-primary-01/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-01 to-primary-02 rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+      {showPWAPrompt && shouldShowInstallPrompt && accountType === 'CUSTOMER' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl animate-in fade-in duration-300 overflow-hidden">
+            <div className="bg-gradient-to-r from-primary-01 to-primary-02 px-6 py-5 text-white">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/70">Welcome to Event Bridge</p>
+              <h3 className="text-2xl font-bold mt-2">Install the customer app</h3>
+              <p className="text-sm text-white/80 mt-1">
+                Keep your planning dashboard a tap away.
+              </p>
+            </div>
+
+            <div className="px-6 py-6 space-y-5">
+              <div className="grid gap-3">
+                <div className="flex items-start gap-3 rounded-2xl border border-neutrals-03 px-4 py-3">
+                  <div className="h-9 w-9 rounded-full bg-primary-01/10 text-primary-01 flex items-center justify-center font-semibold">
+                    1
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-shades-black">Faster customer dashboard</p>
+                    <p className="text-xs text-neutrals-07">Jump straight into bookings, messages, and updates.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-2xl border border-neutrals-03 px-4 py-3">
+                  <div className="h-9 w-9 rounded-full bg-primary-01/10 text-primary-01 flex items-center justify-center font-semibold">
+                    2
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-shades-black">Offline-friendly access</p>
+                    <p className="text-xs text-neutrals-07">Check key details even without a connection.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-2xl border border-neutrals-03 px-4 py-3">
+                  <div className="h-9 w-9 rounded-full bg-primary-01/10 text-primary-01 flex items-center justify-center font-semibold">
+                    3
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-shades-black">Home screen shortcut</p>
+                    <p className="text-xs text-neutrals-07">Get the Event Bridge icon right on your phone.</p>
+                  </div>
                 </div>
               </div>
-              
-              <h3 className="text-2xl font-bold text-shades-black mb-3">
-                Install Event Bridge App
-              </h3>
-              
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-8 h-8 bg-primary-01/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-01 font-bold">✓</span>
-                  </div>
-                  <p className="text-sm text-neutrals-07">Faster loading & better performance</p>
+
+              {isIOS && !deferredPrompt && (
+                <div className="rounded-2xl bg-neutrals-01 border border-neutrals-03 px-4 py-3 text-sm text-neutrals-07">
+                  <p className="font-semibold text-shades-black mb-1">Install on iPhone or iPad</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Tap the Share button in Safari.</li>
+                    <li>Select “Add to Home Screen”.</li>
+                    <li>Tap “Add” to confirm.</li>
+                  </ol>
                 </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-8 h-8 bg-primary-01/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-01 font-bold">✓</span>
-                  </div>
-                  <p className="text-sm text-neutrals-07">Works offline & saves data</p>
-                </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-8 h-8 bg-primary-01/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-01 font-bold">✓</span>
-                  </div>
-                  <p className="text-sm text-neutrals-07">Instant access from home screen</p>
-                </div>
-              </div>
-              
+              )}
+
               <div className="flex flex-col gap-3">
-                <button
-                  onClick={handleInstallPWA}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-primary-01 to-primary-02 text-white rounded-xl hover:from-primary-02 hover:to-primary-01 font-semibold text-lg shadow-lg transition-all hover:shadow-xl"
-                >
-                  Install App Now
-                </button>
-                
+                {deferredPrompt && (
+                  <button
+                    onClick={handleInstallPWA}
+                    className="w-full px-6 py-4 bg-primary-01 text-white rounded-2xl hover:bg-primary-02 font-semibold text-base shadow-lg transition-all"
+                  >
+                    Install customer app
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setShowPWAPrompt(false);
-                    // Redirect immediately after closing prompt
-                    if (accountType === 'VENDOR') {
-                      router.push('/vendor/onboarding');
-                    } else {
-                      router.push('/customer/dashboard');
-                    }
+                    router.push('/customer/dashboard');
                   }}
-                  className="w-full px-6 py-3 border-2 border-neutrals-04 text-neutrals-07 rounded-xl hover:bg-neutrals-02 hover:border-neutrals-05 transition-colors"
+                  className="w-full px-6 py-3 border border-neutrals-04 text-neutrals-07 rounded-2xl hover:bg-neutrals-02 hover:border-neutrals-05 transition-colors"
                 >
-                  Continue in Browser
+                  Continue to customer dashboard
                 </button>
               </div>
-              
-              <p className="text-xs text-neutrals-06 mt-6">
-                You can always install it later from your browser menu (⋮ or ⚙️)
+
+              <p className="text-xs text-neutrals-06">
+                You can install later from your browser menu.
               </p>
             </div>
           </div>
@@ -430,10 +461,10 @@ function SignupForm({
 
       toast.success('Account created successfully!');
 
-      // Show PWA install prompt before redirecting if PWA is supported and not installed
-      if (shouldShowInstallPrompt) {
+      // Show PWA install prompt only for customer accounts
+      if (shouldShowInstallPrompt && accountType === 'CUSTOMER') {
         onAccountCreated();
-        
+
         // Don't auto-redirect, let user decide in the prompt
         // The prompt will handle redirection when user chooses "Continue in Browser"
       } else {
