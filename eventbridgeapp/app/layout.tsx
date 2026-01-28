@@ -24,7 +24,6 @@ export const metadata: Metadata = {
   title: "EventBridge - Event Planning Platform",
   description: "Find and book the best event vendors in Uganda",
   manifest: '/manifest.json',
-  themeColor: '#7C3AED',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -32,6 +31,10 @@ export const metadata: Metadata = {
   },
   applicationName: 'EventBridge',
   keywords: ['event planning', 'vendors', 'Uganda', 'events', 'wedding', 'party'],
+};
+
+export const viewport = {
+  themeColor: '#7C3AED',
 };
 
 export default function RootLayout({

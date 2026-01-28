@@ -298,15 +298,19 @@ export async function getAuthUser(
   });
 
   if (token && token.userId && token.email && token.name && token.accountType) {
-    const name = token.name;
-    const [firstName, ...rest] = name?.split(' ') ?? [];
-    
+    // Accept tokens that at minimum include a userId and accountType.
+    // Some NextAuth token payloads may not include `email` or `name` yet
+    // (they can be added later by the jwt callback). Don't treat those
+    // as fatal — construct a best-effort user object instead.
+    const name = (token.name as string) ?? '';
+    const [firstName, ...rest] = name.split(' ');
+
     return {
       id: Number(token.userId),
-      email: token.email,
+      email: (token.email as string) ?? '',
       firstName: firstName || '',
-      lastName: rest.join(' '),
-      accountType: token.accountType,
+      lastName: rest.join(' ') || '',
+      accountType: token.accountType as string,
     };
   }
 
