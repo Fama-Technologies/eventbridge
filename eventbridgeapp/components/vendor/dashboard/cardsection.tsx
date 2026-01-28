@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, DollarSign, MessageSquareText, CalendarCheck2 } from 'lucide-react';
+import { DollarSign, MessageSquareText, CalendarCheck2 } from 'lucide-react';
 import Card from './card';
 import { useDashboardData } from './DashboardDataProvider';
 
@@ -23,16 +23,16 @@ export default function CardSection() {
       icon: MessageSquareText,
     },
     {
-      title: 'Profile views',
-      count: stats?.profileviews ?? 0,
-      stat: stats ? `${stats.profileviews}` : '0',
+      title: 'Total Earnings',
+      count: stats?.totalRevenue ?? 0, // Using totalRevenue mapped to Total Earnings for currency formatting
+      stat: stats ? `${stats.revenueGrowth}%` : '0%',
       icon: DollarSign,
     },
     {
-      title: 'Response Rate',
-      count: stats?.responseRate ?? 0,
-      stat: stats ? `${stats.responseRate}%` : '0%',
-      icon: Eye,
+      title: 'Active Events',
+      count: stats?.activeEvents ?? 0,
+      stat: stats ? `${stats.activeEvents}` : '0',
+      icon: CalendarCheck2,
     },
   ];
 
