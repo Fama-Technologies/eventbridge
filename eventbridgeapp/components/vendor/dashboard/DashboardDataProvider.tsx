@@ -10,12 +10,12 @@ import {
 } from 'react';
 
 type DashboardStats = {
-  profileviews: number;
+  totalRevenue: number;
   revenueGrowth: number;
   totalBookings: number;
   bookingsGrowth: number;
   pendingRequests: number;
-  responseRate: number;
+  activeEvents: number;
 };
 
 type RecentBooking = {
@@ -36,6 +36,7 @@ type RecentActivity = {
 };
 
 type DashboardData = {
+  vendor: any; // Added vendor object from API response
   stats: DashboardStats;
   profileCompletion: number;
   recentBookings: RecentBooking[];
@@ -63,7 +64,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     async function fetchDashboard() {
       try {
         setLoading(true);
-        const response = await fetch('/api/vendor');
+        const response = await fetch('/api/vendor/dashboard');
         if (!response.ok) {
           throw new Error('Failed to load dashboard data');
         }
@@ -71,6 +72,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
 
         if (isMounted) {
           setData({
+            vendor: payload.vendor,
             stats: payload.stats,
             profileCompletion: payload.profileCompletion,
             recentBookings: payload.recentBookings || [],

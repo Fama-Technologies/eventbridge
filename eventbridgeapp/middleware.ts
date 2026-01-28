@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
             console.log(`Middleware: User is ${token.accountType}, not CUSTOMER. Denying access to ${pathname}`);
             // Redirect to their appropriate dashboard
             const dashboardUrl = new URL(
-                token.accountType === 'VENDOR' ? '/vendor/dashboard' :
+                token.accountType === 'VENDOR' ? '/vendor' :
                     token.accountType === 'ADMIN' ? '/admin/dashboard' :
                         '/',
                 request.url

@@ -14,6 +14,29 @@ const TABS = [
     { name: "My Events", href: "/customer/dashboard/my-events" },
 ];
 
+const RECOMMENDED_EVENT_TYPES = [
+  {
+    label: "Weddings",
+    query: "weddings",
+  },
+  {
+    label: "Travels",
+    query: "travels",
+  },
+  {
+    label: "Anniversaries",
+    query: "anniversaries",
+  },
+  {
+    label: "Corporate Events",
+    query: "corporate",
+  },
+  {
+    label: "Venues",
+    query: "venues",
+  },
+];
+
 export default function CustomerDashboardPage() {
   const [activeTab, setActiveTab] = React.useState("");
   const [categories, setCategories] = React.useState<any[]>([]);
@@ -139,15 +162,12 @@ export default function CustomerDashboardPage() {
         </div>
       </section>
 
-      {/* Top Recommended Services */}
-      <section
-        className="py-6 px-4 sm:px-6"
-
-      >
+      {/* Top Recommended Services by Event Type */}
+      <section className="py-6 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg sm:text-xl font-bold text-shades-black">
-              Top Recommended Services
+              Top Recommended by Event Type
             </h2>
             <Link
               href="/search"
@@ -156,33 +176,53 @@ export default function CustomerDashboardPage() {
               View all <ArrowRight size={16} />
             </Link>
           </div>
+          <p className="text-xs sm:text-sm text-neutrals-06 mb-5">
+            Browse top providers by event focus so you can plan weddings, travel,
+            anniversaries, corporate gatherings, and more in one place.
+          </p>
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-01"></div>
-            </div>
-          ) : services.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-neutrals-06">No services available</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto snap-x snap-mandatory pb-4 ">
-              <div className="grid grid-flow-col auto-cols-[minmax(220px,2fr)] gap-4">
-                {services.map((service) => (
-                  <ServiceCard key={service.id} {...service} />
-                ))}
+          {RECOMMENDED_EVENT_TYPES.map((eventType) => (
+            <div key={eventType.label} className="mb-6 last:mb-0">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base sm:text-lg font-semibold text-shades-black">
+                  Top Recommended in {eventType.label}
+                </h3>
+                <Link
+                  href={`/search?event=${eventType.query}`}
+                  className="text-xs sm:text-sm text-primary-01 hover:text-primary-02 font-medium transition-colors"
+                >
+                  Explore <ArrowRight size={14} className="inline-block" />
+                </Link>
               </div>
+
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-01"></div>
+                </div>
+              ) : services.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-neutrals-06">No services available</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto snap-x snap-mandatory pb-4 ">
+                  <div className="grid grid-flow-col auto-cols-[minmax(220px,2fr)] gap-4">
+                    {services.map((service) => (
+                      <ServiceCard key={`${eventType.query}-${service.id}`} {...service} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       </section>
 
-      {/* In the Central Region */}
+      {/* Nearby Providers */}
       <section className="py-6 px-4 sm:px-6 bg-background">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg sm:text-xl font-bold text-shades-black">
-              In the Central Region
+              Nearby Providers Around You
             </h2>
             <Link
               href="/search"
@@ -191,6 +231,10 @@ export default function CustomerDashboardPage() {
               View all <ArrowRight size={16} />
             </Link>
           </div>
+          <p className="text-xs sm:text-sm text-neutrals-06 mb-5">
+            Recommendations based on your location and recent searches, so you
+            can find event services near your region.
+          </p>
 
           {loading ? (
             <div className="flex justify-center py-12">
