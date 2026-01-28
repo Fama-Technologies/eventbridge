@@ -7,6 +7,8 @@ import { Store, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { signIn, useSession } from 'next-auth/react';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 export default function SignupPage() {
   const { data: session, status } = useSession();
@@ -14,29 +16,7 @@ export default function SignupPage() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<'accountType' | 'details'>('accountType');
   const [accountType, setAccountType] = useState<'VENDOR' | 'CUSTOMER' | null>(null);
-  
-  // PWA state
-  const [showPWAPrompt, setShowPWAPrompt] = useState(false);
-  const [shouldShowInstallPrompt, setShouldShowInstallPrompt] = useState(false);
-
-  // Check if PWA is already installed
-  useEffect(() => {
-    // Check if app is running in standalone mode (already installed)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    
-    // Check for iOS standalone mode
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isInStandaloneMode = isIOS ? 
-      ('standalone' in window.navigator && (window.navigator as any).standalone) : 
-      false;
-    
-    const isInstalled = isStandalone || isInStandaloneMode;
-    
-    // Also check for beforeinstallprompt event support
-    const supportsPWA = 'beforeinstallprompt' in window;
-    
-    setShouldShowInstallPrompt(supportsPWA && !isInstalled);
-  }, []);
+  const { isInstalled, showInstallPrompt } = usePWAInstall();
 
   // Redirect already authenticated users away from signup page
   useEffect(() => {
@@ -79,22 +59,26 @@ export default function SignupPage() {
     }
   };
 
-  // Handle PWA install
-  const handleInstallPWA = () => {
-    const beforeInstallPromptEvent = (window as any).beforeinstallpromptEvent;
-    if (beforeInstallPromptEvent) {
-      beforeInstallPromptEvent.prompt();
-      beforeInstallPromptEvent.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
+  const handleSignupSuccess = (type: 'VENDOR' | 'CUSTOMER') => {
+    // Show PWA install prompt if not already installed
+    if (!isInstalled) {
+      showInstallPrompt();
+      
+      // Redirect after a delay to give user time to see/interact with PWA prompt
+      setTimeout(() => {
+        if (type === 'VENDOR') {
+          router.push('/vendor/onboarding');
         } else {
-          console.log('User dismissed the install prompt');
+          router.push('/customer/dashboard');
         }
-        setShowPWAPrompt(false);
-      });
+      }, 2500); // 2.5 seconds delay
     } else {
-      // Fallback for browsers that don't support beforeinstallprompt
-      setShowPWAPrompt(false);
+      // Already installed, redirect immediately
+      if (type === 'VENDOR') {
+        router.push('/vendor/onboarding');
+      } else {
+        router.push('/customer/dashboard');
+      }
     }
   };
 
@@ -112,8 +96,7 @@ export default function SignupPage() {
               accountType={accountType!}
               onBack={handleBack}
               initialAgreeToTerms={searchParams.get('accepted') === 'true'}
-              onAccountCreated={() => setShowPWAPrompt(true)}
-              shouldShowInstallPrompt={shouldShowInstallPrompt}
+              onSignupSuccess={handleSignupSuccess}
             />
           )}
         </div>
@@ -147,75 +130,7 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* PWA Install Prompt - Shows after successful account creation */}
-      {showPWAPrompt && shouldShowInstallPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in duration-300">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-primary-01/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-01 to-primary-02 rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-              </div>
-              
-              <h3 className="text-2xl font-bold text-shades-black mb-3">
-                Install Event Bridge App
-              </h3>
-              
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-8 h-8 bg-primary-01/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-01 font-bold">✓</span>
-                  </div>
-                  <p className="text-sm text-neutrals-07">Faster loading & better performance</p>
-                </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-8 h-8 bg-primary-01/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-01 font-bold">✓</span>
-                  </div>
-                  <p className="text-sm text-neutrals-07">Works offline & saves data</p>
-                </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-8 h-8 bg-primary-01/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary-01 font-bold">✓</span>
-                  </div>
-                  <p className="text-sm text-neutrals-07">Instant access from home screen</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={handleInstallPWA}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-primary-01 to-primary-02 text-white rounded-xl hover:from-primary-02 hover:to-primary-01 font-semibold text-lg shadow-lg transition-all hover:shadow-xl"
-                >
-                  Install App Now
-                </button>
-                
-                <button
-                  onClick={() => {
-                    setShowPWAPrompt(false);
-                    // Redirect immediately after closing prompt
-                    if (accountType === 'VENDOR') {
-                      router.push('/vendor/onboarding');
-                    } else {
-                      router.push('/customer/dashboard');
-                    }
-                  }}
-                  className="w-full px-6 py-3 border-2 border-neutrals-04 text-neutrals-07 rounded-xl hover:bg-neutrals-02 hover:border-neutrals-05 transition-colors"
-                >
-                  Continue in Browser
-                </button>
-              </div>
-              
-              <p className="text-xs text-neutrals-06 mt-6">
-                You can always install it later from your browser menu (⋮ or ⚙️)
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <PWAInstallPrompt />
     </div>
   );
 }
@@ -323,21 +238,17 @@ function AccountTypeSelection({
   );
 }
 
-interface SignupFormProps {
-  accountType: 'VENDOR' | 'CUSTOMER';
-  onBack: () => void;
-  initialAgreeToTerms?: boolean;
-  onAccountCreated: () => void;
-  shouldShowInstallPrompt: boolean;
-}
-
 function SignupForm({
   accountType,
   onBack,
   initialAgreeToTerms = false,
-  onAccountCreated,
-  shouldShowInstallPrompt,
-}: SignupFormProps) {
+  onSignupSuccess,
+}: {
+  accountType: 'VENDOR' | 'CUSTOMER';
+  onBack: () => void;
+  initialAgreeToTerms?: boolean;
+  onSignupSuccess: (type: 'VENDOR' | 'CUSTOMER') => void;
+}) {
   const router = useRouter();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -430,22 +341,9 @@ function SignupForm({
 
       toast.success('Account created successfully!');
 
-      // Show PWA install prompt before redirecting if PWA is supported and not installed
-      if (shouldShowInstallPrompt) {
-        onAccountCreated();
-        
-        // Don't auto-redirect, let user decide in the prompt
-        // The prompt will handle redirection when user chooses "Continue in Browser"
-      } else {
-        // PWA already installed or not supported, redirect immediately
-        if (accountType === 'VENDOR') {
-          console.log('Redirecting vendor to onboarding');
-          router.push('/vendor/onboarding');
-        } else {
-          console.log('Redirecting customer to dashboard');
-          router.push('/customer/dashboard');
-        }
-      }
+      // Trigger PWA install prompt and handle redirect
+      onSignupSuccess(accountType);
+
     } catch (err) {
       console.error('Signup error:', err);
       toast.error('Something went wrong. Please try again.');
