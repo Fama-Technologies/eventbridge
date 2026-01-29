@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { hash } from 'bcryptjs';
 import { drizzle } from 'drizzle-orm/neon-http';
+import { sql } from 'drizzle-orm'; // ADD THIS IMPORT
 import * as schema from '@/drizzle/schema';
 
 export async function GET() {
@@ -98,10 +99,11 @@ export async function GET() {
     // Test 4: Drizzle - FIXED VERSION
     if (process.env.DATABASE_URL) {
       try {
-        const sql = neon(process.env.DATABASE_URL);
+        const neonSql = neon(process.env.DATABASE_URL);
         // Fix: Type assertion to bypass TypeScript error
-        const db = drizzle(sql as any, { schema });
-        const drizzleTest = await db.execute('SELECT 1 as test');
+        const db = drizzle(neonSql as any, { schema });
+        // Fix: Use sql template tag from drizzle-orm
+        const drizzleTest = await db.execute(sql`SELECT 1 as test`);
         results.tests.push({
           name: 'Drizzle Connection',
           status: 'success',
