@@ -28,7 +28,8 @@ export async function middleware(request: NextRequest) {
     ];
 
     // Check if the path is completely public (no auth required)
-    const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith(`${path}/`));
+    // Fix: Ensure we don't match everything with '/' prefix
+    const isPublicPath = publicPaths.some(path => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`)));
     const isPublicApi = publicApiPaths.some(path => pathname.startsWith(path));
     const isNextInternal = pathname.startsWith('/_next/') || pathname.includes('.');
 
@@ -55,25 +56,27 @@ export async function middleware(request: NextRequest) {
 
     // Check for generic dashboard access
     if (pathname === '/dashboard') {
-        if (token.accountType === 'VENDOR') {
+        const type = token.accountType?.toUpperCase();
+        if (type === 'VENDOR') {
             return NextResponse.redirect(new URL('/vendor', request.url));
-        } else if (token.accountType === 'CUSTOMER') {
+        } else if (type === 'CUSTOMER') {
             return NextResponse.redirect(new URL('/customer/dashboard', request.url));
-        } else if (token.accountType === 'ADMIN') {
+        } else if (type === 'ADMIN') {
             return NextResponse.redirect(new URL('/admin/dashboard', request.url));
         }
         // If account type is unknown or not set, maybe redirect to home or keep as is (though dashboard likely 404s)
         return NextResponse.redirect(new URL('/', request.url));
     }
 
-    // Check account type for customer routes
+    // Check account type for customer routes - Case Insensitive
     if (pathname.startsWith('/customer')) {
-        if (token.accountType !== 'CUSTOMER') {
+        const type = token.accountType?.toUpperCase();
+        if (type !== 'CUSTOMER') {
             console.log(`Middleware: User is ${token.accountType}, not CUSTOMER. Denying access to ${pathname}`);
             // Redirect to their appropriate dashboard
             const dashboardUrl = new URL(
-                token.accountType === 'VENDOR' ? '/vendor' :
-                    token.accountType === 'ADMIN' ? '/admin/dashboard' :
+                type === 'VENDOR' ? '/vendor' :
+                    type === 'ADMIN' ? '/admin/dashboard' :
                         '/',
                 request.url
             );
@@ -81,13 +84,14 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Check account type for vendor routes
+    // Check account type for vendor routes - Case Insensitive
     if (pathname.startsWith('/vendor')) {
-        if (token.accountType !== 'VENDOR') {
+        const type = token.accountType?.toUpperCase();
+        if (type !== 'VENDOR') {
             console.log(`Middleware: User is ${token.accountType}, not VENDOR. Denying access to ${pathname}`);
             const dashboardUrl = new URL(
-                token.accountType === 'CUSTOMER' ? '/customer/dashboard' :
-                    token.accountType === 'ADMIN' ? '/admin/dashboard' :
+                type === 'CUSTOMER' ? '/customer/dashboard' :
+                    type === 'ADMIN' ? '/admin/dashboard' :
                         '/',
                 request.url
             );
