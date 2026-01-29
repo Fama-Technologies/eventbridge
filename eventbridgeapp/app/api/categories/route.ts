@@ -74,7 +74,7 @@ const CATEGORY_TEMPLATES = [
     name: 'Weddings',
     slug: 'weddings',
     description: 'Everything you need for a perfect wedding',
-    imageUrl: '/categories/Weddings.jpg',
+    imageUrl: '/categories/weddings.jpg',
   },
   {
     id: '11',
