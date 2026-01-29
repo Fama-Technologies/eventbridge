@@ -163,9 +163,9 @@ export default function ProfileEditor() {
 
             {/* Tab Content */}
             <div className="p-4 md:p-8 animation-fade-in min-h-[500px]">
-                {activeTab === "basics" && vendorProfile && (
+                {activeTab === "basics" && (
                     <ProfileBasics
-                        vendorProfile={vendorProfile}
+                        vendorProfile={vendorProfile || undefined}
                         services={services}
                         onProfileUpdate={handleProfileUpdate}
                         onServicesUpdate={handleServicesUpdate}
@@ -179,16 +179,40 @@ export default function ProfileEditor() {
                     />
                 )}
 
-                {activeTab === "media" && vendorProfile && (
-                    <PortfolioMedia
-                        vendorId={vendorProfile.id}
-                    />
+                {activeTab === "media" && (
+                    vendorProfile ? (
+                        <PortfolioMedia
+                            vendorId={vendorProfile.id}
+                        />
+                    ) : (
+                        <div className="text-center py-12">
+                            <p className="text-neutrals-06 mb-4">Please create your profile in the "Profile Basics" tab first.</p>
+                            <button
+                                onClick={() => setActiveTab('basics')}
+                                className="text-primary-01 font-bold hover:underline"
+                            >
+                                Go to Profile Basics
+                            </button>
+                        </div>
+                    )
                 )}
 
-                {activeTab === "availability" && vendorProfile && (
-                    <AvailabilitySettings
-                        vendorId={vendorProfile.id}
-                    />
+                {activeTab === "availability" && (
+                    vendorProfile ? (
+                        <AvailabilitySettings
+                            vendorId={vendorProfile.id}
+                        />
+                    ) : (
+                        <div className="text-center py-12">
+                            <p className="text-neutrals-06 mb-4">Please create your profile in the "Profile Basics" tab first.</p>
+                            <button
+                                onClick={() => setActiveTab('basics')}
+                                className="text-primary-01 font-bold hover:underline"
+                            >
+                                Go to Profile Basics
+                            </button>
+                        </div>
+                    )
                 )}
             </div>
         </div>

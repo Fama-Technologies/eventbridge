@@ -1,15 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { vendorProfiles, vendorServices, vendorPackages, vendorAvailability, reviews, vendorPortfolio } from '@/drizzle/schema';
-import { and, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
+import { vendorProfiles, vendorServices, vendorPackages, vendorAvailability, reviews, vendorPortfolio, eventCategories } from '@/drizzle/schema';
+import { and, desc, eq, inArray, isNotNull, or, sql, ilike } from 'drizzle-orm';
 import { formatAvailability } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Step 1: Get distinct featured vendors (verified OR with portfolio) - MAX 4
-    const featuredVendors = await db
+    const { searchParams } = new URL(request.url);
+    const categoryParam = searchParams.get('category');
+
+    // Step 1: Base query
+    let query = db
       .selectDistinctOn([vendorProfiles.id], {
         id: vendorProfiles.id,
         businessName: vendorProfiles.businessName,
@@ -22,14 +25,37 @@ export async function GET() {
         vendorPortfolio,
         eq(vendorProfiles.id, vendorPortfolio.vendorId)
       )
-      .where(
-        or(
-          eq(vendorProfiles.isVerified, true),
-          isNotNull(vendorPortfolio.id)
-        )
+      .leftJoin(
+        eventCategories,
+        eq(vendorProfiles.categoryId, eventCategories.id)
       )
+      .leftJoin(
+        vendorServices,
+        eq(vendorProfiles.id, vendorServices.vendorId)
+      );
+
+    // Build filters
+    const filters = [
+      or(
+        eq(vendorProfiles.isVerified, true),
+        isNotNull(vendorPortfolio.id)
+      )
+    ];
+
+    if (categoryParam && categoryParam !== 'all') {
+      const term = `%${categoryParam}%`;
+      filters.push(or(
+        sql`lower(${eventCategories.name}) = ${categoryParam.toLowerCase()}`,
+        ilike(vendorServices.name, term),
+        ilike(vendorProfiles.businessName, term)
+      ));
+    }
+
+    // Execute query
+    const featuredVendors = await query
+      .where(and(...filters))
       .orderBy(vendorProfiles.id, desc(vendorProfiles.rating))
-      .limit(4); // Only get 4 vendors maximum
+      .limit(20); // Increased limit as we might filter
 
     const vendorIds = featuredVendors.map((v: { id: any; }) => v.id);
 
