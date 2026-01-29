@@ -41,17 +41,45 @@ export default function SavedPage() {
     const fetchFavorites = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/customer/favorites');
+            setError(null);
+            
+            console.log('Fetching favorites...');
+            const response = await fetch('/api/customer/favourites', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                
+                if (response.status === 401) {
+                    setError('Please log in to view your favorites');
+                    setTimeout(() => {
+                        router.push('/login');
+                    }, 2000);
+                    return;
+                }
+                
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('Favorites data:', data);
 
             if (data.success) {
-                setFavourites(data.favorites);
+                setFavourites(data.favorites || []);
             } else {
                 setError(data.error || 'Failed to load favorites');
             }
         } catch (err) {
-            setError('Failed to load favorites');
             console.error('Error fetching favorites:', err);
+            setError('Failed to load favorites. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -59,13 +87,30 @@ export default function SavedPage() {
 
     const removeFavorite = async (vendorId: number) => {
         try {
-            const response = await fetch(`/api/customer/favorites?vendorId=${vendorId}`, {
+            console.log('Removing favorite:', vendorId);
+            const response = await fetch(`/api/customer/favourites?vendorId=${vendorId}`, {
                 method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
             });
+            
+            console.log('Delete response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Delete error response:', errorText);
+                throw new Error(`Failed to remove favorite: ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('Delete response data:', data);
 
             if (data.success) {
                 setFavourites((prev) => prev.filter((f) => f.vendorId !== vendorId));
+            } else {
+                console.error('Failed to remove favorite:', data.error);
             }
         } catch (err) {
             console.error('Error removing favorite:', err);
@@ -89,7 +134,6 @@ export default function SavedPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
             <div className="bg-white sticky top-0 z-10 shadow-sm px-4 py-4 flex items-center justify-between">
                 <button onClick={() => router.back()} className="p-1 text-foreground">
                     <ArrowLeft size={24} />
@@ -108,15 +152,16 @@ export default function SavedPage() {
             {error ? (
                 <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
                     <p className="text-red-500 mb-4">{error}</p>
-                    <button
-                        onClick={fetchFavorites}
-                        className="bg-primary-01 text-white px-6 py-2 rounded-full font-semibold"
-                    >
-                        Try Again
-                    </button>
+                    {!error.includes('log in') && (
+                        <button
+                            onClick={fetchFavorites}
+                            className="bg-primary-01 text-white px-6 py-2 rounded-full font-semibold hover:bg-primary-02 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    )}
                 </div>
             ) : isEmpty ? (
-                // Empty State
                 <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
                     <div className="relative mb-8">
                         <div className="w-40 h-40 bg-primary-01/10 rounded-full flex items-center justify-center">
@@ -139,20 +184,16 @@ export default function SavedPage() {
                     </Link>
                 </div>
             ) : (
-                // List State
                 <div className="p-4 space-y-6">
                     {favourites.map((fav) => (
                         <div key={fav.id} className="bg-white rounded-[2rem] shadow-sm border border-neutrals-03 overflow-hidden mb-6">
-                            {/* Image Section */}
                             <div className="relative h-72 bg-neutrals-02">
-                                {/* Featured Badge */}
                                 {fav.vendor.isVerified && (
                                     <span className="absolute bottom-4 left-4 bg-white text-primary-01 text-[10px] font-bold px-3 py-1.5 rounded-full z-10 uppercase tracking-widest shadow-sm">
                                         Featured
                                     </span>
                                 )}
 
-                                {/* Heart Button */}
                                 <button
                                     onClick={() => removeFavorite(fav.vendorId)}
                                     className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm active:scale-95 transition-transform"
@@ -176,7 +217,6 @@ export default function SavedPage() {
                                 )}
                             </div>
 
-                            {/* Content Section */}
                             <div className="p-5 pt-4">
                                 <div className="flex justify-between items-start mb-1">
                                     <Link href={`/customer/vendor-profile/${fav.vendorId}`}>
@@ -201,11 +241,10 @@ export default function SavedPage() {
                                         <span className="text-lg font-bold text-foreground">
                                             UGX {formatPrice(fav.startingPrice)}
                                         </span>
-                                        <span className="text-sm text-neutrals-06 font-normal">/ event</span>
+                                        <span className="text-sm text-neutrals-06 font-normal">/ hour</span>
                                     </div>
                                 )}
 
-                                {/* Actions */}
                                 <div className="flex gap-3">
                                     <Link
                                         href={`/customer/messages?vendorId=${fav.vendorId}`}
