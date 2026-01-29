@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, Star, MapPin, BadgeCheck, Clock, Calendar, Check, ChevronRight, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import InquiryModal from '@/components/vendor/inquiry-modal';
+import { InquiryModal } from '@/components/category/inquiry-modal';
 
 interface Review {
     id: string;
@@ -461,6 +461,7 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
                 isOpen={isInquiryModalOpen}
                 onClose={() => setIsInquiryModalOpen(false)}
                 vendorName={vendor.name}
+                vendorId={vendor.id}
             />
         </div>
     );
