@@ -8,9 +8,9 @@ if (!process.env.DATABASE_URL) {
 export default {
   schema: './drizzle/schema.ts',
   out: './drizzle/migrations',
-  driver: 'pg',
+  dialect: 'postgresql', // Changed from 'driver' to 'dialect' for v0.22+
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL, // Changed from 'connectionString' to 'url'
   },
   verbose: true,
   strict: true,

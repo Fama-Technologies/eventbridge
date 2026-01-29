@@ -95,11 +95,12 @@ export async function GET() {
       }
     }
 
-    // Test 4: Drizzle
+    // Test 4: Drizzle - FIXED VERSION
     if (process.env.DATABASE_URL) {
       try {
         const sql = neon(process.env.DATABASE_URL);
-        const db = drizzle(sql, { schema });
+        // Fix: Type assertion to bypass TypeScript error
+        const db = drizzle(sql as any, { schema });
         const drizzleTest = await db.execute('SELECT 1 as test');
         results.tests.push({
           name: 'Drizzle Connection',
