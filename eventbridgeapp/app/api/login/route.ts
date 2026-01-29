@@ -1,7 +1,8 @@
+// app/api/login/route.ts - UPDATED
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { db } from '@/lib/db';
-import { users } from '@/drizzle/schema';
+import { users, deletedAccounts } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { createToken, isValidAccountType } from '@/lib/jwt';
 
@@ -13,6 +14,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, message: 'Email and password required' },
         { status: 400 }
+      );
+    }
+
+    // Check if this email is in the deleted accounts table
+    const [deletedAccount] = await db
+      .select()
+      .from(deletedAccounts)
+      .where(eq(deletedAccounts.email, email.toLowerCase()))
+      .limit(1);
+
+    if (deletedAccount) {
+      console.log('Attempted login to deleted account:', email);
+      return NextResponse.json(
+        { success: false, message: 'This account has been deleted' },
+        { status: 410 } // 410 Gone - indicates resource permanently deleted
       );
     }
 
@@ -88,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,
-      secure: false, // For debugging: force non-secure cookie
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
@@ -113,7 +129,7 @@ function getRedirectPath(accountType: string): string {
       return '/admin/dashboard';
 
     case 'CUSTOMER':
-      return '/customer/dashboard'; // Fixed: Changed from '/customer' to '/customer/dashboard'
+      return '/customer/dashboard';
 
     case 'PLANNER':
       return '/planner/dashboard';
