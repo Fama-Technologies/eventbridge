@@ -44,7 +44,7 @@ export default function SavedPage() {
             setError(null);
             
             console.log('Fetching favorites...');
-            const response = await fetch('/api/customer/favourites', {
+            const response = await fetch('/api/customer/favorites', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function SavedPage() {
     const removeFavorite = async (vendorId: number) => {
         try {
             console.log('Removing favorite:', vendorId);
-            const response = await fetch(`/api/customer/favourites?vendorId=${vendorId}`, {
+            const response = await fetch(`/api/customer/favorites?vendorId=${vendorId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

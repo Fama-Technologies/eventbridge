@@ -1,4 +1,4 @@
-// app/api/customer/favourites/route.ts
+// app/api/customer/favorites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
@@ -13,15 +13,22 @@ async function getCurrentUser() {
   const authToken = cookieStore.get('auth-token')?.value;
   const sessionToken = cookieStore.get('session')?.value;
 
+  console.log('Auth token exists:', !!authToken);
+  console.log('Session token exists:', !!sessionToken);
+
   if (authToken) {
     try {
       const payload = await verifyToken(authToken);
+      console.log('Token payload:', payload);
+      
       if (payload && payload.userId) {
         const [user] = await db
           .select()
           .from(users)
           .where(eq(users.id, payload.userId as number))
           .limit(1);
+        
+        console.log('User found:', user ? { id: user.id, accountType: user.accountType } : null);
         return user;
       }
     } catch (error) {
@@ -42,6 +49,8 @@ async function getCurrentUser() {
         .from(users)
         .where(eq(users.id, session.userId))
         .limit(1);
+      
+      console.log('User found via session:', user ? { id: user.id, accountType: user.accountType } : null);
       return user;
     }
   }
@@ -49,10 +58,12 @@ async function getCurrentUser() {
   return null;
 }
 
-// GET - Fetch all favourites for the logged-in customer
+// GET - Fetch all favorites for the logged-in customer
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
+
+    console.log('GET /api/customer/favorites - User:', user ? { id: user.id, accountType: user.accountType } : 'null');
 
     if (!user) {
       return NextResponse.json(
@@ -61,7 +72,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (user.accountType !== 'CUSTOMER') {
+    // Accept both 'CUSTOMER' and 'C' as valid customer account types
+    const validCustomerTypes = ['CUSTOMER', 'C'];
+    if (!validCustomerTypes.includes(user.accountType)) {
+      console.log('Invalid account type:', user.accountType);
       return NextResponse.json(
         { success: false, error: 'Only customers can access favorites' },
         { status: 403 }
@@ -91,6 +105,8 @@ export async function GET(req: NextRequest) {
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
       .where(eq(userFavorites.userId, user.id))
       .orderBy(desc(userFavorites.createdAt));
+
+    console.log('Favorites found:', favoritesData.length);
 
     const formattedFavorites = favoritesData.map((fav: { favoriteId: any; favoriteVendorId: any; favoriteCreatedAt: { toISOString: () => any; }; vendorId: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; categoryId: any; categoryName: any; hourlyRate: any; }) => ({
       id: fav.favoriteId,
@@ -141,7 +157,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.accountType !== 'CUSTOMER') {
+    // Accept both 'CUSTOMER' and 'C' as valid customer account types
+    const validCustomerTypes = ['CUSTOMER', 'C'];
+    if (!validCustomerTypes.includes(user.accountType)) {
       return NextResponse.json(
         { success: false, error: 'Only customers can add favorites' },
         { status: 403 }
@@ -172,7 +190,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if already favourited
+    // Check if already favorited
     const [existingFavorite] = await db
       .select()
       .from(userFavorites)
@@ -274,7 +292,9 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    if (user.accountType !== 'CUSTOMER') {
+    // Accept both 'CUSTOMER' and 'C' as valid customer account types
+    const validCustomerTypes = ['CUSTOMER', 'C'];
+    if (!validCustomerTypes.includes(user.accountType)) {
       return NextResponse.json(
         { success: false, error: 'Only customers can remove favorites' },
         { status: 403 }
