@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ServiceCard from './ServiceCard';
 import type { ServiceCardProps } from './ServiceCard';
 
@@ -17,6 +17,25 @@ export default function ServiceGrid({
 }: ServiceGridProps) {
   const [displayCount, setDisplayCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
+  const [userFavorites, setUserFavorites] = useState<any[]>([]);
+
+  // Fetch favorites on mount
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      try {
+        const res = await fetch('/api/customer/favorites');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.favorites)) {
+            setUserFavorites(data.favorites);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch favorites', err);
+      }
+    };
+    fetchFavorites();
+  }, []);
 
   const displayedServices = services.slice(0, displayCount);
   const hasMore = displayCount < services.length;
@@ -35,7 +54,11 @@ export default function ServiceGrid({
       {/* Services Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {displayedServices.map((service) => (
-          <ServiceCard key={service.id} {...service} />
+          <ServiceCard
+            key={service.id}
+            {...service}
+            isFavorite={userFavorites.some(f => f.vendorId.toString() === service.id)}
+          />
         ))}
       </div>
 

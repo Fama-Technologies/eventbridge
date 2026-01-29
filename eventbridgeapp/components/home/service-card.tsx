@@ -114,13 +114,38 @@ export default function ServiceCard({
 
         {/* Favorite Button */}
         <button
-          onClick={(e) => {
+          onClick={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            setFavorite(!favorite);
+
+            // Optimistic update
+            const newStatus = !favorite;
+            setFavorite(newStatus);
+
+            try {
+              if (newStatus) {
+                // Add to favorites
+                const res = await fetch('/api/customer/favorites', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ vendorId: parseInt(id) })
+                });
+                if (!res.ok) throw new Error('Failed to add favorite');
+              } else {
+                // Remove from favorites
+                const res = await fetch(`/api/customer/favorites?vendorId=${id}`, {
+                  method: 'DELETE'
+                });
+                if (!res.ok) throw new Error('Failed to remove favorite');
+              }
+            } catch (error) {
+              console.error('Error toggling favorite:', error);
+              // Revert on error
+              setFavorite(!newStatus);
+            }
           }}
           className="absolute top-3 right-3 z-10"
-          aria-label="Add to favorites"
+          aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
             size={22}

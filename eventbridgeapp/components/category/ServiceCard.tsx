@@ -33,10 +33,35 @@ export default function ServiceCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [favorite, setFavorite] = useState(isFavorite);
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorite(!favorite);
+
+    // Optimistic update
+    const newStatus = !favorite;
+    setFavorite(newStatus);
+
+    try {
+      if (newStatus) {
+        // Add to favorites
+        const res = await fetch('/api/customer/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendorId: parseInt(id) })
+        });
+        if (!res.ok) throw new Error('Failed to add favorite');
+      } else {
+        // Remove from favorites
+        const res = await fetch(`/api/customer/favorites?vendorId=${id}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to remove favorite');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      // Revert on error
+      setFavorite(!newStatus);
+    }
   };
 
   return (
@@ -53,9 +78,10 @@ export default function ServiceCard({
         {/* Favorite Button */}
         <button
           onClick={handleFavoriteClick}
+          aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
           className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${favorite
-              ? 'bg-primary-01 text-white'
-              : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
+            ? 'bg-primary-01 text-white'
+            : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
             }`}
         >
           <Heart size={16} fill={favorite ? 'currentColor' : 'none'} />
@@ -79,8 +105,8 @@ export default function ServiceCard({
                   setCurrentImageIndex(index);
                 }}
                 className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex
-                    ? 'bg-white w-3'
-                    : 'bg-white/50 hover:bg-white/70'
+                  ? 'bg-white w-3'
+                  : 'bg-white/50 hover:bg-white/70'
                   }`}
               />
             ))}

@@ -43,6 +43,7 @@ export default function CustomerDashboardPage() {
   const [services, setServices] = React.useState<any[]>([]);
   const [regionalServices, setRegionalServices] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [userFavorites, setUserFavorites] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     async function fetchData() {
@@ -52,6 +53,15 @@ export default function CustomerDashboardPage() {
         if (catResponse.ok) {
           const catData = await catResponse.json();
           setCategories(Array.isArray(catData) ? catData : []);
+        }
+
+        // Fetch favorites
+        const favResponse = await fetch("/api/customer/favorites");
+        if (favResponse.ok) {
+          const favData = await favResponse.json();
+          if (favData.success && Array.isArray(favData.favorites)) {
+            setUserFavorites(favData.favorites);
+          }
         }
 
         // Fetch featured services
@@ -73,6 +83,10 @@ export default function CustomerDashboardPage() {
     }
     fetchData();
   }, []);
+
+  const isVendorFavorite = (vendorId: string) => {
+    return userFavorites.some(f => f.vendorId.toString() === vendorId);
+  };
 
   return (
     <div className="min-h-screen bg-neutrals-01 pb-20">
@@ -163,7 +177,11 @@ export default function CustomerDashboardPage() {
                 <div className="overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
                   <div className="grid grid-flow-col auto-cols-[minmax(220px,2fr)] gap-4">
                     {services.map((service) => (
-                      <ServiceCard key={`${eventType.query}-${service.id}`} {...service} />
+                      <ServiceCard
+                        key={`${eventType.query}-${service.id}`}
+                        {...service}
+                        isFavorite={isVendorFavorite(service.id)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -204,7 +222,11 @@ export default function CustomerDashboardPage() {
             <div className="overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
               <div className="grid grid-flow-col auto-cols-[minmax(220px,2fr)] gap-4">
                 {regionalServices.map((service) => (
-                  <ServiceCard key={service.id} {...service} />
+                  <ServiceCard
+                    key={service.id}
+                    {...service}
+                    isFavorite={isVendorFavorite(service.id)}
+                  />
                 ))}
               </div>
             </div>

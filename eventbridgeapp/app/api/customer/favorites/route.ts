@@ -3,17 +3,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { userFavorites, vendorProfiles, eventCategories, users } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
-
-// For testing - use a specific user ID (update this to match your user ID)
-const TEST_USER_ID = 1; // Change this to your actual user ID
+import { getAuthUser } from '@/lib/auth';
 
 // GET - Fetch all favorites for a user
 export async function GET(req: NextRequest) {
   try {
-    console.log('Fetching favorites from database...');
+    const user = await getAuthUser(req);
 
-    // For now, use TEST_USER_ID. Later, get from session/token
-    const userId = TEST_USER_ID;
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
 
     // Fetch favorites with vendor details
     const favorites = await db
@@ -49,8 +53,6 @@ export async function GET(req: NextRequest) {
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
       .where(eq(userFavorites.userId, userId))
       .orderBy(desc(userFavorites.createdAt));
-
-    console.log(`Found ${favorites.length} favorites for user ${userId}`);
 
     // Transform the data to match your frontend expectations
     const formattedFavorites = favorites.map((fav: { favoriteId: any; vendor: { id: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; hourlyRate: any; user: any; }; createdAt: any; category: any; }) => ({
@@ -96,8 +98,17 @@ export async function GET(req: NextRequest) {
 // POST - Add a vendor to favorites
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthUser(req);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { vendorId } = await req.json();
-    
+
     if (!vendorId) {
       return NextResponse.json(
         { success: false, error: 'Vendor ID is required' },
@@ -105,10 +116,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // For now, use TEST_USER_ID
-    const userId = TEST_USER_ID;
-
-    console.log(`Adding favorite: user ${userId}, vendor ${vendorId}`);
+    const userId = user.id;
 
     // Check if already favorited
     const existingFavorite = await db
@@ -124,8 +132,8 @@ export async function POST(req: NextRequest) {
 
     if (existingFavorite.length > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Already in favorites',
           favoriteId: existingFavorite[0].id
         },
@@ -142,8 +150,6 @@ export async function POST(req: NextRequest) {
         createdAt: new Date()
       })
       .returning();
-
-    console.log('Added new favorite:', newFavorite);
 
     return NextResponse.json(
       {
@@ -170,6 +176,15 @@ export async function POST(req: NextRequest) {
 // DELETE - Remove a vendor from favorites
 export async function DELETE(req: NextRequest) {
   try {
+    const user = await getAuthUser(req);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const vendorId = searchParams.get('vendorId');
 
@@ -180,10 +195,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // For now, use TEST_USER_ID
-    const userId = TEST_USER_ID;
-
-    console.log(`Removing favorite: user ${userId}, vendor ${vendorId}`);
+    const userId = user.id;
 
     // Delete the favorite
     const deletedFavorites = await db
@@ -198,15 +210,13 @@ export async function DELETE(req: NextRequest) {
 
     if (deletedFavorites.length === 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Favorite not found' 
+        {
+          success: false,
+          error: 'Favorite not found'
         },
         { status: 404 }
       );
     }
-
-    console.log('Removed favorite:', deletedFavorites[0]);
 
     return NextResponse.json(
       {

@@ -46,6 +46,7 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(false);
 
     // Format currency
     const formatCurrency = (amount: number) => {
@@ -85,8 +86,52 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
 
         if (params.id) {
             fetchVendorData();
+            checkFavoriteStatus();
         }
     }, [params.id]);
+
+    const checkFavoriteStatus = async () => {
+        try {
+            const res = await fetch('/api/customer/favorites');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && Array.isArray(data.favorites)) {
+                    const isFav = data.favorites.some((fav: any) => fav.vendorId.toString() === params.id);
+                    setIsFavorite(isFav);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to check favorite status', err);
+        }
+    };
+
+    const handleFavorite = async () => {
+        // Optimistic update
+        const newStatus = !isFavorite;
+        setIsFavorite(newStatus);
+
+        try {
+            if (newStatus) {
+                // Add to favorites
+                const res = await fetch('/api/customer/favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vendorId: parseInt(params.id) })
+                });
+                if (!res.ok) throw new Error('Failed to add favorite');
+            } else {
+                // Remove from favorites
+                const res = await fetch(`/api/customer/favorites?vendorId=${params.id}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error('Failed to remove favorite');
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            // Revert on error
+            setIsFavorite(!newStatus);
+        }
+    };
 
     // Filter portfolio
     const filteredPortfolio = vendor?.portfolio?.filter(item =>
@@ -141,8 +186,11 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
                         <button className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors">
                             <Share2 size={20} />
                         </button>
-                        <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-neutrals-07 hover:text-primary-01 transition-colors shadow-lg">
-                            <Heart size={20} />
+                        <button
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-lg ${isFavorite ? 'bg-primary-01 text-white' : 'bg-white text-neutrals-07 hover:text-primary-01'}`}
+                            onClick={handleFavorite}
+                        >
+                            <Heart size={20} className={isFavorite ? 'fill-current' : ''} />
                         </button>
                     </div>
                 </div>
@@ -321,7 +369,14 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
                                                 <div className="h-40 bg-neutrals-03 rounded-xl mb-3 relative overflow-hidden">
                                                     <img src={similar.images?.[0] || '/categories/placeholder.jpg'} className="w-full h-full object-cover"
                                                         onError={(e) => (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1000'} />
-                                                    <button className="absolute top-2 right-2 p-1.5 bg-black/40 rounded-full text-white"><Heart size={14} /></button>
+                                                    <button className="absolute top-2 right-2 p-1.5 bg-black/40 rounded-full text-white"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            // For now just alert, implementing fully requires state for each
+                                                            // or using ServiceCard component (which is preferred)
+                                                            alert('Use the main vendor cards to favorite these!');
+                                                        }}
+                                                    ><Heart size={14} /></button>
                                                 </div>
                                                 <h4 className="font-bold text-sm text-foreground truncate">{similar.name}</h4>
                                                 <p className="text-xs text-neutrals-06 mb-1 truncate">{similar.category}</p>
