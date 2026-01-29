@@ -1,4 +1,4 @@
-// app/api/users/delete-account/route.ts - DEBUG VERSION
+// app/api/users/delete-account/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, deletedAccounts } from '@/drizzle/schema';
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     if (!session || !session.user?.email) {
       console.log('ERROR: No session or email');
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Unauthorized. Please log in again.' },
         { status: 401 }
       );
     }
@@ -57,8 +57,9 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-    // Create audit record BEFORE deleting the user
+    // Start database operations
     try {
+      // 1. Create audit record BEFORE deleting the user
       console.log('Creating audit record...');
       const auditRecord = await db.insert(deletedAccounts).values({
         userId: user.id,
@@ -70,51 +71,67 @@ export async function POST(req: NextRequest) {
       }).returning();
 
       console.log('Audit record created:', auditRecord);
-    } catch (auditError) {
-      console.error('Failed to create audit record:', auditError);
-    }
 
-    // HARD DELETE - This will cascade and delete all related data
-    console.log('Attempting to delete user with ID:', user.id);
-    
-    const deleteResult = await db
-      .delete(users)
-      .where(eq(users.id, user.id))
-      .returning();
+      // 2. HARD DELETE - This will cascade and delete all related data
+      console.log('Attempting to delete user with ID:', user.id);
+      
+      const deleteResult = await db
+        .delete(users)
+        .where(eq(users.id, user.id))
+        .returning();
 
-    console.log('Delete result:', deleteResult);
+      console.log('Delete result:', deleteResult);
 
-    // Verify deletion
-    const [stillExists] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1);
+      // 3. Verify deletion
+      const [stillExists] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, user.id))
+        .limit(1);
 
-    console.log('User still exists after delete?', !!stillExists);
+      console.log('User still exists after delete?', !!stillExists);
 
-    if (stillExists) {
-      console.error('ERROR: User was not deleted!');
+      if (stillExists) {
+        console.error('ERROR: User was not deleted!');
+        return NextResponse.json(
+          { success: false, message: 'Failed to delete account. Please try again.' },
+          { status: 500 }
+        );
+      }
+
+      console.log('SUCCESS: Account permanently deleted:', user.email);
+
+      // 4. Return success response
       return NextResponse.json(
-        { success: false, message: 'Failed to delete account' },
+        {
+          success: true,
+          message: 'Your account has been permanently deleted.',
+          data: {
+            userId: user.id,
+            email: user.email,
+            deletedAt: new Date().toISOString(),
+          }
+        },
+        { status: 200 }
+      );
+
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      
+      if (dbError instanceof Error) {
+        console.error('DB Error message:', dbError.message);
+        console.error('DB Error stack:', dbError.stack);
+      }
+
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Database error occurred. Please try again or contact support.',
+          error: dbError instanceof Error ? dbError.message : 'Unknown database error'
+        },
         { status: 500 }
       );
     }
-
-    console.log('SUCCESS: Account permanently deleted:', user.email);
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Account deleted successfully',
-        data: {
-          userId: user.id,
-          email: user.email,
-          deletedAt: new Date().toISOString(),
-        }
-      },
-      { status: 200 }
-    );
 
   } catch (error) {
     console.error('DELETE ACCOUNT ERROR:', error);
@@ -127,10 +144,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        message: 'Failed to delete account. Please try again or contact support.',
+        message: 'An unexpected error occurred. Please try again or contact support.',
         error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
-} 
+}

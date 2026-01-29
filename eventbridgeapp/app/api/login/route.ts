@@ -1,4 +1,4 @@
-// app/api/login/route.ts - UPDATED
+// app/api/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { compare } from 'bcryptjs';
 import { db } from '@/lib/db';

@@ -32,6 +32,7 @@ export default function AccountSecurity() {
 
     // Delete Account State
     const [deleteStep, setDeleteStep] = useState(0); // 0: Closed, 1: Warning, 2: Feedback, 3: Success
+    const [isDeleting, setIsDeleting] = useState(false);
     const [deleteChecks, setDeleteChecks] = useState({
         assets: false,
         leads: false,
@@ -105,19 +106,63 @@ export default function AccountSecurity() {
 
     // Delete Flow Handlers
     const startDeleteFlow = () => setDeleteStep(1);
+    
     const cancelDelete = () => {
         setDeleteStep(0);
         setDeleteChecks({ assets: false, leads: false, history: false });
         setDeleteFeedback({ reason: "", details: "" });
+        setIsDeleting(false);
     };
+    
     const proceedToFeedback = () => setDeleteStep(2);
+    
     const submitFeedback = async () => {
-        // Simulate API call to delete account and submit feedback
-        await new Promise(r => setTimeout(r, 1000));
-        setDeleteStep(3);
+        try {
+            setIsDeleting(true);
+            
+            const response = await fetch('/api/users/delete-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    reason: deleteFeedback.reason,
+                    details: deleteFeedback.details
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                addToast(data.message || 'Failed to delete account', 'error');
+                setIsDeleting(false);
+                return;
+            }
+
+            // Account deleted successfully
+            console.log('Account deleted successfully:', data);
+            addToast('Account deleted successfully', 'success');
+            setDeleteStep(3);
+            
+        } catch (error) {
+            console.error('Delete account error:', error);
+            addToast('An error occurred while deleting your account', 'error');
+            setIsDeleting(false);
+        }
     };
-    const completeDeletion = () => {
-        // Redirect to home or logout
+    
+    const completeDeletion = async () => {
+        // Clear auth token cookie
+        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        
+        // Optional: Call logout endpoint if you have one
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        
+        // Redirect to home page
         window.location.href = "/";
     };
 
@@ -352,6 +397,7 @@ export default function AccountSecurity() {
                     setDeleteFeedback={setDeleteFeedback}
                     onSubmit={submitFeedback}
                     onSkip={() => setDeleteStep(3)}
+                    isLoading={isDeleting}
                 />
             )}
 

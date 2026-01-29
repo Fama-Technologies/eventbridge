@@ -1,5 +1,7 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+
 interface DeleteAccountFeedbackProps {
     deleteFeedback: {
         reason: string;
@@ -8,13 +10,15 @@ interface DeleteAccountFeedbackProps {
     setDeleteFeedback: (feedback: { reason: string; details: string }) => void;
     onSubmit: () => void;
     onSkip: () => void;
+    isLoading?: boolean; // Add isLoading prop
 }
 
 export default function DeleteAccountFeedback({
     deleteFeedback,
     setDeleteFeedback,
     onSubmit,
-    onSkip
+    onSkip,
+    isLoading = false // Default to false
 }: DeleteAccountFeedbackProps) {
     const reasons = [
         'Found better leads elsewhere',
@@ -40,7 +44,7 @@ export default function DeleteAccountFeedback({
                 {/* Scrollable Content */}
                 <div className="p-6 md:p-8 py-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
                     {reasons.map((reason) => (
-                        <label key={reason} className="flex items-center gap-4 cursor-pointer group p-2 hover:bg-neutrals-01 rounded-lg transition-colors">
+                        <label key={reason} className={`flex items-center gap-4 cursor-pointer group p-2 hover:bg-neutrals-01 rounded-lg transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             <div className={`w-5 h-5 rounded-full border border-neutrals-05 flex items-center justify-center shrink-0 ${deleteFeedback.reason === reason ? 'border-primary-01' : 'group-hover:border-neutrals-04'}`}>
                                 {deleteFeedback.reason === reason && <div className="w-2.5 h-2.5 bg-primary-01 rounded-full" />}
                             </div>
@@ -51,6 +55,7 @@ export default function DeleteAccountFeedback({
                                 value={reason}
                                 checked={deleteFeedback.reason === reason}
                                 onChange={(e) => setDeleteFeedback({ ...deleteFeedback, reason: e.target.value })}
+                                disabled={isLoading}
                             />
                             <span className="text-shades-black">{reason}</span>
                         </label>
@@ -58,12 +63,13 @@ export default function DeleteAccountFeedback({
 
                     <textarea
                         placeholder="Tell us more... (optional)"
-                        className="w-full bg-neutrals-01 border border-neutrals-03 rounded-xl p-4 text-shades-black text-sm focus:outline-none focus:border-primary-01 h-24 resize-none transition-all placeholder:text-neutrals-05"
+                        className="w-full bg-neutrals-01 border border-neutrals-03 rounded-xl p-4 text-shades-black text-sm focus:outline-none focus:border-primary-01 h-24 resize-none transition-all placeholder:text-neutrals-05 disabled:opacity-50 disabled:cursor-not-allowed"
                         value={deleteFeedback.details}
                         onChange={(e) => setDeleteFeedback({ ...deleteFeedback, details: e.target.value })}
+                        disabled={isLoading}
                     />
 
-                    <label className="flex items-center gap-4 cursor-pointer group p-2 hover:bg-neutrals-01 rounded-lg transition-colors">
+                    <label className={`flex items-center gap-4 cursor-pointer group p-2 hover:bg-neutrals-01 rounded-lg transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         <div className={`w-5 h-5 rounded-full border border-neutrals-05 flex items-center justify-center ${deleteFeedback.reason === 'Prefer not to say' ? 'border-primary-01' : 'group-hover:border-neutrals-04'}`}>
                             {deleteFeedback.reason === 'Prefer not to say' && <div className="w-2.5 h-2.5 bg-primary-01 rounded-full" />}
                         </div>
@@ -74,6 +80,7 @@ export default function DeleteAccountFeedback({
                             value="Prefer not to say"
                             checked={deleteFeedback.reason === 'Prefer not to say'}
                             onChange={(e) => setDeleteFeedback({ ...deleteFeedback, reason: e.target.value })}
+                            disabled={isLoading}
                         />
                         <span className="text-shades-black">Prefer not to say</span>
                     </label>
@@ -87,13 +94,22 @@ export default function DeleteAccountFeedback({
                 <div className="p-6 md:p-8 pt-0 flex-shrink-0 space-y-3">
                     <button
                         onClick={onSubmit}
-                        className="w-full py-4 bg-primary-01 hover:bg-primary-02 text-shades-white font-bold rounded-xl transition-all"
+                        disabled={isLoading}
+                        className="w-full py-4 bg-primary-01 hover:bg-primary-02 text-shades-white font-bold rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        Submit & Continue
+                        {isLoading ? (
+                            <>
+                                <Loader2 size={18} className="animate-spin" />
+                                Deleting Account...
+                            </>
+                        ) : (
+                            'Submit & Continue'
+                        )}
                     </button>
                     <button
                         onClick={onSkip}
-                        className="w-full py-4 bg-neutrals-01 hover:bg-neutrals-02 border border-neutrals-03 text-shades-black font-semibold rounded-xl transition-all"
+                        disabled={isLoading}
+                        className="w-full py-4 bg-neutrals-01 hover:bg-neutrals-02 border border-neutrals-03 text-shades-black font-semibold rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         Skip this step
                     </button>
