@@ -719,6 +719,98 @@ export const reviews = pgTable('reviews', {
   };
 });
 
+/* ===================== MESSAGING ===================== */
+export const messageThreads = pgTable('message_threads', {
+  id: serial('id').primaryKey(),
+  
+  customerId: integer('customer_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  
+  bookingId: integer('booking_id')
+    .references(() => bookings.id, { onDelete: 'set null' }),
+  
+  lastMessage: text('last_message'),
+  lastMessageTime: timestamp('last_message_time').defaultNow(),
+  unreadCount: integer('unread_count').default(0),
+  customerUnreadCount: integer('customer_unread_count').default(0),
+  vendorUnreadCount: integer('vendor_unread_count').default(0),
+  
+  isArchived: boolean('is_archived').default(false),
+  isBlocked: boolean('is_blocked').default(false),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    customerIdIdx: index('message_threads_customer_id_idx').on(table.customerId),
+    vendorIdIdx: index('message_threads_vendor_id_idx').on(table.vendorId),
+    uniqueCustomerVendor: unique('message_threads_unique_customer_vendor')
+      .on(table.customerId, table.vendorId),
+  };
+});
+
+export const messages = pgTable('messages', {
+  id: serial('id').primaryKey(),
+  
+  threadId: integer('thread_id')
+    .notNull()
+    .references(() => messageThreads.id, { onDelete: 'cascade' }),
+  
+  senderId: integer('sender_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  
+  senderType: text('sender_type')
+    .$type<'CUSTOMER' | 'VENDOR'>()
+    .notNull(),
+  
+  content: text('content'),
+  
+  attachments: jsonb('attachments').$type<Array<{
+    type: string;
+    url: string;
+    name?: string;
+    size?: number;
+  }>>(),
+  
+  read: boolean('read').default(false),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    threadIdIdx: index('messages_thread_id_idx').on(table.threadId),
+    senderIdIdx: index('messages_sender_id_idx').on(table.senderId),
+    createdAtIdx: index('messages_created_at_idx').on(table.createdAt),
+  };
+});
+
+/* ===================== USER FAVORITES ===================== */
+export const userFavorites = pgTable('user_favorites', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('user_favorites_user_id_idx').on(table.userId),
+    vendorIdIdx: index('user_favorites_vendor_id_idx').on(table.vendorId),
+    uniqueUserVendor: unique('user_favorites_unique_user_vendor')
+      .on(table.userId, table.vendorId),
+  };
+});
+
 /* ===================== RELATIONS ===================== */
 export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
@@ -731,6 +823,10 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   onboardingProgress: one(onboardingProgress),
   uploads: many(userUploads),
   invoices: many(invoices),
+  favorites: many(userFavorites),
+  messageThreadsAsCustomer: many(messageThreads, { relationName: 'customerThreads' }),
+  messageThreadsAsVendor: many(messageThreads, { relationName: 'vendorThreads' }),
+  sentMessages: many(messages, { relationName: 'sentMessages' }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -808,6 +904,8 @@ export const vendorProfilesRelations = relations(vendorProfiles, ({ one, many })
   subscriptions: many(vendorSubscriptions),
   usage: many(vendorUsage),
   invoices: many(invoices),
+  favorites: many(userFavorites),
+  messageThreads: many(messageThreads, { relationName: 'vendorThreads' }),
 }));
 
 export const eventCategoriesRelations = relations(eventCategories, ({ many }) => ({
@@ -938,6 +1036,7 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   }),
   reviews: many(reviews),
   invoices: many(invoices),
+  messageThreads: many(messageThreads),
 }));
 
 export const invoicesRelations = relations(invoices, ({ one }) => ({
@@ -970,27 +1069,35 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
-/* ===================== USER FAVORITES ===================== */
-export const userFavorites = pgTable('user_favorites', {
-  id: serial('id').primaryKey(),
+export const messageThreadsRelations = relations(messageThreads, ({ one, many }) => ({
+  customer: one(users, {
+    fields: [messageThreads.customerId],
+    references: [users.id],
+    relationName: 'customerThreads',
+  }),
+  vendor: one(users, {
+    fields: [messageThreads.vendorId],
+    references: [users.id],
+    relationName: 'vendorThreads',
+  }),
+  booking: one(bookings, {
+    fields: [messageThreads.bookingId],
+    references: [bookings.id],
+  }),
+  messages: many(messages),
+}));
 
-  userId: integer('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-
-  vendorId: integer('vendor_id')
-    .notNull()
-    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
-
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => {
-  return {
-    userIdIdx: index('user_favorites_user_id_idx').on(table.userId),
-    vendorIdIdx: index('user_favorites_vendor_id_idx').on(table.vendorId),
-    uniqueUserVendor: unique('user_favorites_unique_user_vendor')
-      .on(table.userId, table.vendorId),
-  };
-});
+export const messagesRelations = relations(messages, ({ one }) => ({
+  thread: one(messageThreads, {
+    fields: [messages.threadId],
+    references: [messageThreads.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+    relationName: 'sentMessages',
+  }),
+}));
 
 export const userFavoritesRelations = relations(userFavorites, ({ one }) => ({
   user: one(users, {
@@ -1081,6 +1188,12 @@ export type NewInvoice = typeof invoices.$inferInsert;
 
 export type Review = typeof reviews.$inferSelect;
 export type NewReview = typeof reviews.$inferInsert;
+
+export type MessageThread = typeof messageThreads.$inferSelect;
+export type NewMessageThread = typeof messageThreads.$inferInsert;
+
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
 
 export type UserFavorite = typeof userFavorites.$inferSelect;
 export type NewUserFavorite = typeof userFavorites.$inferInsert;
