@@ -24,16 +24,29 @@ export default function ExploreCategories() {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch('/api/categories?limit=4');
+        const response = await fetch('/api/categories');
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
+
+        console.log('📊 Categories API Response:', data);
+        console.log('📊 Is Array?', Array.isArray(data));
+        console.log('📊 Data length:', data?.length);
+
+        // Filter for event type categories
         const filtered =
           Array.isArray(data)
             ? data.filter((category) =>
               eventTypeSlugs.has(String(category.slug || '').toLowerCase())
             )
             : [];
-        setCategories(filtered.slice(0, 4));
+
+        console.log('📊 Filtered categories:', filtered);
+        console.log('📊 Filtered length:', filtered.length);
+
+        // If we have filtered results, use them; otherwise show first 4 categories
+        const categoriesToShow = filtered.length > 0 ? filtered : (Array.isArray(data) ? data : []);
+        console.log('📊 Categories to show:', categoriesToShow.slice(0, 4));
+        setCategories(categoriesToShow.slice(0, 4));
       } catch (error) {
         console.error('Error fetching categories:', error);
       } finally {
