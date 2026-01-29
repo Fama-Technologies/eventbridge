@@ -104,16 +104,16 @@ export default function CustomerHeader() {
         {/* Bottom Row: Navigation Links */}
         <div className="flex items-center justify-center gap-8 mt-4">
           {TABS.map((tab) => {
-            const isActive = pathname === tab.href;
+            const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
             return (
               <Link
                 href={tab.href}
                 key={tab.name}
                 className={cn(
-                  "pb-2 text-sm font-semibold transition-all relative",
+                  "pb-2 text-sm font-semibold transition-all relative border-b-2",
                   isActive
-                    ? "text-shades-black"
-                    : "text-neutrals-06 hover:text-neutrals-07",
+                    ? "text-primary-01 border-primary-01"
+                    : "text-neutrals-06 border-transparent hover:text-neutrals-07 hover:border-neutrals-03",
                 )}
               >
                 {tab.name}
