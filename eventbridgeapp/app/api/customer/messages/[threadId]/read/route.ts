@@ -1,62 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { messages, messageThreads } from '@/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
+import { getAuthUser } from '@/lib/auth';
 
 export async function POST(
     req: NextRequest,
     { params }: { params: { threadId: string } }
 ) {
     try {
-        const userId = await getAuthenticatedUserId(req);
+        const authUser = await getAuthUser(req);
         
-        if (!userId) {
+        if (!authUser) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
+        const userId = authUser.id;
+        const userType = authUser.accountType === 'CUSTOMER' ? 'customer' : 'vendor';
         const threadId = parseInt(params.threadId);
-
-        // Verify user has access to this thread
-        const thread = await db
-            .select()
-            .from(messageThreads)
-            .where(
-                and(
-                    eq(messageThreads.id, threadId),
-                    eq(messageThreads.customerId, userId)
-                )
-            )
-            .limit(1);
-
-        if (thread.length === 0) {
+        
+        if (isNaN(threadId) || threadId <= 0) {
             return NextResponse.json(
-                { success: false, error: 'Thread not found or access denied' },
-                { status: 404 }
+                { success: false, error: 'Invalid thread ID' },
+                { status: 400 }
             );
         }
 
-        // Mark all unread messages from vendor as read
-        await db
-            .update(messages)
-            .set({ read: true })
-            .where(
-                and(
-                    eq(messages.threadId, threadId),
-                    eq(messages.senderType, 'VENDOR'),
-                    eq(messages.read, false)
-                )
-            );
+        const { messageIds } = await req.json();
 
-        // Update thread's unread count
+        // Update messages as read
+        if (messageIds && Array.isArray(messageIds) && messageIds.length > 0) {
+            // Mark specific messages as read
+            for (const messageId of messageIds) {
+                await db
+                    .update(messages)
+                    .set({ read: true })
+                    .where(
+                        and(
+                            eq(messages.id, messageId),
+                            eq(messages.threadId, threadId),
+                            ne(messages.senderId, userId)
+                        )
+                    );
+            }
+        } else {
+            // Mark all unread messages as read
+            await db
+                .update(messages)
+                .set({ read: true })
+                .where(
+                    and(
+                        eq(messages.threadId, threadId),
+                        ne(messages.senderId, userId),
+                        eq(messages.read, false)
+                    )
+                );
+        }
+
+        // Reset unread count
+        const fieldToReset = userType === 'customer' ? 'customerUnreadCount' : 'vendorUnreadCount';
         await db
             .update(messageThreads)
-            .set({ 
-                customerUnreadCount: 0,
-                updatedAt: new Date()
-            })
+            .set({ [fieldToReset]: 0 })
             .where(eq(messageThreads.id, threadId));
 
         return NextResponse.json({
@@ -70,18 +78,9 @@ export async function POST(
             {
                 success: false,
                 error: 'Failed to mark messages as read',
-                details: error.message
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
             },
             { status: 500 }
         );
-    }
-}
-
-async function getAuthenticatedUserId(req: NextRequest): Promise<number | null> {
-    try {
-        const token = req.cookies.get('auth-token')?.value;
-        return token ? 1 : null;
-    } catch (error) {
-        return null;
     }
 }

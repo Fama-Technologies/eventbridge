@@ -9,14 +9,21 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 interface MessageThread {
-    id: string;
-    vendorId: string;
+    id: number; // Changed from string to number
+    vendorId: number; // Changed from string to number
     vendorName: string;
     vendorAvatar?: string;
     lastMessage: string;
     lastMessageTime: Date;
     unreadCount: number;
     online: boolean;
+    // Add these fields from your API response
+    vendor?: {
+        businessName: string;
+        city: string;
+        rating: number;
+        responseTime: string;
+    };
 }
 
 interface Message {
@@ -44,56 +51,108 @@ export default function MessagesPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [showSearch, setShowSearch] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [socket, setSocket] = useState<WebSocket | null>(null);
 
     // Fetch message threads
     useEffect(() => {
         fetchMessageThreads();
         
-        // Set up WebSocket for real-time updates
-        setupWebSocket();
+        // Initialize WebSocket connection
+        const ws = new WebSocket('ws://localhost:3000/api/socketio');
+        setSocket(ws);
+        
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            // You can add authentication here if needed
+            // ws.send(JSON.stringify({ type: 'authenticate', token: 'your-token' }));
+        };
+        
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'new_message' || data.type === 'new_message_notification') {
+                    // Refresh threads when new message arrives
+                    fetchMessageThreads();
+                }
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        
+        ws.onclose = () => {
+            console.log('WebSocket disconnected');
+        };
         
         // Cleanup
         return () => {
-            // Cleanup WebSocket
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
+            }
         };
     }, []);
 
     const fetchMessageThreads = async () => {
         try {
             setLoading(true);
+            setError(null);
             const response = await fetch('/api/customer/messages/threads');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
             
             if (data.success) {
                 const formattedThreads = data.threads.map((thread: any) => ({
-                    ...thread,
+                    id: thread.id || 0,
+                    vendorId: thread.vendorId || 0,
+                    vendorName: thread.vendorName || thread.vendor?.businessName || 'Vendor',
+                    vendorAvatar: thread.vendorAvatar || thread.vendor?.profileImage,
+                    lastMessage: thread.lastMessage || 'No messages yet',
                     lastMessageTime: new Date(thread.lastMessageTime),
+                    unreadCount: thread.unreadCount || 0,
+                    online: thread.online || false,
+                    vendor: thread.vendor
                 }));
                 setThreads(formattedThreads);
+            } else {
+                setError(data.error || 'Failed to fetch messages');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching message threads:', error);
+            setError(error.message || 'Failed to load messages');
         } finally {
             setLoading(false);
         }
     };
 
-    const setupWebSocket = () => {
-        // You can implement WebSocket or use polling
-        // For now, we'll use polling
-        const interval = setInterval(fetchMessageThreads, 30000); // Poll every 30 seconds
-        return () => clearInterval(interval);
-    };
-
     const filteredThreads = threads.filter(thread => {
         if (activeFilter === "Unread") return thread.unreadCount > 0;
-        if (activeFilter === "Urgent") return thread.vendorName.includes("Echo Beats"); // Example filter
-        if (searchQuery) return thread.vendorName.toLowerCase().includes(searchQuery.toLowerCase());
+        if (activeFilter === "Urgent") {
+            // Example urgent filter - you can customize this
+            return thread.unreadCount > 3 || 
+                   thread.vendorName.toLowerCase().includes("urgent") ||
+                   (thread.lastMessage && thread.lastMessage.toLowerCase().includes("urgent"));
+        }
+        if (searchQuery) {
+            return thread.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   (thread.lastMessage && thread.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
         return true;
     });
 
     const formatTime = (date: Date) => {
-        return formatDistanceToNow(date, { addSuffix: true });
+        try {
+            return formatDistanceToNow(date, { addSuffix: true });
+        } catch (error) {
+            return 'Recently';
+        }
     };
 
     return (
@@ -125,6 +184,14 @@ export default function MessagesPage() {
                             className="w-full pl-10 pr-4 py-2 bg-neutrals-02 border border-neutrals-03 rounded-lg text-shades-black placeholder:text-neutrals-06 focus:outline-none focus:border-primary-01"
                             autoFocus
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutrals-06 hover:text-shades-black"
+                            >
+                                ✕
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -148,10 +215,37 @@ export default function MessagesPage() {
                     ))}
                 </div>
 
+                {/* Error State */}
+                {error && !loading && (
+                    <div className="text-center py-8 bg-red-50 rounded-xl mb-4">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                            <div className="text-red-500 text-xl">!</div>
+                        </div>
+                        <h3 className="text-lg font-bold text-shades-black mb-2">
+                            Error Loading Messages
+                        </h3>
+                        <p className="text-neutrals-06 mb-4">{error}</p>
+                        <button
+                            onClick={fetchMessageThreads}
+                            className="inline-block bg-primary-01 text-white px-6 py-2 rounded-full font-medium hover:bg-primary-02 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                )}
+
                 {/* Message List */}
                 {loading ? (
-                    <div className="flex justify-center py-12">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-01"></div>
+                    <div className="flex flex-col gap-3">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="bg-shades-white rounded-2xl p-4 flex items-center gap-4 shadow-sm animate-pulse">
+                                <div className="w-12 h-12 rounded-full bg-neutrals-03"></div>
+                                <div className="flex-1">
+                                    <div className="h-4 bg-neutrals-03 rounded w-1/3 mb-2"></div>
+                                    <div className="h-3 bg-neutrals-03 rounded w-2/3"></div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : filteredThreads.length === 0 ? (
                     <div className="text-center py-12">
@@ -182,7 +276,7 @@ export default function MessagesPage() {
                             <Link
                                 key={thread.id}
                                 href={`/customer/messages/${thread.id}`}
-                                className="bg-shades-white rounded-2xl p-4 flex items-center gap-4 shadow-sm active:scale-[0.99] transition-transform"
+                                className="bg-shades-white rounded-2xl p-4 flex items-center gap-4 shadow-sm active:scale-[0.99] transition-transform hover:shadow-md"
                             >
                                 {/* Avatar */}
                                 <div className="relative flex-shrink-0">
@@ -222,10 +316,24 @@ export default function MessagesPage() {
                                         </p>
                                         {thread.unreadCount > 0 && (
                                             <div className="w-5 h-5 bg-primary-01 text-shades-white text-xs font-bold flex items-center justify-center rounded-full flex-shrink-0">
-                                                {thread.unreadCount}
+                                                {thread.unreadCount > 9 ? '9+' : thread.unreadCount}
                                             </div>
                                         )}
                                     </div>
+                                    
+                                    {/* Optional: Show vendor location if available */}
+                                    {thread.vendor?.city && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <span className="text-xs text-neutrals-06">
+                                                📍 {thread.vendor.city}
+                                            </span>
+                                            {thread.vendor.rating && (
+                                                <span className="text-xs text-neutrals-06 ml-2">
+                                                    ⭐ {thread.vendor.rating}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </Link>
                         ))}

@@ -8,16 +8,19 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    // Await the params promise
+    const { slug } = await params;
+    
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
     const offset = (page - 1) * limit;
 
     // Convert slug back to category name
-    const categoryName = params.slug
+    const categoryName = slug
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
@@ -95,7 +98,7 @@ export async function GET(
       category: {
         id: category.id,
         name: category.name,
-        slug: params.slug,
+        slug: slug, // Use the slug variable instead of params.slug
         description: category.description,
         icon: category.icon,
       },

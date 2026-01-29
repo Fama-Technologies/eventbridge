@@ -1,18 +1,17 @@
-// drizzle.config.ts
-import { defineConfig } from 'drizzle-kit';
+// drizzle.config.ts 
 import 'dotenv/config';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-export default defineConfig({
-  dialect: 'postgresql',
+export default {
   schema: './drizzle/schema.ts',
   out: './drizzle/migrations',
-  breakpoints: false,
-  verbose: true,
+  driver: 'pg',
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL,
   },
-});
+  verbose: true,
+  strict: true,
+};

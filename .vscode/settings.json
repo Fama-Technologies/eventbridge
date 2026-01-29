@@ -22,13 +22,20 @@
         "iconify",
         "ilike",
         "landingpage",
+        "msword",
         "neondatabase",
         "neondb",
         "NEXTAUTH",
+        "officedocument",
+        "openxmlformats",
         "presigner",
+        "quicktime",
+        "socketio",
         "sonner",
+        "spreadsheetml",
         "uploadthing",
         "VERCEL",
-        "Videographer"
+        "Videographer",
+        "wordprocessingml"
     ]
 }

@@ -1,42 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 import { db } from '@/lib/db';
 import { messages, messageThreads } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
+import { getAuthUser } from '@/lib/auth';
+import { put } from '@vercel/blob';
 
 export async function POST(req: NextRequest) {
     try {
-        const userId = await getAuthenticatedUserId(req);
+        // Authenticate user using existing auth helper
+        const authUser = await getAuthUser(req);
         
-        if (!userId) {
+        if (!authUser) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
+        const userId = authUser.id;
+        const userType = authUser.accountType;
+        
         const formData = await req.formData();
         const file = formData.get('file') as File;
         const threadId = formData.get('threadId') as string;
-        const type = formData.get('type') as string;
 
-        if (!file || !threadId || !type) {
+        if (!file) {
             return NextResponse.json(
-                { success: false, error: 'Missing required fields' },
+                { success: false, error: 'File is required' },
+                { status: 400 }
+            );
+        }
+
+        if (!threadId) {
+            return NextResponse.json(
+                { success: false, error: 'Thread ID is required' },
+                { status: 400 }
+            );
+        }
+
+        const parsedThreadId = parseInt(threadId);
+        
+        if (isNaN(parsedThreadId) || parsedThreadId <= 0) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid thread ID' },
                 { status: 400 }
             );
         }
 
         // Verify user has access to this thread
         const thread = await db
-            .select()
+            .select({
+                id: messageThreads.id,
+                customerId: messageThreads.customerId,
+                vendorId: messageThreads.vendorId,
+                vendorUnreadCount: messageThreads.vendorUnreadCount,
+                customerUnreadCount: messageThreads.customerUnreadCount
+            })
             .from(messageThreads)
             .where(
                 and(
-                    eq(messageThreads.id, parseInt(threadId)),
-                    eq(messageThreads.customerId, userId)
+                    eq(messageThreads.id, parsedThreadId),
+                    userType === 'CUSTOMER' 
+                        ? eq(messageThreads.customerId, userId)
+                        : eq(messageThreads.vendorId, userId)
                 )
             )
             .limit(1);
@@ -48,8 +74,10 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const threadData = thread[0];
+
         // Validate file size (10MB max)
-        const maxSize = 10 * 1024 * 1024;
+        const maxSize = 10 * 1024 * 1024; // 10MB
         if (file.size > maxSize) {
             return NextResponse.json(
                 { success: false, error: 'File size must be less than 10MB' },
@@ -57,66 +85,103 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Determine file type from MIME type
+        const getFileType = (mimeType: string): string => {
+            if (mimeType.startsWith('image/')) return 'image';
+            if (mimeType.startsWith('video/')) return 'video';
+            if (mimeType.startsWith('audio/')) return 'audio';
+            if (mimeType.includes('pdf')) return 'document';
+            if (mimeType.includes('word') || mimeType.includes('document')) return 'document';
+            if (mimeType.includes('text')) return 'document';
+            return 'document';
+        };
+
+        const fileType = getFileType(file.type);
+        
         // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 
-                             'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                             'text/plain', 'audio/mpeg', 'video/mp4'];
-        if (!allowedTypes.includes(file.type)) {
+        const allowedMimeTypes = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+            'video/mp4', 'video/webm', 'video/quicktime',
+            'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain', 'text/csv',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        
+        if (!allowedMimeTypes.includes(file.type)) {
             return NextResponse.json(
-                { success: false, error: 'File type not allowed' },
+                { 
+                    success: false, 
+                    error: 'File type not allowed. Allowed types: images, videos, audio, PDF, documents' 
+                },
                 { status: 400 }
             );
         }
 
-        // Create uploads directory if it doesn't exist
-        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'messages');
-        if (!existsSync(uploadsDir)) {
-            mkdirSync(uploadsDir, { recursive: true });
-        }
-
-        // Generate unique filename
+        // Generate unique filename for blob storage
         const timestamp = Date.now();
-        const uniqueName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '-')}`;
-        const filePath = join(uploadsDir, uniqueName);
-
-        // Convert file to buffer and save
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(filePath, buffer);
-
-        // File URL for frontend
-        const fileUrl = `/uploads/messages/${uniqueName}`;
+        const randomStr = Math.random().toString(36).substring(2, 15);
+        const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const uniqueName = `${timestamp}-${randomStr}-${safeFileName}`;
+        
+        let blobUrl = '';
+        try {
+            // Upload to Vercel Blob Storage
+            const blob = await put(uniqueName, file, {
+                access: 'public',
+                contentType: file.type,
+            });
+            
+            blobUrl = blob.url;
+        } catch (blobError: any) {
+            console.error('Error uploading to blob storage:', blobError);
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Failed to upload file to storage',
+                    details: process.env.NODE_ENV === 'development' ? blobError.message : undefined
+                },
+                { status: 500 }
+            );
+        }
 
         // Insert message with attachment
         const [newMessage] = await db
             .insert(messages)
             .values({
-                threadId: parseInt(threadId),
+                threadId: parsedThreadId,
                 senderId: userId,
-                senderType: 'CUSTOMER',
-                content: '',
+                senderType: userType,
+                content: '', // No text content for file-only messages
                 attachments: [{
-                    id: `att-${timestamp}`,
-                    type: type,
-                    url: fileUrl,
+                    type: fileType,
+                    url: blobUrl,
                     name: file.name,
                     size: file.size,
+                    mimeType: file.type,
+                    blobPath: uniqueName // Store the blob path for potential future reference
                 }],
-                read: true,
+                read: false,
                 createdAt: new Date(),
             })
             .returning();
 
-        // Update thread
+        // Update thread - increment unread count for the other party
+        const otherPartyField = userType === 'CUSTOMER' ? 'vendorUnreadCount' : 'customerUnreadCount';
+        const currentUnreadCount = threadData[otherPartyField] || 0;
+        
         await db
             .update(messageThreads)
             .set({
-                lastMessage: `Sent a ${type} file`,
+                lastMessage: `Sent a ${fileType} file: ${file.name}`,
                 lastMessageTime: new Date(),
-                vendorUnreadCount: (thread[0].vendorUnreadCount || 0) + 1,
+                [otherPartyField]: currentUnreadCount + 1,
                 updatedAt: new Date()
             })
-            .where(eq(messageThreads.id, parseInt(threadId)));
+            .where(eq(messageThreads.id, parsedThreadId));
 
         return NextResponse.json({
             success: true,
@@ -126,17 +191,19 @@ export async function POST(req: NextRequest) {
                 senderId: newMessage.senderId,
                 senderType: newMessage.senderType,
                 content: newMessage.content,
-                attachments: newMessage.attachments,
+                attachments: newMessage.attachments || [],
                 timestamp: newMessage.createdAt,
                 read: newMessage.read,
             },
-            attachment: {
-                id: `att-${timestamp}`,
-                type: type,
-                url: fileUrl,
+            fileUrl: blobUrl,
+            fileInfo: {
+                type: fileType,
                 name: file.name,
                 size: file.size,
-            }
+                mimeType: file.type,
+                blobPath: uniqueName
+            },
+            notification: 'File uploaded successfully'
         }, { status: 201 });
 
     } catch (error: any) {
@@ -145,18 +212,9 @@ export async function POST(req: NextRequest) {
             {
                 success: false,
                 error: 'Failed to upload file',
-                details: error.message
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
             },
             { status: 500 }
         );
-    }
-}
-
-async function getAuthenticatedUserId(req: NextRequest): Promise<number | null> {
-    try {
-        const token = req.cookies.get('auth-token')?.value;
-        return token ? 1 : null;
-    } catch (error) {
-        return null;
     }
 }

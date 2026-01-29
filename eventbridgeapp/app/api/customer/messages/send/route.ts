@@ -2,35 +2,55 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { messages, messageThreads } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
+import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
     try {
-        const userId = await getAuthenticatedUserId(req);
+        // Authenticate user using existing auth helper
+        const authUser = await getAuthUser(req);
         
-        if (!userId) {
+        if (!authUser) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        const { threadId, content, quoteId } = await req.json();
+        const userId = authUser.id;
+        const userType = authUser.accountType;
+        
+        const { threadId, content, attachments, quoteId } = await req.json();
 
-        if (!threadId || !content) {
+        if (!threadId) {
             return NextResponse.json(
-                { success: false, error: 'Thread ID and content are required' },
+                { success: false, error: 'Thread ID is required' },
+                { status: 400 }
+            );
+        }
+
+        if (!content?.trim() && (!attachments || attachments.length === 0)) {
+            return NextResponse.json(
+                { success: false, error: 'Message content or attachments are required' },
                 { status: 400 }
             );
         }
 
         // Verify user has access to this thread
         const thread = await db
-            .select()
+            .select({
+                id: messageThreads.id,
+                customerId: messageThreads.customerId,
+                vendorId: messageThreads.vendorId,
+                vendorUnreadCount: messageThreads.vendorUnreadCount,
+                customerUnreadCount: messageThreads.customerUnreadCount
+            })
             .from(messageThreads)
             .where(
                 and(
                     eq(messageThreads.id, threadId),
-                    eq(messageThreads.customerId, userId)
+                    userType === 'CUSTOMER' 
+                        ? eq(messageThreads.customerId, userId)
+                        : eq(messageThreads.vendorId, userId)
                 )
             )
             .limit(1);
@@ -42,34 +62,41 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const threadData = thread[0];
+        
         // Insert message
         const [newMessage] = await db
             .insert(messages)
             .values({
                 threadId,
                 senderId: userId,
-                senderType: 'CUSTOMER',
-                content,
-                read: true, // Customer sent it, so it's read by them
+                senderType: userType,
+                content: content?.trim() || null,
+                attachments: attachments || [],
+                read: false, // Messages start unread
                 createdAt: new Date(),
             })
             .returning();
 
-        // Update thread
+        // Update thread - increment unread count for the other party
+        const otherPartyField = userType === 'CUSTOMER' ? 'vendorUnreadCount' : 'customerUnreadCount';
+        const currentUnreadCount = threadData[otherPartyField] || 0;
+        
         await db
             .update(messageThreads)
             .set({
-                lastMessage: content,
+                lastMessage: content?.substring(0, 200) || '[Attachment]',
                 lastMessageTime: new Date(),
-                vendorUnreadCount: (thread[0].vendorUnreadCount || 0) + 1,
+                [otherPartyField]: currentUnreadCount + 1,
                 updatedAt: new Date()
             })
             .where(eq(messageThreads.id, threadId));
 
-        // If this is a quote acceptance, update the quote
+        // If this is a quote acceptance, you could handle it here
         if (quoteId) {
-            // You'll need to implement quote acceptance logic
-            console.log(`Quote ${quoteId} accepted in thread ${threadId}`);
+            // You would typically update a quotes table
+            // await updateQuoteStatus(quoteId, 'accepted');
+            console.log(`Quote ${quoteId} mentioned in message`);
         }
 
         return NextResponse.json({
@@ -80,11 +107,15 @@ export async function POST(req: NextRequest) {
                 senderId: newMessage.senderId,
                 senderType: newMessage.senderType,
                 content: newMessage.content,
-                attachments: newMessage.attachments,
+                attachments: newMessage.attachments || [],
                 timestamp: newMessage.createdAt,
                 read: newMessage.read,
             },
-            threadUpdated: true
+            threadUpdated: true,
+            unreadCounts: {
+                customer: userType === 'VENDOR' ? currentUnreadCount + 1 : 0,
+                vendor: userType === 'CUSTOMER' ? currentUnreadCount + 1 : 0
+            }
         }, { status: 201 });
 
     } catch (error: any) {
@@ -93,18 +124,9 @@ export async function POST(req: NextRequest) {
             {
                 success: false,
                 error: 'Failed to send message',
-                details: error.message
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
             },
             { status: 500 }
         );
-    }
-}
-
-async function getAuthenticatedUserId(req: NextRequest): Promise<number | null> {
-    try {
-        const token = req.cookies.get('auth-token')?.value;
-        return token ? 1 : null;
-    } catch (error) {
-        return null;
     }
 }

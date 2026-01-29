@@ -1,6 +1,6 @@
 // lib/auth.ts - UPDATED VERSION (no type declarations)
 import { NextRequest } from 'next/server';
-import { verifyToken, createToken } from '@/lib/jwt';
+import { verifyToken } from '@/lib/jwt'; // Add this import
 import { db } from '@/lib/db';
 import { users, accounts, deletedAccounts } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -8,7 +8,7 @@ import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
-import { getToken } from 'next-auth/jwt';
+import { getToken } from 'next-auth/jwt'; // Make sure this is imported
 
 /* =========================
 TYPES
@@ -324,7 +324,7 @@ export async function getAuthUser(
   }
 
   if (customToken) {
-    const payload = await verifyToken(customToken);
+    const payload = await verifyToken(customToken); // This now works
     if (payload) {
       // Extract name from token or use separate firstName/lastName
       const name = (payload as any).name || '';

@@ -2,35 +2,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { messageThreads } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
+import { getAuthUser } from '@/lib/auth';
 
-// Store typing status in memory (for production, use Redis or similar)
-const typingStatus = new Map<string, { isTyping: boolean; timestamp: Date }>();
+// Store typing status in memory
+const typingStatus = new Map<string, { isTyping: boolean; timestamp: Date; userId: number }>();
 
 export async function POST(
     req: NextRequest,
     { params }: { params: { threadId: string } }
 ) {
     try {
-        const userId = await getAuthenticatedUserId(req);
+        const authUser = await getAuthUser(req);
         
-        if (!userId) {
+        if (!authUser) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
+        const userId = authUser.id;
+        const userType = authUser.accountType === 'CUSTOMER' ? 'customer' : 'vendor';
+        
         const threadId = parseInt(params.threadId);
-        const { isTyping } = await req.json();
+        
+        if (isNaN(threadId) || threadId <= 0) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid thread ID' },
+                { status: 400 }
+            );
+        }
 
-        // Verify user has access to this thread
+        const { isTyping } = await req.json();
+        
+        if (typeof isTyping !== 'boolean') {
+            return NextResponse.json(
+                { success: false, error: 'isTyping must be a boolean' },
+                { status: 400 }
+            );
+        }
+
+        // Verify user has access to thread
         const thread = await db
-            .select()
+            .select({
+                id: messageThreads.id
+            })
             .from(messageThreads)
             .where(
                 and(
                     eq(messageThreads.id, threadId),
-                    eq(messageThreads.customerId, userId)
+                    userType === 'customer' 
+                        ? eq(messageThreads.customerId, userId)
+                        : eq(messageThreads.vendorId, userId)
                 )
             )
             .limit(1);
@@ -43,13 +66,15 @@ export async function POST(
         }
 
         // Store typing status
-        typingStatus.set(`thread-${threadId}-customer`, {
+        const key = `thread-${threadId}-${userType}`;
+        typingStatus.set(key, {
             isTyping,
-            timestamp: new Date()
+            timestamp: new Date(),
+            userId
         });
 
-        // You could emit a WebSocket event here to notify the vendor
-        // For now, we'll just acknowledge the request
+        // Clean up old entries
+        cleanupTypingStatus();
 
         return NextResponse.json({
             success: true,
@@ -62,39 +87,78 @@ export async function POST(
             {
                 success: false,
                 error: 'Failed to send typing indicator',
-                details: error.message
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
             },
             { status: 500 }
         );
     }
 }
 
-// Check if someone is typing
 export async function GET(
     req: NextRequest,
     { params }: { params: { threadId: string } }
 ) {
     try {
-        const userId = await getAuthenticatedUserId(req);
+        const authUser = await getAuthUser(req);
         
-        if (!userId) {
+        if (!authUser) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
+        const userId = authUser.id;
+        const userType = authUser.accountType === 'CUSTOMER' ? 'customer' : 'vendor';
+        
         const threadId = parseInt(params.threadId);
+        
+        if (isNaN(threadId) || threadId <= 0) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid thread ID' },
+                { status: 400 }
+            );
+        }
 
-        // Check if vendor is typing
-        const vendorTyping = typingStatus.get(`thread-${threadId}-vendor`);
-        const isTyping = vendorTyping?.isTyping === true && 
-                        (Date.now() - vendorTyping.timestamp.getTime()) < 3000; // Within last 3 seconds
+        // Verify user has access to thread
+        const thread = await db
+            .select({
+                id: messageThreads.id
+            })
+            .from(messageThreads)
+            .where(
+                and(
+                    eq(messageThreads.id, threadId),
+                    userType === 'customer' 
+                        ? eq(messageThreads.customerId, userId)
+                        : eq(messageThreads.vendorId, userId)
+                )
+            )
+            .limit(1);
+
+        if (thread.length === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Thread not found or access denied' },
+                { status: 404 }
+            );
+        }
+
+        // Check if other party is typing
+        const otherUserType = userType === 'customer' ? 'vendor' : 'customer';
+        const typingKey = `thread-${threadId}-${otherUserType}`;
+        const typingData = typingStatus.get(typingKey);
+        
+        const now = Date.now();
+        const isTyping = typingData?.isTyping === true && 
+                        (now - typingData.timestamp.getTime()) < 5000;
+
+        // Clean up
+        cleanupTypingStatus();
 
         return NextResponse.json({
             success: true,
             isTyping,
-            lastTyped: vendorTyping?.timestamp
+            lastUpdate: typingData?.timestamp?.toISOString()
         });
 
     } catch (error: any) {
@@ -103,18 +167,20 @@ export async function GET(
             {
                 success: false,
                 error: 'Failed to check typing status',
-                details: error.message
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
             },
             { status: 500 }
         );
     }
 }
 
-async function getAuthenticatedUserId(req: NextRequest): Promise<number | null> {
-    try {
-        const token = req.cookies.get('auth-token')?.value;
-        return token ? 1 : null;
-    } catch (error) {
-        return null;
+function cleanupTypingStatus() {
+    const now = Date.now();
+    const maxAge = 10000;
+    
+    for (const [key, data] of typingStatus.entries()) {
+        if (now - data.timestamp.getTime() > maxAge) {
+            typingStatus.delete(key);
+        }
     }
 }

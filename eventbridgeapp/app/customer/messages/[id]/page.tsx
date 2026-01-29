@@ -10,16 +10,16 @@ import {
 import { useRouter, useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSocket } from "@/hooks/useSocket";
 
 interface Message {
-    id: string;
-    threadId: string;
-    senderId: string;
-    senderType: 'customer' | 'vendor';
+    id: number;
+    threadId: number;
+    senderId: number;
+    senderType: 'CUSTOMER' | 'VENDOR';
     content: string;
     attachments?: Array<{
-        id: string;
-        type: 'image' | 'document' | 'audio' | 'video';
+        type: string;
         url: string;
         name?: string;
         size?: number;
@@ -27,32 +27,44 @@ interface Message {
     timestamp: Date;
     read: boolean;
     status?: 'sending' | 'sent' | 'delivered' | 'read';
+    sender?: {
+        id: number;
+        name: string;
+        avatar?: string;
+    };
 }
 
 interface VendorInfo {
-    id: string;
+    id: number;
     name: string;
     avatar?: string;
     online: boolean;
     lastSeen?: Date;
     businessName?: string;
     rating?: number;
-    responseTime?: string; // e.g., "Usually responds within 1 hour"
+    responseTime?: string;
+    email?: string;
+    phone?: string;
+    accountType?: string;
 }
 
 interface Quote {
     id: string;
+    bookingId?: number;
     title: string;
     description: string;
-    price: string;
-    status: 'pending' | 'accepted' | 'rejected' | 'expired';
+    amount: number;
+    currency?: string;
+    formattedPrice: string;
+    status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'negotiating';
     createdAt: Date;
+    validUntil?: Date;
 }
 
 export default function ChatPage() {
     const router = useRouter();
     const params = useParams();
-    const threadId = params.id as string;
+    const threadId = parseInt(params.id as string);
     
     const [messages, setMessages] = useState<Message[]>([]);
     const [vendor, setVendor] = useState<VendorInfo | null>(null);
@@ -69,6 +81,13 @@ export default function ChatPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // Initialize WebSocket
+    const { isConnected, sendMessage: sendWsMessage, onNewMessage, onTypingIndicator } = useSocket(
+        1, // Replace with actual user ID from auth
+        'customer',
+        'your-token' // Replace with actual token
+    );
 
     // Fetch messages and vendor info
     useEffect(() => {
@@ -76,15 +95,38 @@ export default function ChatPage() {
         fetchVendorInfo();
         fetchActiveQuote();
         
-        // Set up polling for new messages
-        const pollInterval = setInterval(fetchMessages, 5000);
-        
         // Mark messages as read
         markAsRead();
         
+        // Set up WebSocket listeners
+        onNewMessage((message: any) => {
+            if (message.threadId === threadId) {
+                setMessages(prev => [...prev, {
+                    id: message.id,
+                    threadId: message.threadId,
+                    senderId: message.senderId,
+                    senderType: message.senderType,
+                    content: message.content,
+                    attachments: message.attachments || [],
+                    timestamp: new Date(message.timestamp),
+                    read: message.read,
+                    status: 'delivered'
+                }]);
+                
+                setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            }
+        });
+        
+        onTypingIndicator((data: any) => {
+            if (data.threadId === threadId && data.userType === 'vendor') {
+                setTyping(data.isTyping);
+            }
+        });
+        
         // Cleanup
         return () => {
-            clearInterval(pollInterval);
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
@@ -93,17 +135,25 @@ export default function ChatPage() {
 
     const fetchMessages = async () => {
         try {
+            setIsLoading(true);
             const response = await fetch(`/api/customer/messages/${threadId}`);
             const data = await response.json();
             
             if (data.success) {
                 const formattedMessages = data.messages.map((msg: any) => ({
-                    ...msg,
+                    id: msg.id,
+                    threadId: msg.threadId,
+                    senderId: msg.sender?.id || msg.senderId,
+                    senderType: msg.senderType,
+                    content: msg.content,
+                    attachments: msg.attachments || [],
                     timestamp: new Date(msg.timestamp),
+                    read: msg.read,
+                    status: 'sent',
+                    sender: msg.sender
                 }));
                 setMessages(formattedMessages);
                 
-                // Auto-scroll to bottom
                 setTimeout(() => {
                     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
                 }, 100);
@@ -122,7 +172,7 @@ export default function ChatPage() {
             const data = await response.json();
             
             if (data.success) {
-                setVendor(data.vendor);
+                setVendor(data.user);
             }
         } catch (error) {
             console.error('Error fetching vendor info:', error);
@@ -146,6 +196,10 @@ export default function ChatPage() {
         try {
             await fetch(`/api/customer/messages/${threadId}/read`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ messageIds: [] })
             });
         } catch (error) {
             console.error('Error marking messages as read:', error);
@@ -153,7 +207,6 @@ export default function ChatPage() {
     };
 
     const handleTyping = () => {
-        // Send typing indicator
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
         }
@@ -189,12 +242,12 @@ export default function ChatPage() {
             setIsSending(true);
             
             // Create temporary message for optimistic UI
-            const tempId = `temp-${Date.now()}`;
+            const tempId = Date.now();
             const tempMessage: Message = {
                 id: tempId,
                 threadId,
-                senderId: 'customer', // This should be actual user ID
-                senderType: 'customer',
+                senderId: 1, // Replace with actual user ID
+                senderType: 'CUSTOMER',
                 content: inputValue,
                 timestamp: new Date(),
                 read: false,
@@ -204,33 +257,39 @@ export default function ChatPage() {
             setMessages(prev => [...prev, tempMessage]);
             setInputValue("");
             
-            const response = await fetch('/api/customer/messages/send', {
+            // Send via WebSocket first
+            if (isConnected) {
+                sendWsMessage(threadId, inputValue);
+            }
+            
+            // Also send via REST API for persistence
+            const response = await fetch(`/api/customer/messages/${threadId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    threadId,
                     content: inputValue,
+                    attachments: []
                 }),
             });
             
             const data = await response.json();
             
             if (data.success) {
-                // Replace temp message with real one
+                // Update temp message with real data
                 setMessages(prev => prev.map(msg => 
-                    msg.id === tempId 
-                        ? { ...data.message, timestamp: new Date(data.message.timestamp) }
-                        : msg
+                    msg.id === tempId ? {
+                        ...msg,
+                        id: data.message.id,
+                        status: 'sent'
+                    } : msg
                 ));
                 
-                // Auto-scroll
                 setTimeout(() => {
                     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
                 }, 100);
             } else {
-                // Remove temp message on error
                 setMessages(prev => prev.filter(msg => msg.id !== tempId));
                 toast.error(data.error || 'Failed to send message');
             }
@@ -258,8 +317,7 @@ export default function ChatPage() {
             
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('threadId', threadId);
-            formData.append('type', getFileType(file.type));
+            formData.append('threadId', threadId.toString());
             
             const response = await fetch('/api/customer/messages/upload', {
                 method: 'POST',
@@ -269,29 +327,37 @@ export default function ChatPage() {
             const data = await response.json();
             
             if (data.success) {
-                // Add file message to chat
+                const tempId = Date.now();
                 const fileMessage: Message = {
-                    id: data.message.id,
+                    id: tempId,
                     threadId,
-                    senderId: 'customer',
-                    senderType: 'customer',
+                    senderId: 1,
+                    senderType: 'CUSTOMER',
                     content: '',
                     attachments: [{
-                        id: data.attachment.id,
-                        type: data.attachment.type,
-                        url: data.attachment.url,
-                        name: data.attachment.name,
-                        size: data.attachment.size,
+                        type: getFileType(file.type),
+                        url: data.fileUrl || URL.createObjectURL(file),
+                        name: file.name,
+                        size: file.size,
                     }],
-                    timestamp: new Date(data.message.timestamp),
+                    timestamp: new Date(),
                     read: false,
-                    status: 'sent',
+                    status: 'sending',
                 };
                 
                 setMessages(prev => [...prev, fileMessage]);
                 toast.success('File uploaded successfully');
                 
-                // Auto-scroll
+                // Send via WebSocket
+                if (isConnected) {
+                    sendWsMessage(threadId, `Sent file: ${file.name}`, [{
+                        type: getFileType(file.type),
+                        url: data.fileUrl,
+                        name: file.name,
+                        size: file.size
+                    }]);
+                }
+                
                 setTimeout(() => {
                     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
                 }, 100);
@@ -310,17 +376,26 @@ export default function ChatPage() {
         }
     };
 
-    const getFileType = (mimeType: string): 'image' | 'document' | 'audio' | 'video' => {
+    const getFileType = (mimeType: string): string => {
         if (mimeType.startsWith('image/')) return 'image';
         if (mimeType.startsWith('video/')) return 'video';
         if (mimeType.startsWith('audio/')) return 'audio';
         return 'document';
     };
 
-    const acceptQuote = async (quoteId: string) => {
+    const acceptQuote = async () => {
+        if (!activeQuote) return;
+        
         try {
-            const response = await fetch(`/api/customer/quotes/${quoteId}/accept`, {
+            const response = await fetch(`/api/customer/messages/${threadId}/quote`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    acceptTerms: true,
+                    notes: 'Quote accepted'
+                }),
             });
             
             const data = await response.json();
@@ -330,7 +405,10 @@ export default function ChatPage() {
                 toast.success('Quote accepted successfully!');
                 
                 // Send acceptance message
-                await sendQuoteAcceptanceMessage(quoteId);
+                setInputValue(`I've accepted the quote (${activeQuote.title}). Looking forward to working together!`);
+                setTimeout(() => {
+                    sendMessage();
+                }, 100);
             } else {
                 toast.error(data.error || 'Failed to accept quote');
             }
@@ -340,21 +418,31 @@ export default function ChatPage() {
         }
     };
 
-    const sendQuoteAcceptanceMessage = async (quoteId: string) => {
+    const rejectQuote = async () => {
+        if (!activeQuote) return;
+        
         try {
-            await fetch('/api/customer/messages/send', {
-                method: 'POST',
+            const response = await fetch(`/api/customer/messages/${threadId}/quote`, {
+                method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    threadId,
-                    content: `I've accepted the quote. Looking forward to working together!`,
-                    quoteId,
+                    reason: 'Not interested'
                 }),
             });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setActiveQuote(prev => prev ? { ...prev, status: 'rejected' } : null);
+                toast.success('Quote rejected');
+            } else {
+                toast.error(data.error || 'Failed to reject quote');
+            }
         } catch (error) {
-            console.error('Error sending acceptance message:', error);
+            console.error('Error rejecting quote:', error);
+            toast.error('Failed to reject quote');
         }
     };
 
@@ -564,10 +652,10 @@ export default function ChatPage() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto bg-neutrals-01 p-4" ref={messagesEndRef}>
+            <div className="flex-1 overflow-y-auto bg-neutrals-01 p-4">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {messages.map((message, index) => {
-                        const isCustomer = message.senderType === 'customer';
+                        const isCustomer = message.senderType === 'CUSTOMER';
                         const showDate = index === 0 || 
                             formatDate(message.timestamp) !== formatDate(messages[index - 1].timestamp);
                         
@@ -590,8 +678,8 @@ export default function ChatPage() {
                                                 : 'bg-white border border-neutrals-03 rounded-bl-none'
                                         )}>
                                             {/* Attachments */}
-                                            {message.attachments?.map((attachment) => (
-                                                <div key={attachment.id} className="mb-2">
+                                            {message.attachments?.map((attachment, idx) => (
+                                                <div key={idx} className="mb-2">
                                                     {renderAttachment(attachment)}
                                                 </div>
                                             ))}
@@ -640,12 +728,12 @@ export default function ChatPage() {
                                         PRICE
                                     </span>
                                     <span className="text-lg font-bold text-shades-black">
-                                        {activeQuote.price}
+                                        {activeQuote.formattedPrice || `UGX ${activeQuote.amount.toLocaleString()}`}
                                     </span>
                                 </div>
                                 <div className="space-y-2">
                                     <button 
-                                        onClick={() => acceptQuote(activeQuote.id)}
+                                        onClick={acceptQuote}
                                         className="w-full bg-primary-01 hover:bg-primary-02 text-shades-white font-bold py-3 rounded-full transition-colors shadow-md"
                                     >
                                         Accept Quote
@@ -655,6 +743,12 @@ export default function ChatPage() {
                                         className="w-full bg-white border border-neutrals-03 hover:bg-neutrals-02 text-shades-black font-medium py-3 rounded-full transition-colors"
                                     >
                                         Negotiate Price
+                                    </button>
+                                    <button 
+                                        onClick={rejectQuote}
+                                        className="w-full bg-white border border-red-200 hover:bg-red-50 text-red-600 font-medium py-3 rounded-full transition-colors"
+                                    >
+                                        Reject Quote
                                     </button>
                                 </div>
                             </div>
