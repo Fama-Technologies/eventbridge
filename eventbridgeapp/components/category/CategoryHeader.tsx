@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, MapPin, Calendar, Moon, Sun, PartyPopper } from 'lucide-react';
+import { Search, MapPin, Calendar, Moon, Sun, PartyPopper, SlidersHorizontal, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/providers/theme-provider';
 import { useRouter } from 'next/navigation';
@@ -39,6 +39,9 @@ export default function CategoryHeader() {
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Mobile search state
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // Refs
   const serviceRef = useRef<HTMLDivElement>(null);
@@ -105,10 +108,10 @@ export default function CategoryHeader() {
     : SERVICE_SUGGESTIONS;
 
   const filteredLocations = location
-    ? LOCATION_SUGGESTIONS.filter(l => 
-        l.city.toLowerCase().includes(location.toLowerCase()) ||
-        l.country.toLowerCase().includes(location.toLowerCase())
-      )
+    ? LOCATION_SUGGESTIONS.filter(l =>
+      l.city.toLowerCase().includes(location.toLowerCase()) ||
+      l.country.toLowerCase().includes(location.toLowerCase())
+    )
     : LOCATION_SUGGESTIONS;
 
   return (
@@ -121,149 +124,211 @@ export default function CategoryHeader() {
         </Link>
 
         {/* Search Bar - Theme Aware */}
+        {/* Search Bar - Theme Aware */}
         <div className="flex-1 max-w-xl relative">
-          <div className={`rounded-full flex items-center border transition-colors ${
-            isDark 
-              ? 'bg-white/10 border-white/20' 
-              : 'bg-neutrals-01 border-neutrals-03'
-          }`}>
-            {/* Service */}
-            <div ref={serviceRef} className={`relative flex items-center gap-2 px-4 py-2 flex-1 border-r ${
-              isDark ? 'border-white/20' : 'border-neutrals-03'
-            }`}>
-              <Search size={16} className={isDark ? 'text-white/60' : 'text-neutrals-06'} />
-              <input
-                type="text"
-                placeholder="Service"
-                value={service}
-                onChange={(e) => {
-                  setService(e.target.value);
-                  setShowServiceDropdown(true);
+
+          {/* Mobile Search Pill */}
+          <div
+            className={`md:hidden rounded-full flex items-center shadow-md border px-1 py-1 transition-all cursor-pointer ${isDark ? 'bg-white/10 border-white/20' : 'bg-neutrals-01 border-neutrals-03'
+              } ${showMobileSearch ? 'hidden' : 'flex'}`}
+            onClick={() => setShowMobileSearch(true)}
+          >
+            <div className={`pl-3 pr-2 border-r ${isDark ? 'border-white/20' : 'border-neutrals-03'}`}>
+              <SlidersHorizontal size={16} className="text-primary-01" />
+            </div>
+            <span className={`flex-1 text-sm font-medium px-3 truncate ${isDark ? 'text-white' : 'text-shades-black'}`}>
+              Start your search
+            </span>
+            <div className="bg-primary-01 text-white p-2 rounded-full">
+              <Search size={14} />
+            </div>
+          </div>
+
+          <div className={`${showMobileSearch ? 'fixed inset-x-0 top-0 bg-white z-50 p-6 flex flex-col h-auto rounded-b-3xl shadow-xl' : 'hidden md:flex items-center border rounded-full'} transition-all ${!showMobileSearch && (isDark ? 'bg-white/10 border-white/20' : 'bg-neutrals-01 border-neutrals-03')}`}>
+
+            {/* Close Button for Mobile */}
+            {showMobileSearch && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMobileSearch(false);
                 }}
-                onFocus={() => setShowServiceDropdown(true)}
-                onKeyPress={handleKeyPress}
-                className={`bg-transparent text-sm focus:outline-none w-full ${
-                  isDark 
-                    ? 'text-white placeholder:text-white/50' 
-                    : 'text-foreground placeholder:text-neutrals-06'
-                }`}
-              />
-              
+                className="absolute top-4 right-4 p-2 rounded-full bg-neutrals-02 text-shades-black z-50 hover:bg-neutrals-03 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            )}
+
+            {/* Service (What) */}
+            <div ref={serviceRef} className={`${showMobileSearch ? 'w-full mb-6 relative' : 'flex-1 relative flex items-center gap-2 px-4 py-2 border-r'} ${!showMobileSearch && (isDark ? 'border-white/20' : 'border-neutrals-03')}`}>
+              {showMobileSearch ? (
+                <>
+                  <label className="block text-sm font-bold text-shades-black mb-1 ml-1">What</label>
+                  <div className="flex items-center border-b border-neutrals-03 pb-2">
+                    <Search size={20} className="text-neutrals-05 mr-3" />
+                    <input
+                      type="text"
+                      placeholder="Wedding, Birthday..."
+                      value={service}
+                      onChange={(e) => {
+                        setService(e.target.value);
+                        setShowServiceDropdown(true);
+                        // We don't hide others in this design, we keep it open
+                      }}
+                      onFocus={() => setShowServiceDropdown(true)}
+                      onKeyPress={handleKeyPress}
+                      className="bg-transparent text-base focus:outline-none w-full text-shades-black placeholder:text-neutrals-05"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Search size={16} className={isDark ? 'text-white/60' : 'text-neutrals-06'} />
+                  <input
+                    type="text"
+                    placeholder="Service"
+                    value={service}
+                    onChange={(e) => {
+                      setService(e.target.value);
+                      setShowServiceDropdown(true);
+                    }}
+                    onFocus={() => setShowServiceDropdown(true)}
+                    onKeyPress={handleKeyPress}
+                    className={`bg-transparent text-sm focus:outline-none w-full ${isDark
+                        ? 'text-white placeholder:text-white/50'
+                        : 'text-foreground placeholder:text-neutrals-06'
+                      }`}
+                  />
+                </>
+              )}
+
               {/* Service Dropdown */}
               {showServiceDropdown && filteredServices.length > 0 && (
-                <div className={`absolute top-full left-0 mt-2 w-80 rounded-2xl shadow-2xl border z-50 ${
-                  isDark 
-                    ? 'bg-[#1E1E1E] border-white/10' 
-                    : 'bg-shades-white border-neutrals-03'
-                }`}>
-                  <div className="p-2 max-h-72 overflow-y-auto">
-                    {filteredServices.map((item, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleServiceSelect(item.name)}
-                        className={`w-full flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-                          isDark 
-                            ? 'hover:bg-white/5' 
-                            : 'hover:bg-neutrals-02'
+                <div className={`absolute top-full left-0 mt-2 w-full z-50 rounded-xl shadow-lg border max-h-60 overflow-y-auto ${isDark
+                    ? 'bg-[#1E1E1E] border-white/10'
+                    : 'bg-white border-neutrals-03'
+                  }`}>
+                  {filteredServices.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleServiceSelect(item.name)}
+                      className={`w-full flex items-center gap-3 text-left p-3 transition-colors ${isDark
+                          ? 'hover:bg-white/5 text-white'
+                          : 'hover:bg-neutrals-01 text-shades-black'
                         }`}
-                      >
-                        <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center ${
-                          isDark 
-                            ? 'bg-[#444]' 
-                            : 'bg-neutrals-03'
-                        }`}>
-                          <PartyPopper size={20} className={isDark ? 'text-white/70' : 'text-neutrals-06'} />
-                        </div>
-                        <div className="flex-1">
-                          <div className={isDark ? 'text-white font-medium' : 'text-foreground font-medium'}>{item.name}</div>
-                          <div className={isDark ? 'text-white/60 text-xs' : 'text-neutrals-06 text-xs'}>{item.services}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                    >
+                      <span className="font-medium">{item.name}</span>
+                      <span className="text-xs opacity-60 ml-auto">{item.services}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Location */}
-            <div ref={locationRef} className={`relative flex items-center gap-2 px-4 py-2 flex-1 border-r ${
-              isDark ? 'border-white/20' : 'border-neutrals-03'
-            }`}>
-              <MapPin size={16} className={isDark ? 'text-white/60' : 'text-neutrals-06'} />
-              <input
-                type="text"
-                placeholder="Location"
-                value={location}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  setShowLocationDropdown(true);
-                }}
-                onFocus={() => setShowLocationDropdown(true)}
-                onKeyPress={handleKeyPress}
-                className={`bg-transparent text-sm focus:outline-none w-full ${
-                  isDark 
-                    ? 'text-white placeholder:text-white/50' 
-                    : 'text-foreground placeholder:text-neutrals-06'
-                }`}
-              />
-              
+            {/* Location (Where) */}
+            <div ref={locationRef} className={`${showMobileSearch ? 'w-full mb-6 relative' : 'flex-1 relative flex items-center gap-2 px-4 py-2 border-r'} ${!showMobileSearch && (isDark ? 'border-white/20' : 'border-neutrals-03')}`}>
+              {showMobileSearch ? (
+                <>
+                  <label className="block text-sm font-bold text-shades-black mb-1 ml-1">Where</label>
+                  <div className="flex items-center border-b border-neutrals-03 pb-2">
+                    <MapPin size={20} className="text-neutrals-05 mr-3" />
+                    <input
+                      type="text"
+                      placeholder="City or Zip code"
+                      value={location}
+                      onChange={(e) => {
+                        setLocation(e.target.value);
+                        setShowLocationDropdown(true);
+                      }}
+                      onFocus={() => setShowLocationDropdown(true)}
+                      onKeyPress={handleKeyPress}
+                      className="bg-transparent text-base focus:outline-none w-full text-shades-black placeholder:text-neutrals-05"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <MapPin size={16} className={isDark ? 'text-white/60' : 'text-neutrals-06'} />
+                  <input
+                    type="text"
+                    placeholder="Location"
+                    value={location}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      setShowLocationDropdown(true);
+                    }}
+                    onFocus={() => setShowLocationDropdown(true)}
+                    onKeyPress={handleKeyPress}
+                    className={`bg-transparent text-sm focus:outline-none w-full ${isDark
+                        ? 'text-white placeholder:text-white/50'
+                        : 'text-foreground placeholder:text-neutrals-06'
+                      }`}
+                  />
+                </>
+              )}
+
               {/* Location Dropdown */}
               {showLocationDropdown && filteredLocations.length > 0 && (
-                <div className={`absolute top-full left-0 mt-2 w-80 rounded-2xl shadow-2xl border z-50 ${
-                  isDark 
-                    ? 'bg-[#1E1E1E] border-white/10' 
-                    : 'bg-shades-white border-neutrals-03'
-                }`}>
-                  <div className="p-2 max-h-72 overflow-y-auto">
-                    {filteredLocations.map((loc, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleLocationSelect(loc.city, loc.country)}
-                        className={`w-full flex items-center gap-3 text-left p-3 rounded-lg transition-colors ${
-                          isDark 
-                            ? 'hover:bg-white/5' 
-                            : 'hover:bg-neutrals-02'
+                <div className={`absolute top-full left-0 mt-2 w-full z-50 rounded-xl shadow-lg border max-h-60 overflow-y-auto ${isDark
+                    ? 'bg-[#1E1E1E] border-white/10'
+                    : 'bg-white border-neutrals-03'
+                  }`}>
+                  {filteredLocations.map((loc, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleLocationSelect(loc.city, loc.country)}
+                      className={`w-full flex items-center gap-3 text-left p-3 transition-colors ${isDark
+                          ? 'hover:bg-white/5 text-white'
+                          : 'hover:bg-neutrals-01 text-shades-black'
                         }`}
-                      >
-                        <div className={`w-10 h-10 rounded-lg shrink-0 ${
-                          isDark 
-                            ? 'bg-[#555]' 
-                            : 'bg-neutrals-03'
-                        }`} />
-                        <span className={isDark ? 'text-white font-medium' : 'text-foreground font-medium'}>
-                          {loc.city}, {loc.country}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                    >
+                      <span className="font-medium">{loc.city}, {loc.country}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Date */}
-            <div ref={dateRef} className="relative flex items-center gap-2 px-4 py-2 flex-1">
-              <Calendar size={16} className={isDark ? 'text-white/60' : 'text-neutrals-06'} />
-              <input
-                type="text"
-                placeholder="Date"
-                value={date}
-                onClick={() => setShowDatePicker(!showDatePicker)}
-                onKeyPress={handleKeyPress}
-                readOnly
-                className={`bg-transparent text-sm focus:outline-none w-full cursor-pointer ${
-                  isDark 
-                    ? 'text-white placeholder:text-white/50' 
-                    : 'text-foreground placeholder:text-neutrals-06'
-                }`}
-              />
-              
+            {/* Date (When) */}
+            <div ref={dateRef} className={`${showMobileSearch ? 'w-full mb-8 relative' : 'flex-1 relative flex items-center gap-2 px-4 py-2'}`}>
+              {showMobileSearch ? (
+                <>
+                  <label className="block text-sm font-bold text-shades-black mb-1 ml-1">When</label>
+                  <div className="flex items-center border-b border-neutrals-03 pb-2" onClick={() => setShowDatePicker(!showDatePicker)}>
+                    <Calendar size={20} className="text-neutrals-05 mr-3" />
+                    <input
+                      type="text"
+                      placeholder="Add dates"
+                      value={date}
+                      readOnly
+                      className="bg-transparent text-base focus:outline-none w-full text-shades-black placeholder:text-neutrals-05"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Calendar size={16} className={isDark ? 'text-white/60' : 'text-neutrals-06'} />
+                  <input
+                    type="text"
+                    placeholder="Date"
+                    value={date}
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    onKeyPress={handleKeyPress}
+                    readOnly
+                    className={`bg-transparent text-sm focus:outline-none w-full cursor-pointer ${isDark
+                        ? 'text-white placeholder:text-white/50'
+                        : 'text-foreground placeholder:text-neutrals-06'
+                      }`}
+                  />
+                </>
+              )}
+
               {/* Simple Date Picker */}
               {showDatePicker && (
-                <div className={`absolute top-full right-0 mt-2 w-64 rounded-2xl shadow-2xl border z-50 p-4 ${
-                  isDark 
-                    ? 'bg-[#1E1E1E] border-white/10' 
-                    : 'bg-shades-white border-neutrals-03'
-                }`}>
+                <div className={`absolute top-full right-0 mt-2 w-64 rounded-2xl shadow-2xl border z-50 p-4 ${isDark
+                    ? 'bg-[#1E1E1E] border-white/10'
+                    : 'bg-white border-neutrals-03'
+                  } ${showMobileSearch ? 'left-0 w-full' : ''}`}>
                   <input
                     type="date"
                     onChange={(e) => {
@@ -272,11 +337,10 @@ export default function CategoryHeader() {
                       }
                     }}
                     min={new Date().toISOString().split('T')[0]}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-01 ${
-                      isDark 
-                        ? 'bg-[#2a2a2a] text-white border-white/10' 
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-01 ${isDark
+                        ? 'bg-[#2a2a2a] text-white border-white/10'
                         : 'bg-shades-white text-foreground border-neutrals-03'
-                    }`}
+                      }`}
                   />
                 </div>
               )}
@@ -285,10 +349,14 @@ export default function CategoryHeader() {
             {/* Search Button */}
             <button
               onClick={handleSearch}
-              className="bg-primary-01 hover:bg-primary-02 text-white rounded-full w-9 h-9 flex items-center justify-center transition-colors shrink-0 m-1"
+              className={`${showMobileSearch
+                  ? 'w-full py-4 bg-primary-01 hover:bg-primary-02 text-white rounded-full font-bold text-lg shadow-lg flex items-center justify-center gap-2'
+                  : 'bg-primary-01 hover:bg-primary-02 text-white rounded-full w-9 h-9 flex items-center justify-center transition-colors shrink-0 m-1'
+                }`}
               aria-label="Search"
             >
-              <Search size={16} />
+              <Search size={showMobileSearch ? 24 : 16} strokeWidth={showMobileSearch ? 3 : 2} />
+              {showMobileSearch && "Search"}
             </button>
           </div>
         </div>
@@ -305,11 +373,10 @@ export default function CategoryHeader() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${
-              isDark 
-                ? 'border-white/20 text-white/70 hover:text-white hover:border-white/40' 
-                : 'border-neutrals-04 text-neutrals-07 hover:text-primary-01 hover:border-primary-01'
-            }`}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${isDark
+              ? 'border-white/20 text-white/70 hover:text-white hover:border-white/40'
+              : 'border-neutrals-04 text-neutrals-07 hover:text-primary-01 hover:border-primary-01'
+              }`}
             aria-label="Toggle theme"
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}

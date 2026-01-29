@@ -84,7 +84,7 @@ export default function Footer() {
 
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-12 pb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 md:gap-12 pb-16">
           {/* For Customers */}
           <div>
             <h4 className="text-neutrals-07 text-xs font-medium uppercase tracking-wider mb-6">

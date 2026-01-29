@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Globe, Sun, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react';
+import { Globe, Sun, Moon, Menu, LayoutDashboard, Settings, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/providers/theme-provider';
@@ -61,15 +61,15 @@ export default function Header() {
   const headerPositionClass = isHome ? 'fixed' : 'sticky';
 
   const textColorClass = isHome && !isScrolled
-    ? 'text-white hover:text-white/80'
+    ? 'text-shades-white hover:text-shades-white/80'
     : 'text-shades-black hover:text-primary-01';
 
   const logoTextClass = isHome && !isScrolled
-    ? 'text-white'
+    ? 'text-shades-white'
     : 'text-primary-01';
 
   const logoBgClass = isHome && !isScrolled
-    ? 'bg-white/10 backdrop-blur-sm'
+    ? 'bg-shades-white/10 backdrop-blur-sm'
     : 'bg-primary-01/10';
 
   // Determine dashboard link based on role
@@ -86,7 +86,7 @@ export default function Header() {
           <span className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 ${logoBgClass}`}>
             <Image src="/logo.svg" alt="Logo" width={32} height={32} />
           </span>
-          <span className={`transition-colors duration-300 ${logoTextClass}`}>Event Bridge</span>
+          <span className={`transition-colors duration-300 ${logoTextClass} hidden md:block`}>Event Bridge</span>
         </Link>
 
         {/* Navigation - Desktop */}
@@ -107,9 +107,8 @@ export default function Header() {
         </nav>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* "Become a Vendor" - Hide for signed-in users */}
-
 
 
           {/* Create Account */}
@@ -132,75 +131,18 @@ export default function Header() {
             </Link>
           )}
 
-          {/* User Avatar & Dropdown */}
-          {mounted && user && (
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="w-10 h-10 rounded-full bg-neutrals-02 border border-neutrals-03 flex items-center justify-center overflow-hidden focus:outline-none transition-transform active:scale-95"
-              >
-                {user.image ? (
-                  <Image src={user.image} alt={user.name || 'User'} width={40} height={40} className="object-cover w-full h-full" />
-                ) : (
-                  <div className="w-full h-full bg-primary-01 text-white flex items-center justify-center font-bold">
-                    {user.name?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-              </button>
-
-              {/* Dropdown Menu */}
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-neutrals-02 py-2 animate-in fade-in slide-in-from-top-2 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-neutrals-02">
-                    <p className="text-sm font-semibold text-shades-black truncate">{user.name}</p>
-                    <p className="text-xs text-neutrals-06 truncate">{user.email}</p>
-                  </div>
-
-                  <div className="py-1">
-                    <Link
-                      href={getDashboardLink()}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-shades-black hover:bg-neutrals-01 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <LayoutDashboard size={16} />
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/settings" // Assuming a general settings page or specific depending on role
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-shades-black hover:bg-neutrals-01 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Settings size={16} />
-                      Settings
-                    </Link>
-                  </div>
-
-                  <div className="border-t border-neutrals-02 py-1">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                    >
-                      <LogOut size={16} />
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Language Icon */}
+          {/* Language Icon - Hidden on mobile */}
           <button
-            className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
+            className={`hidden md:flex w-10 h-10 rounded-full border items-center justify-center transition-all duration-200 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
             aria-label="Language"
           >
             <Globe size={20} />
           </button>
 
-          {/* Theme Toggle */}
+          {/* Theme Toggle - Hidden on mobile */}
           <button
             onClick={toggleTheme}
-            className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
+            className={`hidden md:flex w-10 h-10 rounded-full border items-center justify-center transition-all duration-300 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
             aria-label="Toggle theme"
           >
             {mounted && (
@@ -225,19 +167,89 @@ export default function Header() {
             )}
           </button>
 
-          {/* Burger Menu with Dropdown */}
-          <div className="relative">
+          {/* Burger Menu with Dropdown - Hidden on mobile to avoid cluttering */}
+          <div className="relative hidden md:block">
             <BurgerMenu variant="light" />
           </div>
 
           {/* Mobile Menu Button - Show only if not logged in possibly? Or distinct mobile menu logic */}
-          <button
-            className={`md:hidden w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Mobile Menu"
-          >
-            <Menu size={20} />
-          </button>
+          {mounted && !user && (
+            <button
+              className={`md:hidden w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Mobile Menu"
+            >
+              <Menu size={20} />
+            </button>
+          )}
+
+          {/* User Avatar & Dropdown - MOVED TO THE RIGHTMOST POSITION */}
+          {mounted && user && (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-10 h-10 rounded-full bg-neutrals-02 border border-neutrals-03 flex items-center justify-center overflow-hidden focus:outline-none transition-transform active:scale-95 ml-2"
+              >
+                {user.image ? (
+                  <Image src={user.image} alt={user.name || 'User'} width={40} height={40} className="object-cover w-full h-full" />
+                ) : (
+                  <div className="w-full h-full bg-primary-01 text-white flex items-center justify-center font-bold">
+                    {user.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+              </button>
+
+              {/* Improved Dropdown Menu */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-popover rounded-2xl shadow-2xl border border-border py-2 animate-in fade-in slide-in-from-top-2 overflow-hidden z-50 ring-1 ring-black/5">
+                  <div className="px-6 py-4 border-b border-border bg-muted/50">
+                    <p className="text-base font-bold text-foreground truncate">{user.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                  </div>
+
+                  <div className="py-2 px-2">
+                    <Link
+                      href={getDashboardLink()}
+                      className="flex items-center gap-4 px-4 py-3 text-sm font-medium text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors group"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <LayoutDashboard size={18} className="text-muted-foreground group-hover:text-accent-foreground transition-colors" />
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-4 px-4 py-3 text-sm font-medium text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors group"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Settings size={18} className="text-muted-foreground group-hover:text-accent-foreground transition-colors" />
+                      Settings
+                    </Link>
+                  </div>
+
+                  {/* Theme Toggle in Dropdown for Mobile */}
+                  <div className="md:hidden py-2 px-2 border-t border-border">
+                    <button
+                      onClick={toggleTheme}
+                      className="flex items-center gap-4 px-4 py-3 text-sm font-medium text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors w-full text-left"
+                    >
+                      {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} className="text-muted-foreground" />}
+                      {resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                    </button>
+                  </div>
+
+                  <div className="border-t border-border p-2 mt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-4 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-colors text-left"
+                    >
+                      <LogOut size={18} />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

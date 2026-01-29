@@ -10,19 +10,19 @@ import { getQuickStats, searchVendors } from '@/lib/queries';
 export default function BookingProcess() {
   // ADDED: Router for navigation
   const router = useRouter();
-  
+
   // ADDED: State for statistics
   const [stats, setStats] = useState({
     totalVendors: 0,
     totalBookings: 0
   });
-  
+
   // ADDED: State for loading
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // ADDED: State for search input
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // ADDED: Fetch statistics on component mount
   useEffect(() => {
     const fetchStats = async () => {
@@ -44,10 +44,10 @@ export default function BookingProcess() {
         setIsLoading(false);
       }
     };
-    
+
     fetchStats();
   }, []);
-  
+
   // ADDED: Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,8 +62,8 @@ export default function BookingProcess() {
       icon: '/icons/search-normal.svg',
       title: 'Discover Vendors',
       // MODIFIED: Added dynamic stats
-      description: isLoading 
-        ? 'Loading vendors...' 
+      description: isLoading
+        ? 'Loading vendors...'
         : `Browse ${stats.totalVendors.toLocaleString()}+ verified event pros tailored to your specific needs.`,
       bgColor: 'bg-blue-100',
       iconBg: 'bg-blue-200',
@@ -75,8 +75,8 @@ export default function BookingProcess() {
       icon: '/icons/message-search.svg',
       title: 'Compare & Connect',
       // MODIFIED: Added dynamic stats
-      description: isLoading 
-        ? 'Loading booking data...' 
+      description: isLoading
+        ? 'Loading booking data...'
         : `Check reviews, availability, and chat with ${stats.totalBookings.toLocaleString()}+ successful bookings.`,
       bgColor: 'bg-purple-100',
       iconBg: 'bg-purple-200',
@@ -113,7 +113,7 @@ export default function BookingProcess() {
           <p className="text-primary-01 font-semibold text-[24px] uppercase tracking-wider mb-3">
             THE PROCESS
           </p>
-          <h2 className="text-[64px] font-bold text-shades-black mb-4">
+          <h2 className="text-3xl md:text-5xl lg:text-[64px] font-bold text-shades-black mb-4">
             Booking made Simple
           </h2>
           <p className="text-neutrals-06 text-base max-w-xl mx-auto">
@@ -173,7 +173,7 @@ export default function BookingProcess() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Number Badge - positioned at top right - UNCHANGED */}
                 <div className="absolute -top-1 -right-1 w-7 h-7 bg-primary-01 text-white rounded-full flex items-center justify-center text-sm font-bold">
                   {step.number}
@@ -187,7 +187,7 @@ export default function BookingProcess() {
               <p className="text-neutrals-06 text-sm leading-relaxed max-w-[200px]">
                 {step.description}
               </p>
-              
+
               {/* ADDED: Hover indicator */}
               <div className="mt-4 text-primary-01 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 Click to explore →

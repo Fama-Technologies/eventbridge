@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, MapPin, Calendar } from 'lucide-react';
+import { Search, MapPin, Calendar, SlidersHorizontal, X } from 'lucide-react';
 import type { MediaItem } from './HeroCarousel';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import HeroCarousel from './HeroCarousel';
@@ -13,6 +13,7 @@ export default function HeroSection() {
   const [what, setWhat] = useState('');
   const [where, setWhere] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
 
   // Dropdown visibility states ok
   const [showEventDropdown, setShowEventDropdown] = useState(false);
@@ -158,90 +159,124 @@ export default function HeroSection() {
         </p>
 
         {/* Search Bar */}
-        <div className="bg-shades-white rounded-full p-2 flex items-center shadow-2xl max-w-3xl mx-auto border border-white/10">
-          {/* What */}
-          <div ref={whatInputRef} className="flex items-center gap-3 px-5 flex-1 border-r border-white/20">
-            <Search size={18} className="text-shades-black shrink-0" />
-            <div className="flex-1 text-left">
-              <label className="text-xs font-medium text-shades-black block">What</label>
-              <input
-                type="text"
-                placeholder="Wedding, Birthday..."
-                value={what}
-                onChange={(e) => {
-                  setWhat(e.target.value);
-                  setShowEventDropdown(true);
-                  setShowLocationDropdown(false);
-                  setShowDatePicker(false);
-                }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => {
-                  setShowEventDropdown(true);
-                  setShowLocationDropdown(false);
-                  setShowDatePicker(false);
-                  updateRects();
-                }}
-                className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent"
-              />
-            </div>
-          </div>
 
-          {/* Where */}
-          <div ref={whereInputRef} className="flex items-center gap-3 px-5 flex-1 border-r border-white/20">
-            <MapPin size={18} className="text-shades-black shrink-0" />
-            <div className="flex-1 text-left">
-              <label className="text-xs font-medium text-shades-black block">Where</label>
-              <input
-                type="text"
-                placeholder="City or Zip code"
-                value={where}
-                onChange={(e) => {
-                  setWhere(e.target.value);
-                  setShowLocationDropdown(true);
-                  setShowEventDropdown(false);
-                  setShowDatePicker(false);
-                }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => {
-                  setShowLocationDropdown(true);
-                  setShowEventDropdown(false);
-                  setShowDatePicker(false);
-                  updateRects();
-                }}
-                className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent"
-              />
-            </div>
-          </div>
-
-          {/* When */}
-          <div ref={whenInputRef} className="flex items-center gap-3 px-5 flex-1">
-            <Calendar size={18} className="text-shades-black shrink-0" />
-            <div className="flex-1 text-left">
-              <label className="text-xs font-medium text-shades-black block">When</label>
-              <input
-                type="text"
-                placeholder="Add dates"
-                value={selectedDate ? format(selectedDate, 'MMM dd, yyyy') : ''}
-                onClick={() => {
-                  setShowDatePicker(!showDatePicker);
-                  setShowEventDropdown(false);
-                  setShowLocationDropdown(false);
-                  updateRects();
-                }}
-                readOnly
-                className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent cursor-pointer"
-              />
-            </div>
-          </div>
-
-          {/* Search Button */}
-          <button
-            onClick={handleSearch}
-            className="bg-primary-01 hover:bg-primary-02 text-shades-white rounded-full w-11 h-11 flex items-center justify-center transition-colors shrink-0 ml-2"
-            aria-label="Search"
+        <div className="max-w-3xl mx-auto">
+          {/* Mobile Search Pill (Visible only on mobile when collapsed) */}
+          <div
+            className={`md:hidden bg-shades-white rounded-full p-2.5 flex items-center shadow-2xl border border-white/10 transition-all ${isMobileSearchExpanded ? 'hidden' : 'flex'}`}
+            onClick={() => setIsMobileSearchExpanded(true)}
           >
-            <Search size={20} />
-          </button>
+            <div className="pl-4 pr-3 border-r border-neutrals-03">
+              <SlidersHorizontal size={20} className="text-primary-01" strokeWidth={2.5} />
+            </div>
+            <span className="flex-1 text-left text-sm font-medium text-shades-black px-4">
+              Start your search
+            </span>
+            <div className="bg-primary-01 text-shades-white p-2.5 rounded-full">
+              <Search size={18} strokeWidth={2.5} />
+            </div>
+          </div>
+
+          {/* Detailed Search Form (Visible on desktop OR when expanded on mobile) */}
+          <div className={`${isMobileSearchExpanded ? 'flex' : 'hidden md:flex'} bg-shades-white rounded-3xl md:rounded-full p-2 flex-col md:flex-row items-stretch md:items-center shadow-2xl border border-white/10 gap-2 md:gap-0 relative`}>
+
+            {/* Close button for mobile expanded view */}
+            {isMobileSearchExpanded && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMobileSearchExpanded(false);
+                }}
+                className="md:hidden absolute -top-12 right-0 bg-white/20 backdrop-blur-md p-2 rounded-full text-white"
+              >
+                <X size={20} />
+              </button>
+            )}
+
+            {/* What */}
+            <div ref={whatInputRef} className="flex items-center gap-3 px-5 flex-1 border-b md:border-b-0 md:border-r border-neutrals-03 py-3 md:py-0">
+              <Search size={18} className="text-shades-black shrink-0" />
+              <div className="flex-1 text-left">
+                <label className="text-xs font-medium text-shades-black block">What</label>
+                <input
+                  type="text"
+                  placeholder="Wedding, Birthday..."
+                  value={what}
+                  onChange={(e) => {
+                    setWhat(e.target.value);
+                    setShowEventDropdown(true);
+                    setShowLocationDropdown(false);
+                    setShowDatePicker(false);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    setShowEventDropdown(true);
+                    setShowLocationDropdown(false);
+                    setShowDatePicker(false);
+                    updateRects();
+                  }}
+                  className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Where */}
+            <div ref={whereInputRef} className="flex items-center gap-3 px-5 flex-1 border-b md:border-b-0 md:border-r border-neutrals-03 py-3 md:py-0">
+              <MapPin size={18} className="text-shades-black shrink-0" />
+              <div className="flex-1 text-left">
+                <label className="text-xs font-medium text-shades-black block">Where</label>
+                <input
+                  type="text"
+                  placeholder="City or Zip code"
+                  value={where}
+                  onChange={(e) => {
+                    setWhere(e.target.value);
+                    setShowLocationDropdown(true);
+                    setShowEventDropdown(false);
+                    setShowDatePicker(false);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    setShowLocationDropdown(true);
+                    setShowEventDropdown(false);
+                    setShowDatePicker(false);
+                    updateRects();
+                  }}
+                  className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent"
+                />
+              </div>
+            </div>
+
+            {/* When */}
+            <div ref={whenInputRef} className="flex items-center gap-3 px-5 flex-1 py-3 md:py-0">
+              <Calendar size={18} className="text-shades-black shrink-0" />
+              <div className="flex-1 text-left">
+                <label className="text-xs font-medium text-shades-black block">When</label>
+                <input
+                  type="text"
+                  placeholder="Add dates"
+                  value={selectedDate ? format(selectedDate, 'MMM dd, yyyy') : ''}
+                  onClick={() => {
+                    setShowDatePicker(!showDatePicker);
+                    setShowEventDropdown(false);
+                    setShowLocationDropdown(false);
+                    updateRects();
+                  }}
+                  readOnly
+                  className="w-full text-sm text-shades-black placeholder:text-shades-black/40 focus:outline-none bg-transparent cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Search Button */}
+            <button
+              onClick={handleSearch}
+              className="bg-primary-01 hover:bg-primary-02 text-shades-white rounded-full w-full md:w-11 h-11 flex items-center justify-center transition-colors shrink-0 md:ml-2 mt-2 md:mt-0"
+              aria-label="Search"
+            >
+              <Search size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Popular Categories */}
