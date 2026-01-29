@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { 
-  bookings, 
-  vendorProfiles, 
-  users, 
+import {
+  bookings,
+  vendorProfiles,
+  users,
   events,
   vendorServices,
   vendorPackages
@@ -25,9 +25,12 @@ export async function GET(req: Request) {
     // TODO: Get vendor ID from session/authentication
     // For now, using vendor ID 1 as example
     const vendorId = 1;
-    
+
+    const { searchParams } = new URL(req.url);
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
+
     // Fetch bookings for this vendor from database
-    const dbBookings = await db
+    let query = db
       .select({
         id: bookings.id,
         status: bookings.status,
@@ -62,23 +65,26 @@ export async function GET(req: Request) {
       .where(eq(bookings.vendorId, vendorId))
       .orderBy(desc(bookings.startTime));
 
+    // Apply limit if provided
+    const dbBookings = limit ? await query.limit(limit) : await query;
+
     // Format bookings for frontend - matching BookingDetailsModal expectations
     const formattedBookings = dbBookings.map((booking: { id: { toString: () => string; }; paymentStatus: string; totalAmount: any; startTime: string | number | Date; endTime: string | number | Date; eventTitle: any; status: any; clientFirstName: string; clientLastName: string; clientEmail: any; eventLocation: any; notes: any; }) => {
       // Generate booking ID from database ID
       const bookingId = `BK-${booking.id.toString().padStart(6, '0')}`;
-      
+
       // Determine payment status label
       const paymentStatus = booking.paymentStatus || 'unpaid';
       const isPaid = paymentStatus === 'paid';
       const isPartial = paymentStatus === 'partial';
-      
+
       // Calculate balance amount (simplified logic)
       const balanceAmount = isPaid ? 0 : (booking.totalAmount || 0) * 0.5; // Example: 50% balance if not paid
-      
+
       // Parse dates safely
       const startTime = booking.startTime ? new Date(booking.startTime) : new Date();
       const endTime = booking.endTime ? new Date(booking.endTime) : startTime;
-      
+
       // Create mock payments array for demonstration
       const payments: PaymentItem[] = [
         {
@@ -88,7 +94,7 @@ export async function GET(req: Request) {
           date: format(subDays(startTime, 7), 'MMM d, yyyy') // 7 days before event
         }
       ];
-      
+
       if (isPartial) {
         payments.push({
           type: 'due',
@@ -97,10 +103,10 @@ export async function GET(req: Request) {
           date: format(new Date(), 'MMM d, yyyy')
         });
       }
-      
+
       // Calculate guest count (default to 50 if not available)
       const guestCount = 50; // Default value since not in your schema
-      
+
       return {
         id: booking.id.toString(),
         bookingId: bookingId,
@@ -110,7 +116,7 @@ export async function GET(req: Request) {
         startDate: startTime,
         endDate: endTime,
         initials: (
-          (booking.clientFirstName?.charAt(0) || '') + 
+          (booking.clientFirstName?.charAt(0) || '') +
           (booking.clientLastName?.charAt(0) || '')
         ).toUpperCase() || 'CL',
         dateDisplay: format(startTime, 'MMM d'),
@@ -124,9 +130,9 @@ export async function GET(req: Request) {
         guestCount: guestCount, // Also include guestCount for compatibility
         totalAmount: booking.totalAmount || 0,
         venue: booking.eventLocation || 'Location not specified',
-        dateRange: format(startTime, 'MMM d') + 
-          (startTime.toDateString() === endTime.toDateString() 
-            ? '' 
+        dateRange: format(startTime, 'MMM d') +
+          (startTime.toDateString() === endTime.toDateString()
+            ? ''
             : ` - ${format(endTime, 'MMM d')}`),
         timeRange: 'All Day',
         paymentStatus: paymentStatus,
@@ -148,7 +154,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ bookings: formattedBookings });
-    
+
   } catch (error) {
     console.error('Error fetching bookings from database:', error);
     return NextResponse.json(
@@ -162,20 +168,20 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    
+
     console.log('Booking creation data received:', data);
-    
+
     // Validate required fields
     const requiredFields = [
-      'clientName', 
-      'startDate', 
-      'endDate', 
-      'venue', 
+      'clientName',
+      'startDate',
+      'endDate',
+      'venue',
       'vendorId'
     ];
-    
+
     const missingFields = requiredFields.filter(field => !data[field]);
-    
+
     if (missingFields.length > 0) {
       console.log('Missing fields:', missingFields);
       return NextResponse.json(
@@ -186,7 +192,7 @@ export async function POST(req: Request) {
 
     // Get or create client user
     let clientId = data.clientId;
-    
+
     if (!clientId) {
       // Check if client already exists by email
       if (data.clientEmail) {
@@ -194,13 +200,13 @@ export async function POST(req: Request) {
           .from(users)
           .where(eq(users.email, data.clientEmail))
           .limit(1);
-        
+
         if (existingClient.length > 0) {
           clientId = existingClient[0].id;
           console.log('Found existing client with ID:', clientId);
         }
       }
-      
+
       // If no existing client, create new one
       if (!clientId) {
         const [newUser] = await db.insert(users).values({
@@ -210,7 +216,7 @@ export async function POST(req: Request) {
           password: 'temporary-password',
           accountType: 'CUSTOMER',
         }).returning();
-        
+
         clientId = newUser.id;
         console.log('Created new client user with ID:', clientId);
       }
@@ -254,23 +260,23 @@ export async function POST(req: Request) {
       lastName: users.lastName,
       email: users.email,
     })
-    .from(users)
-    .where(eq(users.id, clientId))
-    .limit(1);
+      .from(users)
+      .where(eq(users.id, clientId))
+      .limit(1);
 
     // Format response for frontend - matching BookingDetailsModal expectations
     const bookingId = `BK-${newBooking.id.toString().padStart(6, '0')}`;
     const guestCount = data.guestCount || 0;
     const paymentStatus = data.paymentStatus || 'pending';
     const totalAmount = newBooking.totalAmount || 0;
-    
+
     // Calculate balance amount
     const balanceAmount = paymentStatus === 'paid' ? 0 : totalAmount * 0.5;
-    
+
     // Parse dates safely
     const startTime = new Date(data.startDate);
     const endTime = new Date(data.endDate);
-    
+
     // Create payments array with proper types
     const payments: PaymentItem[] = [
       {
@@ -280,7 +286,7 @@ export async function POST(req: Request) {
         date: format(new Date(), 'MMM d, yyyy')
       }
     ];
-    
+
     if (paymentStatus === 'partial') {
       payments.push({
         type: 'due',
@@ -298,8 +304,8 @@ export async function POST(req: Request) {
       date: startTime,
       startDate: startTime,
       endDate: endTime,
-      initials: client[0] ? 
-        ((client[0].firstName?.charAt(0) || '') + (client[0].lastName?.charAt(0) || '')).toUpperCase() : 
+      initials: client[0] ?
+        ((client[0].firstName?.charAt(0) || '') + (client[0].lastName?.charAt(0) || '')).toUpperCase() :
         data.clientName.substring(0, 2).toUpperCase(),
       dateDisplay: format(startTime, 'MMM d'),
       client: {
@@ -313,9 +319,9 @@ export async function POST(req: Request) {
       guestCount: guestCount, // Also include guestCount
       totalAmount: totalAmount,
       venue: newEvent.location,
-      dateRange: format(startTime, 'MMM d') + 
-        (startTime.toDateString() === endTime.toDateString() 
-          ? '' 
+      dateRange: format(startTime, 'MMM d') +
+        (startTime.toDateString() === endTime.toDateString()
+          ? ''
           : ` - ${format(endTime, 'MMM d')}`),
       timeRange: 'All Day',
       paymentStatus: paymentStatus,
@@ -336,7 +342,7 @@ export async function POST(req: Request) {
     };
 
     return NextResponse.json(formattedBooking, { status: 201 });
-    
+
   } catch (error) {
     console.error('Booking creation error:', error);
     return NextResponse.json(

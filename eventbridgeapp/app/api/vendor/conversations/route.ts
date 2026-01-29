@@ -1,84 +1,96 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { messageThreads, users, bookings, messages, events, vendorProfiles } from '@/drizzle/schema';
+import { eq, desc, and, ne } from 'drizzle-orm';
 
-export async function GET() {
-    const conversations = [
-        {
-            id: 'conv-1',
-            name: 'Sarah Jenkins',
-            avatar: '/avatars/sarah.png', // We'll make sure this path works or use a fallback
-            eventId: 'evt_001',
-            eventName: "Sarah's Wedding",
-            eventType: "Sarah's Wedding",
-            lastMessage: 'Perfect, thank you so much for the quick response! Looking forward to seeing the final setup.',
-            timestamp: 'Oct 24, 02:45 PM',
-            status: 'confirmed',
-            isVerified: true,
-            unreadCount: 1,
-            unread: true,
-            eventDetails: {
-                date: 'Oct 24, 2024',
-                time: '04:00 PM',
-                venue: 'Grand Regency Hall, Room 4B',
-                guests: 150
-            },
-            sharedFiles: [
-                { name: 'Floral_Proposal_v2.pdf', size: '2.4 MB', date: 'Oct 15', type: 'pdf' },
-                { name: 'Mood_Board_Ref.png', size: '1.1 MB', date: 'Today', type: 'image' }
-            ],
-            messages: [
-                {
-                    id: 'm1',
-                    conversationId: 'conv-1',
-                    content: 'Hi David! We were just reviewing the floral proposal you sent last week. Everything looks amazing! We just had one question about the peonies.',
-                    timestamp: '02:00 PM',
-                    sender: 'user'
-                },
-                {
-                    id: 'm2',
-                    conversationId: 'conv-1',
-                    content: "Hello Sarah! I'm so glad to hear that. I'm happy to answer any questions. What would you like to know about the peonies?",
-                    timestamp: '02:15 PM',
-                    sender: 'vendor'
-                },
-                {
-                    id: 'm3',
-                    conversationId: 'conv-1',
-                    content: 'Perfect, thank you so much for the quick response! Looking forward to seeing the final setup.',
-                    timestamp: '02:45 PM',
-                    sender: 'user'
-                }
-            ]
-        },
-        {
-            id: 'conv-2',
-            name: 'Tech Corp Mixer',
-            avatar: '',
-            eventId: 'evt_002',
-            eventName: 'Tech Corp Mixer',
-            eventType: 'Corporate Event',
-            lastMessage: 'We have reviewed the initial quote and would like to request some changes to the catering menu...',
-            timestamp: 'Nov 02, 10:15 AM',
-            status: 'pending-quote',
-            unreadCount: 0,
-            unread: false,
-            eventDetails: {
-                date: 'Dec 12, 2024',
-                time: '06:00 PM',
-                venue: 'Tech Hub Conference Center',
-                guests: 500
-            },
-            sharedFiles: [],
-            messages: [
-                {
-                    id: 'm4',
-                    conversationId: 'conv-2',
-                    content: 'We have reviewed the initial quote and would like to request some changes to the catering menu...',
-                    timestamp: '10:15 AM',
-                    sender: 'user'
-                }
-            ]
+export async function GET(req: NextRequest) {
+    try {
+        const user = await getAuthUser(req);
+
+        if (!user) {
+            return NextResponse.json(
+                { message: 'Unauthorized' },
+                { status: 401 }
+            );
         }
-    ];
 
-    return NextResponse.json({ conversations });
+        if (user.accountType !== 'VENDOR') {
+            return NextResponse.json(
+                { message: 'Access denied. Vendor account required.' },
+                { status: 403 }
+            );
+        }
+
+        // Fetch threads for this vendor
+        // We'll join with users to get customer details
+        // And bookings/events if available
+        const threads = await db
+            .select({
+                id: messageThreads.id,
+                customerId: messageThreads.customerId,
+                customerName: users.firstName,
+                customerLastName: users.lastName,
+                customerImage: users.image,
+                lastMessage: messageThreads.lastMessage,
+                lastMessageTime: messageThreads.lastMessageTime,
+                unreadCount: messageThreads.vendorUnreadCount,
+                bookingId: messageThreads.bookingId,
+                eventName: events.title,
+                eventDate: events.startDate,
+                eventType: events.description, // Using description as type for now or join categories
+                bookingStatus: bookings.status,
+            })
+            .from(messageThreads)
+            .innerJoin(users, eq(messageThreads.customerId, users.id))
+            .leftJoin(bookings, eq(messageThreads.bookingId, bookings.id))
+            .leftJoin(events, eq(bookings.eventId, events.id))
+            .where(
+                and(
+                    eq(messageThreads.vendorId, user.id),
+                    eq(messageThreads.isArchived, false)
+                )
+            )
+            .orderBy(desc(messageThreads.lastMessageTime));
+
+        // Format the response to match the frontend expectations
+        const formattedConversations = threads.map(thread => {
+            const customerName = `${thread.customerName} ${thread.customerLastName}`.trim();
+
+            return {
+                id: String(thread.id),
+                name: customerName,
+                avatar: thread.customerImage || '',
+                eventId: thread.bookingId ? String(thread.bookingId) : undefined,
+                eventName: thread.eventName || 'General Inquiry',
+                eventType: thread.eventType || 'Unspecified',
+                lastMessage: thread.lastMessage || '',
+                timestamp: thread.lastMessageTime ? new Date(thread.lastMessageTime).toLocaleDateString() : '',
+                status: thread.bookingStatus || 'pending-quote',
+                isVerified: true, // Assuming customers are verified for now
+                unreadCount: thread.unreadCount || 0,
+                unread: (thread.unreadCount || 0) > 0,
+                // These details might need to be fetched dynamically or added to schema
+                eventDetails: {
+                    date: thread.eventDate ? new Date(thread.eventDate).toDateString() : 'TBD',
+                    time: thread.eventDate ? new Date(thread.eventDate).toLocaleTimeString() : 'TBD',
+                    venue: 'TBD', // Placeholder as it's not in the main query
+                    guests: 0 // Placeholder
+                },
+                sharedFiles: [], // Would need a separate query for files
+                messages: [] // detailed messages are fetched separately usually, but list view mocks them? 
+                // The original mock had "messages" array in list view. 
+                // We will leave it empty here or fetch last message only.
+            };
+        });
+
+        return NextResponse.json({ conversations: formattedConversations });
+
+    } catch (error) {
+        console.error('Failed to fetch conversations:', error);
+        return NextResponse.json(
+            { message: 'Internal Server Error' },
+            { status: 500 }
+        );
+    }
 }
