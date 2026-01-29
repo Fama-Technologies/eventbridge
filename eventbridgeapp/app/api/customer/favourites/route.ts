@@ -1,4 +1,4 @@
-// app/api/customer/favorites/route.ts
+// app/api/customer/favourites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
@@ -49,7 +49,7 @@ async function getCurrentUser() {
   return null;
 }
 
-// GET - Fetch all favorites for the logged-in customer
+// GET - Fetch all favourites for the logged-in customer
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
