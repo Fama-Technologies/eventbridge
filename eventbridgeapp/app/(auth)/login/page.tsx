@@ -85,8 +85,13 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
+      // If callbackUrl is generic (root), send to /dashboard so middleware works its magic
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const cleanCallback = callbackUrl.replace(origin, '');
+      const isGeneric = cleanCallback === '/' || cleanCallback === '' || cleanCallback === '/dashboard';
+
       await signIn('google', {
-        callbackUrl: callbackUrl,
+        callbackUrl: isGeneric ? '/dashboard' : callbackUrl,
       });
     } catch (error) {
       console.error("Google sign-in error:", error);

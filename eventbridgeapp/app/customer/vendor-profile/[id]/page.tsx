@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, Star, MapPin, BadgeCheck, Clock, Calendar, Check, ChevronRight, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import InquiryModal from '@/components/vendor/inquiry-modal';
 
 interface Review {
     id: string;
@@ -44,6 +45,7 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
     const [similarVendors, setSimilarVendors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
 
     // Format currency
     const formatCurrency = (amount: number) => {
@@ -391,11 +393,20 @@ export default function VendorProfilePage({ params }: { params: { id: string } }
                             UGX {formatCurrency(vendor.startingPrice)} <span className="text-sm font-normal text-neutrals-06">/{vendor.priceUnit}</span>
                         </div>
                     </div>
-                    <button className="flex-1 max-w-xs bg-primary-01 hover:bg-primary-02 text-white font-bold py-3.5 rounded-full shadow-lg shadow-primary-01/20 transition-all">
+                    <button
+                        onClick={() => setIsInquiryModalOpen(true)}
+                        className="flex-1 max-w-xs bg-primary-01 hover:bg-primary-02 text-white font-bold py-3.5 rounded-full shadow-lg shadow-primary-01/20 transition-all"
+                    >
                         Make Inquiry
                     </button>
                 </div>
             </div>
+            {/* Inquiry Modal */}
+            <InquiryModal
+                isOpen={isInquiryModalOpen}
+                onClose={() => setIsInquiryModalOpen(false)}
+                vendorName={vendor.name}
+            />
         </div>
     );
 }
