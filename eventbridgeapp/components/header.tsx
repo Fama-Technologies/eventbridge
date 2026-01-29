@@ -139,10 +139,10 @@ export default function Header() {
             <Globe size={20} />
           </button>
 
-          {/* Theme Toggle - Hidden on mobile */}
+          {/* Theme Toggle - Visible on mobile now */}
           <button
             onClick={toggleTheme}
-            className={`hidden md:flex w-10 h-10 rounded-full border items-center justify-center transition-all duration-300 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
+            className={`flex w-10 h-10 rounded-full border items-center justify-center transition-all duration-300 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
             aria-label="Toggle theme"
           >
             {mounted && (
@@ -167,8 +167,8 @@ export default function Header() {
             )}
           </button>
 
-          {/* Burger Menu with Dropdown - Hidden on mobile to avoid cluttering */}
-          <div className="relative hidden md:block">
+          {/* Burger Menu with Dropdown - Visible on mobile now */}
+          <div className="relative block">
             <BurgerMenu variant="light" />
           </div>
 

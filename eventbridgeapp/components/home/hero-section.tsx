@@ -163,7 +163,7 @@ export default function HeroSection() {
         <div className="max-w-3xl mx-auto">
           {/* Mobile Search Pill (Visible only on mobile when collapsed) */}
           <div
-            className={`md:hidden bg-shades-white rounded-full p-2.5 flex items-center shadow-2xl border border-white/10 transition-all ${isMobileSearchExpanded ? 'hidden' : 'flex'}`}
+            className={`md:hidden mx-4 bg-shades-white rounded-full p-2.5 flex items-center shadow-2xl border border-white/10 transition-all ${isMobileSearchExpanded ? 'hidden' : 'flex'}`}
             onClick={() => setIsMobileSearchExpanded(true)}
           >
             <div className="pl-4 pr-3 border-r border-neutrals-03">

@@ -64,9 +64,10 @@ export default function ExploreCategories() {
           <h2 className="text-2xl font-bold text-shades-black">Explore services by event type</h2>
           <Link
             href="/categories"
-            className="flex items-center gap-2 text-shades-black hover:text-primary-01 font-medium transition-colors text-sm"
+            className="group flex items-center gap-2 text-shades-black hover:text-primary-01 font-medium transition-colors text-sm"
           >
-            View all <ArrowRight size={18} />
+            <span className="hidden md:inline">View all</span>
+            <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
         </div>
 
