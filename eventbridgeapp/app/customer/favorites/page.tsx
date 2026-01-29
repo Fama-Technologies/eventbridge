@@ -5,11 +5,13 @@ import { ArrowLeft, Heart, Search, Star, MessageSquare, Plus, Loader2 } from 'lu
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
-interface Favorite {
+// Types based on your schema
+interface FavoriteVendor {
     id: number;
     vendorId: number;
-    createdAt: string;
+    createdAt: Date;
     vendor: {
         id: number;
         businessName: string | null;
@@ -28,12 +30,13 @@ interface Favorite {
     startingPrice: number | null;
 }
 
-export default function SavedPage() {
+export default function FavoritesPage() {
     const router = useRouter();
-    const [favourites, setFavourites] = useState<Favorite[]>([]);
+    const [favorites, setFavorites] = useState<FavoriteVendor[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [removingId, setRemovingId] = useState<number | null>(null);
 
+    // Fetch favorites from API
     useEffect(() => {
         fetchFavorites();
     }, []);
@@ -41,45 +44,21 @@ export default function SavedPage() {
     const fetchFavorites = async () => {
         try {
             setLoading(true);
-            setError(null);
+            const response = await fetch('/api/customer/favorites');
             
-            console.log('Fetching favorites...');
-            const response = await fetch('/api/customer/favorites', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-            });
-
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                
-                if (response.status === 401) {
-                    setError('Please log in to view your favorites');
-                    setTimeout(() => {
-                        router.push('/login');
-                    }, 2000);
-                    return;
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setFavorites(data.favorites);
+                } else {
+                    toast.error(data.error || 'Failed to load favorites');
                 }
-                
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('Favorites data:', data);
-
-            if (data.success) {
-                setFavourites(data.favorites || []);
             } else {
-                setError(data.error || 'Failed to load favorites');
+                toast.error('Failed to load favorites');
             }
-        } catch (err) {
-            console.error('Error fetching favorites:', err);
-            setError('Failed to load favorites. Please try again.');
+        } catch (error) {
+            console.error('Error fetching favorites:', error);
+            toast.error('Error loading favorites');
         } finally {
             setLoading(false);
         }
@@ -87,55 +66,81 @@ export default function SavedPage() {
 
     const removeFavorite = async (vendorId: number) => {
         try {
-            console.log('Removing favorite:', vendorId);
+            setRemovingId(vendorId);
+            
             const response = await fetch(`/api/customer/favorites?vendorId=${vendorId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
             });
-            
-            console.log('Delete response status:', response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Delete error response:', errorText);
-                throw new Error(`Failed to remove favorite: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('Delete response data:', data);
 
-            if (data.success) {
-                setFavourites((prev) => prev.filter((f) => f.vendorId !== vendorId));
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setFavorites(prev => prev.filter(f => f.vendorId !== vendorId));
+                    toast.success('Removed from favorites');
+                } else {
+                    toast.error(data.error || 'Failed to remove favorite');
+                }
             } else {
-                console.error('Failed to remove favorite:', data.error);
+                toast.error('Failed to remove favorite');
             }
-        } catch (err) {
-            console.error('Error removing favorite:', err);
+        } catch (error) {
+            console.error('Error removing favorite:', error);
+            toast.error('Error removing favorite');
+        } finally {
+            setRemovingId(null);
         }
     };
 
-    const formatPrice = (price: number | null) => {
-        if (!price) return null;
-        return new Intl.NumberFormat('en-UG').format(price);
+    const addFavorite = async (vendorId: number) => {
+        try {
+            const response = await fetch('/api/customer/favorites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ vendorId }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    toast.success('Added to favorites!');
+                    // Refresh the list
+                    fetchFavorites();
+                } else {
+                    toast.error(data.error || 'Failed to add favorite');
+                }
+            } else {
+                toast.error('Failed to add favorite');
+            }
+        } catch (error) {
+            console.error('Error adding favorite:', error);
+            toast.error('Error adding favorite');
+        }
     };
 
-    const isEmpty = favourites.length === 0;
+    const isEmpty = favorites.length === 0;
 
     if (loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary-01" />
+                <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary-01 mx-auto mb-4" />
+                    <p className="text-neutrals-06">Loading favorites...</p>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-background">
+            {/* Header */}
             <div className="bg-white sticky top-0 z-10 shadow-sm px-4 py-4 flex items-center justify-between">
-                <button onClick={() => router.back()} className="p-1 text-foreground">
+                <button 
+                    onClick={() => router.back()} 
+                    className="p-1 text-foreground"
+                    aria-label="Go back"
+                >
                     <ArrowLeft size={24} />
                 </button>
 
@@ -144,24 +149,17 @@ export default function SavedPage() {
                     <Heart className="text-primary-01 fill-primary-01" size={20} />
                 </div>
 
-                <button className="p-1 text-foreground">
+                <button 
+                    className="p-1 text-foreground"
+                    aria-label="Search"
+                    onClick={() => toast.info('Search feature coming soon!')}
+                >
                     <Search size={24} />
                 </button>
             </div>
 
-            {error ? (
-                <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
-                    <p className="text-red-500 mb-4">{error}</p>
-                    {!error.includes('log in') && (
-                        <button
-                            onClick={fetchFavorites}
-                            className="bg-primary-01 text-white px-6 py-2 rounded-full font-semibold hover:bg-primary-02 transition-colors"
-                        >
-                            Try Again
-                        </button>
-                    )}
-                </div>
-            ) : isEmpty ? (
+            {isEmpty ? (
+                // Empty State
                 <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
                     <div className="relative mb-8">
                         <div className="w-40 h-40 bg-primary-01/10 rounded-full flex items-center justify-center">
@@ -184,76 +182,92 @@ export default function SavedPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="p-4 space-y-6">
-                    {favourites.map((fav) => (
-                        <div key={fav.id} className="bg-white rounded-[2rem] shadow-sm border border-neutrals-03 overflow-hidden mb-6">
+                // List State
+                <div className="p-4 space-y-6 pb-20">
+                    {favorites.map(({ vendor, category, startingPrice, id }) => (
+                        <div key={id} className="bg-white rounded-[2rem] shadow-sm border border-neutrals-03 overflow-hidden mb-6">
+                            {/* Image Section */}
                             <div className="relative h-72 bg-neutrals-02">
-                                {fav.vendor.isVerified && (
-                                    <span className="absolute bottom-4 left-4 bg-white text-primary-01 text-[10px] font-bold px-3 py-1.5 rounded-full z-10 uppercase tracking-widest shadow-sm">
-                                        Featured
+                                {/* Featured Badge */}
+                                {vendor.isVerified && (
+                                    <span className="absolute bottom-4 left-4 bg-white text-green-600 text-[10px] font-bold px-3 py-1.5 rounded-full z-10 uppercase tracking-widest shadow-sm">
+                                        Verified
                                     </span>
                                 )}
 
+                                {/* Heart Button */}
                                 <button
-                                    onClick={() => removeFavorite(fav.vendorId)}
-                                    className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm active:scale-95 transition-transform"
+                                    onClick={() => removeFavorite(vendor.id)}
+                                    disabled={removingId === vendor.id}
+                                    className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm active:scale-95 transition-transform disabled:opacity-50"
+                                    aria-label={`Remove ${vendor.businessName} from favorites`}
                                 >
-                                    <Heart className="text-primary-01 fill-primary-01" size={20} />
+                                    {removingId === vendor.id ? (
+                                        <Loader2 className="h-5 w-5 animate-spin text-primary-01" />
+                                    ) : (
+                                        <Heart className="text-primary-01 fill-primary-01" size={20} />
+                                    )}
                                 </button>
 
-                                {fav.vendor.coverImage || fav.vendor.profileImage ? (
+                                <div className="relative w-full h-full">
                                     <Image
-                                        src={fav.vendor.coverImage || fav.vendor.profileImage || ''}
-                                        alt={fav.vendor.businessName || 'Vendor'}
+                                        src={vendor.coverImage || vendor.profileImage || '/placeholder.jpg'}
+                                        alt={vendor.businessName || 'Vendor'}
                                         fill
                                         className="object-cover"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
+                                        priority={vendor.id === 1}
                                     />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-primary-01/20 to-primary-02/20 flex items-center justify-center">
-                                        <span className="text-4xl font-bold text-primary-01">
-                                            {fav.vendor.businessName?.[0] || 'V'}
-                                        </span>
-                                    </div>
-                                )}
+                                </div>
                             </div>
 
+                            {/* Content Section */}
                             <div className="p-5 pt-4">
                                 <div className="flex justify-between items-start mb-1">
-                                    <Link href={`/customer/vendor-profile/${fav.vendorId}`}>
-                                        <h3 className="text-xl font-bold text-foreground leading-tight tracking-tight hover:text-primary-01 transition-colors">
-                                            {fav.vendor.businessName || 'Vendor'}
-                                        </h3>
-                                    </Link>
-                                    <div className="flex items-center gap-1.5 bg-neutrals-02 px-2.5 py-1 rounded-lg shrink-0 mt-1">
-                                        <Star size={11} className="text-primary-01 fill-current" />
-                                        <span className="text-xs font-bold text-foreground">
-                                            {fav.vendor.rating ? (fav.vendor.rating / 10).toFixed(1) : '0.0'}
-                                        </span>
-                                    </div>
+                                    <h3 className="text-xl font-bold text-foreground leading-tight tracking-tight">
+                                        {vendor.businessName || 'Unnamed Vendor'}
+                                    </h3>
+                                    {(vendor.rating || vendor.rating === 0) && (
+                                        <div className="flex items-center gap-1.5 bg-neutrals-02 px-2.5 py-1 rounded-lg shrink-0 mt-1">
+                                            <Star size={11} className="text-primary-01 fill-current" />
+                                            <span className="text-xs font-bold text-foreground">
+                                                {vendor.rating.toFixed(1)}
+                                                <span className="text-neutrals-06 font-normal ml-1">
+                                                    ({vendor.reviewCount || 0})
+                                                </span>
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <p className="text-neutrals-06 text-sm mb-4 font-medium">
-                                    {fav.category?.name || 'Service'} • {fav.vendor.city || 'Uganda'}
+                                    {category?.name || 'Various Services'} • {vendor.city || 'Multiple Locations'}
                                 </p>
 
-                                {fav.startingPrice && (
-                                    <div className="flex items-baseline gap-1 mb-5">
-                                        <span className="text-lg font-bold text-foreground">
-                                            UGX {formatPrice(fav.startingPrice)}
-                                        </span>
-                                        <span className="text-sm text-neutrals-06 font-normal">/ hour</span>
-                                    </div>
-                                )}
+                                <div className="flex items-baseline gap-1 mb-5">
+                                    {startingPrice ? (
+                                        <>
+                                            <span className="text-lg font-bold text-foreground">UGX {startingPrice.toLocaleString()}</span>
+                                            <span className="text-sm text-neutrals-06 font-normal">/ hour</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-lg font-bold text-foreground">Contact for pricing</span>
+                                    )}
+                                </div>
 
+                                {/* Actions */}
                                 <div className="flex gap-3">
-                                    <Link
-                                        href={`/customer/messages?vendorId=${fav.vendorId}`}
+                                    <button 
                                         className="flex items-center justify-center gap-2 bg-neutrals-02 hover:bg-neutrals-03 text-foreground font-semibold px-6 py-3 rounded-full text-sm transition-colors min-w-[100px]"
+                                        onClick={() => toast.info('Chat feature coming soon!')}
                                     >
                                         <MessageSquare size={16} strokeWidth={2.5} />
                                         Chat
-                                    </Link>
-                                    <button className="flex items-center justify-center gap-2 bg-neutrals-02 hover:bg-neutrals-03 text-foreground font-semibold px-5 py-3 rounded-full text-sm transition-colors">
+                                    </button>
+                                    <button 
+                                        className="flex items-center justify-center gap-2 bg-neutrals-02 hover:bg-neutrals-03 text-foreground font-semibold px-5 py-3 rounded-full text-sm transition-colors"
+                                        onClick={() => toast.info('Add to Event feature coming soon!')}
+                                    >
                                         <div className="w-4 h-4 rounded-full border border-foreground flex items-center justify-center">
                                             <Plus size={10} strokeWidth={3} />
                                         </div>

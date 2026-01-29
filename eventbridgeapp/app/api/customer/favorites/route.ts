@@ -1,56 +1,19 @@
 // app/api/customer/favorites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { userFavorites, users, vendorProfiles, eventCategories } from '@/drizzle/schema';
+import { userFavorites, vendorProfiles, eventCategories } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { verifyToken } from '@/lib/jwt';
 
-async function getAuthenticatedUserId(req: NextRequest): Promise<number | null> {
-  try {
-    // Get token from cookie
-    const token = req.cookies.get('auth-token')?.value;
-    
-    console.log('Auth token present:', !!token);
+// For demo purposes - using a hardcoded user ID
+// In a real app, you'd get this from a session or token
+const DEMO_USER_ID = 1; // Change this to match your test user ID
 
-    if (!token) {
-      console.log('No auth token found');
-      return null;
-    }
-
-    // Verify token
-    const decoded = await verifyToken(token);
-    console.log('Token decoded:', decoded);
-
-    if (!decoded || !decoded.userId) {
-      console.log('Invalid token or no userId');
-      return null;
-    }
-
-    return decoded.userId;
-  } catch (error) {
-    console.error('Authentication error:', error);
-    return null;
-  }
-}
-
-// GET - Fetch all favorites for the authenticated user
+// GET - Fetch all favorites for the demo user
 export async function GET(req: NextRequest) {
   try {
     console.log('=== GET FAVORITES API CALLED ===');
 
-    const userId = await getAuthenticatedUserId(req);
-
-    if (!userId) {
-      console.log('User not authenticated');
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      );
-    }
-
-    console.log('Fetching favorites for user:', userId);
-
-    // Fetch favorites with vendor details
+    // Fetch favorites with vendor details for demo user
     const userFavoritesData = await db
       .select({
         id: userFavorites.id,
@@ -76,7 +39,7 @@ export async function GET(req: NextRequest) {
       .from(userFavorites)
       .leftJoin(vendorProfiles, eq(userFavorites.vendorId, vendorProfiles.id))
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
-      .where(eq(userFavorites.userId, userId));
+      .where(eq(userFavorites.userId, DEMO_USER_ID));
 
     console.log('Found favorites:', userFavoritesData.length);
 
@@ -105,15 +68,6 @@ export async function POST(req: NextRequest) {
   try {
     console.log('=== ADD FAVORITE API CALLED ===');
 
-    const userId = await getAuthenticatedUserId(req);
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      );
-    }
-
     const { vendorId } = await req.json();
 
     if (!vendorId) {
@@ -123,7 +77,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('Adding favorite:', { userId, vendorId });
+    console.log('Adding favorite:', { userId: DEMO_USER_ID, vendorId });
 
     // Check if already favorited
     const existing = await db
@@ -131,7 +85,7 @@ export async function POST(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, userId),
+          eq(userFavorites.userId, DEMO_USER_ID),
           eq(userFavorites.vendorId, vendorId)
         )
       )
@@ -148,7 +102,7 @@ export async function POST(req: NextRequest) {
     const [newFavorite] = await db
       .insert(userFavorites)
       .values({
-        userId: userId,
+        userId: DEMO_USER_ID,
         vendorId: vendorId,
         createdAt: new Date(),
       })
@@ -181,15 +135,6 @@ export async function DELETE(req: NextRequest) {
   try {
     console.log('=== DELETE FAVORITE API CALLED ===');
 
-    const userId = await getAuthenticatedUserId(req);
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const vendorId = searchParams.get('vendorId');
 
@@ -200,14 +145,14 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    console.log('Removing favorite:', { userId, vendorId });
+    console.log('Removing favorite:', { userId: DEMO_USER_ID, vendorId });
 
     // Delete the favorite
     const deleted = await db
       .delete(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, userId),
+          eq(userFavorites.userId, DEMO_USER_ID),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       )
