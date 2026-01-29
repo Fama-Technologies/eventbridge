@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
             .orderBy(desc(messageThreads.lastMessageTime));
 
         // Format the response to match the frontend expectations
-        const formattedConversations = threads.map(thread => {
+        const formattedConversations = threads.map((thread: { customerName: any; customerLastName: any; id: any; customerImage: any; bookingId: any; eventName: any; eventType: any; lastMessage: any; lastMessageTime: string | number | Date; bookingStatus: any; unreadCount: any; eventDate: string | number | Date; }) => {
             const customerName = `${thread.customerName} ${thread.customerLastName}`.trim();
 
             return {
