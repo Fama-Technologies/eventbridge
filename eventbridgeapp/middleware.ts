@@ -22,6 +22,7 @@ export async function middleware(request: NextRequest) {
         '/api/auth',
         '/api/login',
         '/api/signup',
+        '/api/categories',
         '/api/public',
         '/api/uploadthing',
     ];

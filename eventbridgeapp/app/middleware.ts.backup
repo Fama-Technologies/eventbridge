@@ -10,9 +10,12 @@ export function middleware(request: NextRequest) {
     '/login',
     '/signup',
     '/forgot-password',
+    '/categories',
+    '/category',
     '/api/login',
     '/api/signup',
     '/api/auth',
+    '/api/categories',
     '/api/uploadthing', // If you're using uploadthing
   ];
 
@@ -62,11 +65,13 @@ export const config = {
     /*
      * Match all request paths except for the ones starting with:
      * - api/auth (NextAuth.js API routes)
+     * - api/categories (public categories API)
+     * - api/public (public API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api/auth|api/categories|api/public|_next/static|_next/image|favicon.ico|public).*)',
   ],
 };

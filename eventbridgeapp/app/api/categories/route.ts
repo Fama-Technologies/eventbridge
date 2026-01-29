@@ -146,44 +146,20 @@ const CATEGORY_TEMPLATES = [
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch vendor counts for each category from the database
-    const categoriesWithCounts = await Promise.all(
-      CATEGORY_TEMPLATES.map(async (category) => {
-        try {
-          // Count vendors that have services matching this category
-          const result = await db
-            .select({
-              count: sql<number>`COUNT(DISTINCT ${vendorProfiles.id})`,
-            })
-            .from(vendorProfiles)
-            .leftJoin(vendorServices, eq(vendorProfiles.id, vendorServices.vendorId))
-            .where(
-              or(
-                ilike(vendorServices.name, `%${category.slug.replace('-', ' ')}%`),
-                ilike(vendorServices.name, `%${category.name}%`),
-                ilike(vendorProfiles.businessName, `%${category.name}%`)
-              )
-            );
+    console.log('📊 Categories API called');
+    console.log('📊 Total category templates:', CATEGORY_TEMPLATES.length);
 
-          const vendorCount = result[0]?.count ? Number(result[0].count) : 0;
+    // Return categories with vendorCount set to 0 for now
+    // We can add vendor counting later once we confirm categories are displaying
+    const categoriesWithCounts = CATEGORY_TEMPLATES.map(category => ({
+      ...category,
+      vendorCount: 0
+    }));
 
-          return {
-            ...category,
-            vendorCount,
-          };
-        } catch (error) {
-          console.error(`Error counting vendors for category ${category.slug}:`, error);
-          return {
-            ...category,
-            vendorCount: 0,
-          };
-        }
-      })
-    );
-
+    console.log('📊 Returning categories:', categoriesWithCounts.length);
     return NextResponse.json(categoriesWithCounts);
   } catch (error) {
-    console.error('Get categories error:', error);
+    console.error('❌ Get categories error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch categories' },
       { status: 500 }
