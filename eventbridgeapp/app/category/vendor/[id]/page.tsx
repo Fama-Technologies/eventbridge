@@ -23,7 +23,53 @@ import {
 import { CategoryHeader, PlanningEventCTA, CategoryFooter } from '@/components/category';
 import { InquiryModal } from '@/components/category/inquiry-modal';
 
-// ... (existing interfaces)
+// Interfaces
+interface VendorData {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  description: string;
+  yearsExperience: number;
+  rating: number;
+  reviewCount: number;
+  images: string[];
+  packages: any[];
+  portfolio: PortfolioItem[];
+  reviews: Review[];
+}
+
+type TabType = 'packages' | 'overview' | 'reviews' | 'portfolio';
+
+interface Review {
+  id: string;
+  author: string;
+  avatar: string;
+  location: string;
+  date: string;
+  text: string;
+  rating: number;
+}
+
+interface PortfolioItem {
+  id: number;
+  src: string;
+  category: string;
+}
+
+interface SimilarVendorCardProps {
+  vendor: {
+    id: string;
+    name: string;
+    category: string;
+    location: string;
+    availability: string;
+    price: string;
+    priceUnit: string;
+    rating: number;
+    images: string[];
+  };
+}
 
 export default function VendorProfilePage() {
   const params = useParams();
@@ -39,99 +85,90 @@ export default function VendorProfilePage() {
   // State for similar vendors
   const [similarVendors, setSimilarVendors] = useState<any[]>([]);
 
-  // ... (useEffect and loading checks)
+  // Add your useEffect and other logic here
 
-  {/* Action Buttons */ }
-              <button 
-                onClick={() => setShowInquiryModal(true)}
-                className="w-full bg-primary-01 text-shades-white py-3 rounded-lg font-medium mb-3 hover:bg-primary-02 transition-colors"
-              >
-                Make Inquiry
-              </button>
-
-              <button 
-                onClick={() => setShowInquiryModal(true)}
-                className="w-full border border-neutrals-03  text-foreground py-3 rounded-lg font-medium mb-4 hover:border-foreground transition-colors flex items-center justify-center gap-2"
-              >
-                <MessageSquare size={16} />
-                Chat with Vendor
-              </button>
-
-              <p className="text-center text-xs text-neutrals-06 mb-4">
-                🔒 You won&apos;t be charged yet
-              </p>
-
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <Shield size={14} className="text-primary-01" />
-                <span className="text-neutrals-07">Verified by EventBridge</span>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-neutrals-03 ">
-                <button className="flex items-center gap-2 text-neutrals-06 text-sm hover:text-foreground transition-colors">
-                  <Flag size={14} />
-                  Report this listing
-                </button>
-              </div>
-            </div >
-          </div >
-        </div >
-
-    {/* Inquiry Modal */ }
-  {
-    vendor && (
-      <InquiryModal
-        isOpen={showInquiryModal}
-        onClose={() => setShowInquiryModal(false)}
-        vendorName={vendor.name}
-        vendorId={vendor.id}
-      />
-    )
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
-  {/* Similar Vendors Section */ }
+  if (!vendor) {
+    return <div>Vendor not found</div>;
+  }
 
-  <section className="mt-16 mb-8">
-    <h2 className="text-xl font-semibold text-foreground mb-6">
-      Similar vendors in {vendor.location}
-    </h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {similarVendors.length > 0 ? (
-        similarVendors.map((similarVendor) => (
-          <SimilarVendorCard key={similarVendor.id} vendor={similarVendor} />
-        ))
-      ) : (
-        <p className="text-neutrals-06 col-span-full">No similar vendors found.</p>
+  return (
+    <div>
+      {/* Action Buttons */}
+      <div>
+        <button 
+          onClick={() => setShowInquiryModal(true)}
+          className="w-full bg-primary-01 text-shades-white py-3 rounded-lg font-medium mb-3 hover:bg-primary-02 transition-colors"
+        >
+          Make Inquiry
+        </button>
+
+        <button 
+          onClick={() => setShowInquiryModal(true)}
+          className="w-full border border-neutrals-03  text-foreground py-3 rounded-lg font-medium mb-4 hover:border-foreground transition-colors flex items-center justify-center gap-2"
+        >
+          <MessageSquare size={16} />
+          Chat with Vendor
+        </button>
+
+        <p className="text-center text-xs text-neutrals-06 mb-4">
+          🔒 You won&apos;t be charged yet
+        </p>
+
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <Shield size={14} className="text-primary-01" />
+          <span className="text-neutrals-07">Verified by EventBridge</span>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-neutrals-03 ">
+          <button className="flex items-center gap-2 text-neutrals-06 text-sm hover:text-foreground transition-colors">
+            <Flag size={14} />
+            Report this listing
+          </button>
+        </div>
+      </div>
+
+      {/* Inquiry Modal */}
+      {vendor && (
+        <InquiryModal
+          isOpen={showInquiryModal}
+          onClose={() => setShowInquiryModal(false)}
+          vendorName={vendor.name}
+          vendorId={vendor.id}
+        />
       )}
+
+      {/* Similar Vendors Section */}
+      <section className="mt-16 mb-8">
+        <h2 className="text-xl font-semibold text-foreground mb-6">
+          Similar vendors in {vendor.location}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {similarVendors.length > 0 ? (
+            similarVendors.map((similarVendor) => (
+              <SimilarVendorCard key={similarVendor.id} vendor={similarVendor} />
+            ))
+          ) : (
+            <p className="text-neutrals-06 col-span-full">No similar vendors found.</p>
+          )}
+        </div>
+      </section>
+
+      {/* Planning Event CTA */}
+      <section className="my-12">
+        <PlanningEventCTA />
+      </section>
+
+      {/* Footer */}
+      <CategoryFooter />
     </div>
-  </section>
-
-  {/* Planning Event CTA */ }
-  <section className="my-12">
-    <PlanningEventCTA />
-  </section>
-      </main >
-
-    {/* Footer */ }
-    < CategoryFooter />
-    </div >
   );
 }
 
 // Similar Vendor Card Component
-interface SimilarVendorCardProps {
-  vendor: {
-    id: string;
-    name: string;
-    category: string;
-    location: string;
-    availability: string;
-    price: string;
-    priceUnit: string;
-    rating: number;
-    images: string[];
-  };
-}
-
 function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -203,6 +240,7 @@ function SimilarVendorCard({ vendor }: SimilarVendorCardProps) {
     </Link>
   );
 }
+
 // Overview Tab Component
 function OverviewTab({ vendor }: { vendor: VendorData }) {
   const [expanded, setExpanded] = useState(false);
@@ -229,16 +267,6 @@ function OverviewTab({ vendor }: { vendor: VendorData }) {
 }
 
 // Reviews Tab Component
-interface Review {
-  id: string;
-  author: string;
-  avatar: string;
-  location: string;
-  date: string;
-  text: string;
-  rating: number;
-}
-
 function ReviewsTab({ reviews = [], reviewCount }: { reviews?: Review[]; reviewCount: number }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -301,13 +329,6 @@ function ReviewsTab({ reviews = [], reviewCount }: { reviews?: Review[]; reviewC
 }
 
 // Portfolio Tab Component
-// Portfolio Tab Component
-interface PortfolioItem {
-  id: number;
-  src: string;
-  category: string;
-}
-
 function PortfolioTab({ portfolio = [] }: { portfolio?: PortfolioItem[] }) {
   // Extract unique categories from portfolio or default to empty
   const categories = ['All Photos', ...Array.from(new Set(portfolio.map((item) => item.category)))];
