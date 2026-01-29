@@ -13,13 +13,13 @@ async function getCurrentUser() {
   const authToken = cookieStore.get('auth-token')?.value;
   const sessionToken = cookieStore.get('session')?.value;
 
-  console.log('Auth token exists:', !!authToken);
-  console.log('Session token exists:', !!sessionToken);
+  console.log('Favorites API - Auth token exists:', !!authToken);
+  console.log('Favorites API - Session token exists:', !!sessionToken);
 
   if (authToken) {
     try {
       const payload = await verifyToken(authToken);
-      console.log('Token payload:', payload);
+      console.log('Favorites API - Token payload:', payload);
       
       if (payload && payload.userId) {
         const [user] = await db
@@ -28,20 +28,24 @@ async function getCurrentUser() {
           .where(eq(users.id, payload.userId as number))
           .limit(1);
         
-        console.log('User found:', user ? { id: user.id, accountType: user.accountType } : null);
+        console.log('Favorites API - User from token:', user ? { id: user.id, accountType: user.accountType } : null);
         return user;
       }
     } catch (error) {
-      console.error('Token verification failed:', error);
+      console.error('Favorites API - Token verification failed:', error);
     }
   }
 
   if (sessionToken) {
+    console.log('Favorites API - Checking session token...');
     const [session] = await db
       .select()
       .from(sessions)
       .where(eq(sessions.token, sessionToken))
       .limit(1);
+
+    console.log('Favorites API - Session found:', !!session);
+    console.log('Favorites API - Session valid:', session && new Date(session.expiresAt) >= new Date());
 
     if (session && new Date(session.expiresAt) >= new Date()) {
       const [user] = await db
@@ -50,37 +54,40 @@ async function getCurrentUser() {
         .where(eq(users.id, session.userId))
         .limit(1);
       
-      console.log('User found via session:', user ? { id: user.id, accountType: user.accountType } : null);
+      console.log('Favorites API - User from session:', user ? { id: user.id, accountType: user.accountType } : null);
       return user;
     }
   }
 
+  console.log('Favorites API - No user found');
   return null;
 }
 
-// GET - Fetch all favorites for the logged-in customer
 export async function GET(req: NextRequest) {
   try {
+    console.log('=== Favorites GET Request ===');
     const user = await getCurrentUser();
 
-    console.log('GET /api/customer/favorites - User:', user ? { id: user.id, accountType: user.accountType } : 'null');
+    console.log('Favorites API - Final user:', user ? { id: user.id, accountType: user.accountType } : 'null');
 
     if (!user) {
+      console.log('Favorites API - Returning 401 Unauthorized');
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Accept both 'CUSTOMER' and 'C' as valid customer account types
     const validCustomerTypes = ['CUSTOMER', 'C'];
     if (!validCustomerTypes.includes(user.accountType)) {
-      console.log('Invalid account type:', user.accountType);
+      console.log('Favorites API - Invalid account type:', user.accountType);
       return NextResponse.json(
         { success: false, error: 'Only customers can access favorites' },
         { status: 403 }
       );
     }
+
+    console.log('Favorites API - Fetching favorites for user:', user.id);
 
     const favoritesData = await db
       .select({
@@ -106,7 +113,7 @@ export async function GET(req: NextRequest) {
       .where(eq(userFavorites.userId, user.id))
       .orderBy(desc(userFavorites.createdAt));
 
-    console.log('Favorites found:', favoritesData.length);
+    console.log('Favorites API - Found favorites:', favoritesData.length);
 
     const formattedFavorites = favoritesData.map((fav: { favoriteId: any; favoriteVendorId: any; favoriteCreatedAt: { toISOString: () => any; }; vendorId: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; categoryId: any; categoryName: any; hourlyRate: any; }) => ({
       id: fav.favoriteId,
@@ -137,7 +144,7 @@ export async function GET(req: NextRequest) {
       favorites: formattedFavorites,
     });
   } catch (error) {
-    console.error('Error fetching favorites:', error);
+    console.error('Favorites API - Error fetching favorites:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -145,7 +152,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - Add a vendor to favorites
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -157,7 +163,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Accept both 'CUSTOMER' and 'C' as valid customer account types
     const validCustomerTypes = ['CUSTOMER', 'C'];
     if (!validCustomerTypes.includes(user.accountType)) {
       return NextResponse.json(
@@ -176,7 +181,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if vendor exists
     const [vendor] = await db
       .select()
       .from(vendorProfiles)
@@ -190,7 +194,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if already favorited
     const [existingFavorite] = await db
       .select()
       .from(userFavorites)
@@ -209,7 +212,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create favorite
     const [newFavorite] = await db
       .insert(userFavorites)
       .values({
@@ -219,7 +221,6 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    // Fetch the complete favorite data with vendor and category info
     const [favoriteData] = await db
       .select({
         favoriteId: userFavorites.id,
@@ -280,7 +281,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE - Remove a vendor from favorites
 export async function DELETE(req: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -292,7 +292,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Accept both 'CUSTOMER' and 'C' as valid customer account types
     const validCustomerTypes = ['CUSTOMER', 'C'];
     if (!validCustomerTypes.includes(user.accountType)) {
       return NextResponse.json(
@@ -311,7 +310,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Check if favorite exists
     const [existingFavorite] = await db
       .select()
       .from(userFavorites)
@@ -330,7 +328,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Delete favorite
     await db
       .delete(userFavorites)
       .where(

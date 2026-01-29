@@ -17,10 +17,10 @@ export default function BottomNav() {
             active: pathname === '/customer/dashboard' || pathname === '/customer/landingpage',
         },
         {
-            label: 'Favourites',
+            label: 'Favorites',
             icon: Heart,
-            href: '/customer/favourites',
-            active: pathname.includes('/customer/favourites'),
+            href: '/customer/favorites',
+            active: pathname.includes('/customer/favorites'),
         },
         {
             label: 'Events',
