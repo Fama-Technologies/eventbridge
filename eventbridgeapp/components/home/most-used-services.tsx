@@ -64,10 +64,12 @@ export default function MostUsedServices() {
             <p className="text-neutrals-06 text-lg">No featured services available at the moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
+          <div className="overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
+            <div className="grid grid-flow-col auto-cols-[minmax(220px,2fr)] gap-4">
+              {services.map((service) => (
+                <ServiceCard key={service.id} {...service} />
+              ))}
+            </div>
           </div>
         )}
       </div>

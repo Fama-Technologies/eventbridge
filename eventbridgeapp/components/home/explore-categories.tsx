@@ -30,8 +30,8 @@ export default function ExploreCategories() {
         const filtered =
           Array.isArray(data)
             ? data.filter((category) =>
-                eventTypeSlugs.has(String(category.slug || '').toLowerCase())
-              )
+              eventTypeSlugs.has(String(category.slug || '').toLowerCase())
+            )
             : [];
         setCategories(filtered.slice(0, 4));
       } catch (error) {
@@ -66,16 +66,18 @@ export default function ExploreCategories() {
             <p className="text-neutrals-06 text-lg">No categories found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((cat) => (
-              <CategoryCard
-                key={cat.slug}
-                title={cat.name}
-                subtitle={cat.description}
-                image={cat.imageUrl}
-                href={`/category/${cat.slug}`}
-              />
-            ))}
+          <div className="overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
+            <div className="grid grid-flow-col auto-cols-[minmax(220px,1fr)] gap-4">
+              {categories.map((cat) => (
+                <CategoryCard
+                  key={cat.slug}
+                  title={cat.name}
+                  subtitle={cat.description}
+                  image={cat.imageUrl}
+                  href={`/category/${cat.slug}`}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

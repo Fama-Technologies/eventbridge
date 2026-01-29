@@ -18,7 +18,8 @@ export default function Header() {
   const user = session?.user;
 
   const pathname = usePathname();
-  const isHome = pathname === '/';
+  const pathnameSafe = pathname ?? '';
+  const isHome = pathnameSafe === '/';
   const [isScrolled, setIsScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +94,7 @@ export default function Header() {
           {/* Find Vendors links to /categories page */}
           <Link
             href="/categories"
-            className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100 ${pathname.startsWith('/categories') || pathname.startsWith('/category') || pathname.startsWith('/customer/vendor') || pathname.startsWith('/customer/dashboard/find-vendors')
+            className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100 ${pathnameSafe.startsWith('/categories') || pathnameSafe.startsWith('/category') || pathnameSafe.startsWith('/customer/vendor') || pathnameSafe.startsWith('/customer/dashboard/find-vendors')
               ? 'after:scale-x-100'
               : 'after:scale-x-0'
               }`}
@@ -102,15 +103,7 @@ export default function Header() {
           </Link>
 
 
-          {/* "Become a Planner" - Hide for signed-in users */}
-          {!user && (
-            <Link
-              href="/signup?type=customer"
-              className={`${textColorClass} relative transition-colors duration-200 font-medium after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100`}
-            >
-              Become a Planner
-            </Link>
-          )}
+
         </nav>
 
         {/* Right Section */}
@@ -120,7 +113,7 @@ export default function Header() {
 
 
           {/* Create Account */}
-          {!user && (
+          {mounted && !user && (
             <Link
               href="/signup"
               className="hidden sm:block px-4 py-2 rounded font-semibold transition-all duration-200 bg-primary-01 text-white hover:opacity-90 shadow-md shadow-primary-01/20"
@@ -130,7 +123,7 @@ export default function Header() {
           )}
 
           {/* Login Button - Hide if logged in */}
-          {!user && (
+          {mounted && !user && (
             <Link
               href="/login"
               className="hidden sm:block px-4 py-2 rounded font-semibold border transition-all duration-200 text-primary-01 border-primary-01 hover:opacity-90 hover:bg-primary-01 hover:text-shades-white"
@@ -140,7 +133,7 @@ export default function Header() {
           )}
 
           {/* User Avatar & Dropdown */}
-          {user && (
+          {mounted && user && (
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -261,7 +254,7 @@ export default function Header() {
 
 
           {/* Become a Planner */}
-          {!user && (
+          {mounted && !user && (
             <Link
               href="/signup?type=customer"
               className="block py-2 text-shades-black transition-colors hover:text-primary-01"
@@ -275,7 +268,7 @@ export default function Header() {
 
 
           {/* Create Account Mobile */}
-          {!user && (
+          {mounted && !user && (
             <Link
               href="/signup"
               className="block w-full py-2 px-4 rounded font-semibold text-center bg-primary-01 text-shades-white transition-opacity hover:opacity-90"
@@ -286,7 +279,7 @@ export default function Header() {
           )}
 
           {/* Login Button (Mobile) */}
-          {!user && (
+          {mounted && !user && (
             <Link
               href="/login"
               className="block py-2 px-4 rounded-lg font-semibold text-center border border-primary-01 text-primary-01 transition-opacity hover:opacity-90"
@@ -296,7 +289,7 @@ export default function Header() {
           )}
 
           {/* Mobile Authenticated Links */}
-          {user && (
+          {mounted && user && (
             <>
               <Link
                 href={getDashboardLink()}

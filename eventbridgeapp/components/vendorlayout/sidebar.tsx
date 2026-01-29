@@ -12,13 +12,14 @@ import {
     LogOut,
     PlusCircle,
     ChevronDown,
-    BarChart3
+    BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useUpgradeModal } from '@/hooks/useUpgradeModal';
+import { signOut } from 'next-auth/react';
 
 const navigation = [
     { name: 'Dashboard', href: '/vendor', icon: LayoutDashboard },
@@ -80,15 +81,15 @@ export default function Sidebar() {
     const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
+            // Clear custom auth-token if it exists
             await fetch('/api/logout', { method: 'POST' });
-            toast.success('Logged out successfully');
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 500);
         } catch (error) {
-            console.error('Logout failed', error);
-            toast.error('Logout failed');
+            console.error('Failed to clear custom token', error);
         }
+        // standard next-auth logout
+        await signOut({ redirect: false });
+        // Force hard reload to login page
+        window.location.href = '/login';
     };
 
     const secondaryNavigation = [

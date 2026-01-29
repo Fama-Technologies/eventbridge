@@ -8,45 +8,12 @@ import { verifyToken } from '@/lib/jwt';
 // Mark this route as dynamic to prevent static generation
 export const dynamic = 'force-dynamic';
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-options";
+
 async function getCurrentUser() {
-  const cookieStore = await cookies();
-  const authToken = cookieStore.get('auth-token')?.value;
-  const sessionToken = cookieStore.get('session')?.value;
-
-  if (authToken) {
-    try {
-      const payload = await verifyToken(authToken);
-      if (payload && payload.userId) {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, payload.userId as number))
-          .limit(1);
-        return user;
-      }
-    } catch (error) {
-      console.error('Token verification failed:', error);
-    }
-  }
-
-  if (sessionToken) {
-    const [session] = await db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.token, sessionToken))
-      .limit(1);
-
-    if (session && new Date(session.expiresAt) >= new Date()) {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
-      return user;
-    }
-  }
-
-  return null;
+  const session = await getServerSession(authOptions);
+  return session?.user;
 }
 
 export async function GET() {
@@ -62,10 +29,11 @@ export async function GET() {
     }
 
     // Get vendor profile
+    // session.user.id is string, but db expects number
     const [vendorProfile] = await db
       .select()
       .from(vendorProfiles)
-      .where(eq(vendorProfiles.userId, user.id))
+      .where(eq(vendorProfiles.userId, parseInt(user.id)))
       .limit(1);
 
     if (!vendorProfile) {
@@ -74,7 +42,7 @@ export async function GET() {
 
     // Calculate statistics
     const stats = await calculateVendorStats(vendorProfile.id);
-    
+
     // Calculate profile completion
     const profileCompletion = calculateProfileCompletion(vendorProfile);
 
@@ -130,7 +98,7 @@ export async function GET() {
       const activities = [];
       const clientName = `${item.client.firstName} ${item.client.lastName}`;
       const eventName = item.event.title || 'an event';
-      
+
       // Booking created activity
       activities.push({
         id: `booking_${item.booking.id}`,
@@ -140,9 +108,9 @@ export async function GET() {
       });
 
       // If booking was recently updated
-      if (item.booking.updatedAt && 
-          new Date(item.booking.updatedAt).getTime() > thirtyDaysAgo.getTime() &&
-          item.booking.status === 'confirmed') {
+      if (item.booking.updatedAt &&
+        new Date(item.booking.updatedAt).getTime() > thirtyDaysAgo.getTime() &&
+        item.booking.status === 'confirmed') {
         activities.push({
           id: `confirmed_${item.booking.id}`,
           type: 'booking_confirmed' as const,
@@ -156,8 +124,13 @@ export async function GET() {
       .slice(0, 10);
 
     // Construct vendor info with fallbacks
-    const businessName = vendorProfile.businessName || `${user.firstName} ${user.lastName}`;
-    const location = vendorProfile.city && vendorProfile.state 
+    // Handle name parsing safely from session.user.name (which is all next-auth guarantees)
+    const fullName = user.name || "User";
+    const firstName = fullName.split(" ")[0];
+    const lastName = fullName.split(" ").slice(1).join(" ") || "";
+
+    const businessName = vendorProfile.businessName || fullName;
+    const location = vendorProfile.city && vendorProfile.state
       ? `${vendorProfile.city}, ${vendorProfile.state}`
       : vendorProfile.address || vendorProfile.city || vendorProfile.state;
 
@@ -285,12 +258,12 @@ function calculateProfileCompletion(vendor: any): number {
     vendor.state,
     vendor.profileImage,
   ];
-  
+
   // Add extra weight for verification
   const totalFields = fields.length + 1; // +1 for verification
-  const filledFields = fields.filter(field => 
+  const filledFields = fields.filter(field =>
     field && field.toString().trim() !== ''
   ).length + (vendor.isVerified ? 1 : 0);
-  
+
   return Math.round((filledFields / totalFields) * 100);
 }

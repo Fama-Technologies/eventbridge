@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Heart, Calendar, User, MessageSquare } from 'lucide-react';
+import { Home, Heart, MessageSquare, PartyPopper, CircleUser } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function BottomNav() {
@@ -17,30 +17,36 @@ export default function BottomNav() {
             active: pathname === '/customer/dashboard' || pathname === '/customer/landingpage',
         },
         {
-            label: 'Saved',
+            label: 'Favourites',
             icon: Heart,
-            href: '/customer/saved',
-            active: pathname.includes('/customer/saved'),
+            href: '/customer/favourites',
+            active: pathname.includes('/customer/favourites'),
         },
         {
-            label: 'Bookings',
-            icon: Calendar,
-            href: '/customer/bookings',
-            active: pathname.includes('/customer/bookings'),
+            label: 'Events',
+            icon: PartyPopper,
+            href: '/customer/events',
+            active: pathname.includes('/customer/events'),
         },
         {
-            label: 'Chat',
+            label: 'Messages',
             icon: MessageSquare,
-            href: '/customer/chat',
-            active: pathname.includes('/customer/chat'),
+            href: '/customer/messages',
+            active: pathname.includes('/customer/messages'),
         },
         {
             label: 'Profile',
-            icon: User,
+            icon: CircleUser,
             href: '/customer/profile',
             active: pathname.includes('/customer/profile'),
         },
     ];
+
+    const isChatDetail = pathname.startsWith('/customer/messages/') && pathname.split('/').length > 3;
+
+    if (isChatDetail) {
+        return null;
+    }
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-shades-white border-t border-neutrals-03 pb-safe-area-inset-bottom z-50">

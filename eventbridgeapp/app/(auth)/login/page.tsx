@@ -48,17 +48,30 @@ export default function LoginPage() {
         // Determine redirect based on account type or use callback
         let redirectUrl = callbackUrl;
 
-        if (callbackUrl === '/' && session?.user?.accountType) {
-          // Only override the default '/' redirect
-          if (session.user.accountType === 'CUSTOMER') {
-            redirectUrl = '/customer/dashboard';
-          } else if (session.user.accountType === 'VENDOR') {
-            redirectUrl = '/vendor';
-          } else if (session.user.accountType === 'ADMIN') {
-            redirectUrl = '/admin/dashboard';
+
+        if (session?.user?.accountType) {
+          const type = session.user.accountType;
+
+          // Force correct dashboard if:
+          // 1. callbackUrl is generic root/dashboard
+          // 2. callbackUrl is for a different role (e.g. Customer trying to go to /vendor)
+          const isGeneric = callbackUrl === '/' || callbackUrl === '/dashboard';
+          const isCustomerGoingToVendor = type === 'CUSTOMER' && callbackUrl.includes('/vendor');
+          const isVendorGoingToCustomer = type === 'VENDOR' && callbackUrl.includes('/customer');
+
+          if (isGeneric || isCustomerGoingToVendor || isVendorGoingToCustomer) {
+            console.log("Redirect override triggered. conditions:", { isGeneric, isCustomerGoingToVendor, isVendorGoingToCustomer });
+            if (type === 'CUSTOMER') {
+              redirectUrl = '/customer/dashboard';
+            } else if (type === 'VENDOR') {
+              redirectUrl = '/vendor';
+            } else if (type === 'ADMIN') {
+              redirectUrl = '/admin/dashboard';
+            }
           }
         }
 
+        console.log("FINAL Redirecting to:", redirectUrl);
         // Force a hard navigation to ensure middleware picks up new cookies
         window.location.href = redirectUrl;
       }

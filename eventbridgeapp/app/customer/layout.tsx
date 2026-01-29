@@ -9,7 +9,6 @@ export default function CustomerLayout({
         <div className="min-h-screen bg-neutrals-01 flex flex-col">
             <main className="flex-1 pb-20">
                 {children}
-                
             </main>
             <BottomNav />
         </div>

@@ -98,14 +98,14 @@ export const sessions = pgTable('sessions', {
 /* ===================== DELETED ACCOUNTS AUDIT ===================== */
 export const deletedAccounts = pgTable('deleted_accounts', {
   id: serial('id').primaryKey(),
-  
+
   userId: integer('user_id').notNull(), // Store for reference - no FK constraint
   email: text('email').notNull(),
   accountType: text('account_type').notNull(),
-  
+
   reason: text('reason'),
   details: text('details'),
-  
+
   deletedAt: timestamp('deleted_at').defaultNow().notNull(),
 }, (table) => {
   return {
@@ -970,6 +970,39 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
+/* ===================== USER FAVORITES ===================== */
+export const userFavorites = pgTable('user_favorites', {
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
+  vendorId: integer('vendor_id')
+    .notNull()
+    .references(() => vendorProfiles.id, { onDelete: 'cascade' }),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userIdIdx: index('user_favorites_user_id_idx').on(table.userId),
+    vendorIdIdx: index('user_favorites_vendor_id_idx').on(table.vendorId),
+    uniqueUserVendor: unique('user_favorites_unique_user_vendor')
+      .on(table.userId, table.vendorId),
+  };
+});
+
+export const userFavoritesRelations = relations(userFavorites, ({ one }) => ({
+  user: one(users, {
+    fields: [userFavorites.userId],
+    references: [users.id],
+  }),
+  vendor: one(vendorProfiles, {
+    fields: [userFavorites.vendorId],
+    references: [vendorProfiles.id],
+  }),
+}));
+
 /* ===================== TYPES ===================== */
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -1048,3 +1081,6 @@ export type NewInvoice = typeof invoices.$inferInsert;
 
 export type Review = typeof reviews.$inferSelect;
 export type NewReview = typeof reviews.$inferInsert;
+
+export type UserFavorite = typeof userFavorites.$inferSelect;
+export type NewUserFavorite = typeof userFavorites.$inferInsert;

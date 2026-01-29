@@ -16,7 +16,7 @@ const mockFavourites = [
         price: '1,200,000',
         unit: 'event',
         rating: 4.91,
-        image: '/images/royal-touch-decor.jpg', // Placeholder
+        image: '/categories/dec.jpg',
         isFeatured: true,
     },
     {
@@ -27,7 +27,7 @@ const mockFavourites = [
         price: '600,000',
         unit: 'day',
         rating: 4.8,
-        image: '/images/echo-beats.jpg', // Placeholder
+        image: '/categories/djs.jpg',
         isFeatured: false,
     },
 ];
@@ -36,7 +36,10 @@ export default function SavedPage() {
     const router = useRouter();
     const [favourites, setFavourites] = useState(mockFavourites);
 
-    // Toggle empty state for demonstration if needed, or just handle empty array
+    const removeFavorite = (id: string) => {
+        setFavourites((prev) => prev.filter((f) => f.id !== id));
+    };
+
     const isEmpty = favourites.length === 0;
 
     return (
@@ -58,19 +61,19 @@ export default function SavedPage() {
             </div>
 
             {isEmpty ? (
-                // Empty State (Image 2)
+                // Empty State
                 <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
                     <div className="relative mb-8">
                         <div className="w-40 h-40 bg-primary-01/10 rounded-full flex items-center justify-center">
                             <Heart className="w-20 h-20 text-primary-01" strokeWidth={1.5} />
                         </div>
                         <div className="absolute top-0 right-0 w-8 h-8 bg-primary-01/30 rounded-full" />
-                        <div className="absolute bottom-4 left-2 w-6 h-6 bg-primary-01/20 rounded-full" />
+                        <div className="absolute bottom-4 left-2 w-6 h-6 bg-blue-200 rounded-full" />
                     </div>
 
                     <h2 className="text-2xl font-bold text-foreground mb-3">No favourite vendors yet</h2>
                     <p className="text-neutrals-06 mb-8 max-w-xs mx-auto">
-                        Start exploring to build you dream event team. Save the ones you like here!
+                        Start exploring to build your dream event team. Save the ones you like here!
                     </p>
 
                     <Link
@@ -81,7 +84,7 @@ export default function SavedPage() {
                     </Link>
                 </div>
             ) : (
-                // List State (Image 1)
+                // List State
                 <div className="p-4 space-y-6">
                     {favourites.map((vendor) => (
                         <div key={vendor.id} className="bg-white rounded-[2rem] shadow-sm border border-neutrals-03 overflow-hidden mb-6">
@@ -95,17 +98,18 @@ export default function SavedPage() {
                                 )}
 
                                 {/* Heart Button */}
-                                <button className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm active:scale-95 transition-transform">
-                                    <Heart className="text-primary-01" size={20} />
+                                <button
+                                    onClick={() => removeFavorite(vendor.id)}
+                                    className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm active:scale-95 transition-transform"
+                                >
+                                    <Heart className="text-primary-01 fill-primary-01" size={20} />
                                 </button>
 
-                                <img
+                                <Image
                                     src={vendor.image}
                                     alt={vendor.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1519225421980-715cb0202128?q=80&w=1000&auto=format&fit=crop'; // Fallback
-                                    }}
+                                    fill
+                                    className="object-cover"
                                 />
                             </div>
 

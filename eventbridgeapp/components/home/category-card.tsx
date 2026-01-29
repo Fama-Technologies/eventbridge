@@ -39,7 +39,7 @@ export default function CategoryCard({
         setIsLoading(true);
 
         const response = await fetch(
-          `/api/public/vendors/by-category?categoryId=${categoryId}`
+          `/api/public/by-category?categoryId=${categoryId}`
         );
 
         if (!response.ok) {

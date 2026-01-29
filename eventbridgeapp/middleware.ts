@@ -40,12 +40,27 @@ export async function middleware(request: NextRequest) {
         secret: process.env.NEXTAUTH_SECRET,
     });
 
+    console.log(`Middleware Debug: Path=${pathname}, TokenExists=${!!token}, AccountType=${token?.accountType}`);
+
     // If no token and trying to access protected route, redirect to login
     if (!token) {
         console.log(`Middleware: No token found, redirecting to login from ${pathname}`);
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('callbackUrl', pathname);
         return NextResponse.redirect(loginUrl);
+    }
+
+    // Check for generic dashboard access
+    if (pathname === '/dashboard') {
+        if (token.accountType === 'VENDOR') {
+            return NextResponse.redirect(new URL('/vendor', request.url));
+        } else if (token.accountType === 'CUSTOMER') {
+            return NextResponse.redirect(new URL('/customer/dashboard', request.url));
+        } else if (token.accountType === 'ADMIN') {
+            return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+        }
+        // If account type is unknown or not set, maybe redirect to home or keep as is (though dashboard likely 404s)
+        return NextResponse.redirect(new URL('/', request.url));
     }
 
     // Check account type for customer routes

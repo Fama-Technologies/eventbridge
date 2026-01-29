@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, ArrowRight, Sun } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Search } from "lucide-react";
 import { useTheme } from '@/providers/theme-provider';
-
+import { usePathname } from 'next/navigation';
 
 const TABS = [
   { name: "Find Vendors", href: "/customer/dashboard/find-vendors" },
@@ -14,20 +14,13 @@ const TABS = [
   { name: "My Events", href: "/customer/dashboard/my-events" },
 ];
 
-export default function Customerheader() {
-  const [activeTab, setActiveTab] = React.useState("");
-  const [categories, setCategories] = React.useState<any[]>([]);
-  const [services, setServices] = React.useState<any[]>([]);
-  const [regionalServices, setRegionalServices] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
+export default function CustomerHeader() {
   const [mounted, setMounted] = useState(false);
   const { setTheme: updateTheme, resolvedTheme } = useTheme();
-
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
-
-
   }, []);
 
   const toggleTheme = () => {
@@ -37,52 +30,61 @@ export default function Customerheader() {
   const textColorClass = 'text-shades-black hover:text-primary-01';
 
   return (
-    <div>
-      {/* Hero / Search Section - Sticky */}
-      <div className="bg-shades-white shadow-sm pt-6 pb-4 px-4 sm:px-6 sticky top-0 z-30">
-        <div className="max-w-2xl mx-auto">
-          {/*a logo and the theme change toggle*/}
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center">
-              <Image
-                src="/logo.png"
-                alt="Logo"
-                width={100}
-                height={100}
-                className="w-24 h-24"
-              />
-            </Link>
+    <div className="bg-shades-white shadow-sm sticky top-0 z-30 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-2">
+        {/* Top Row: Logo - Theme Toggle */}
+        <div className="flex items-center justify-between mb-4">
 
-            {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 border-neutrals-04 ${textColorClass} hover:border-primary-01`}
-              aria-label="Toggle theme"
-            >
-              {mounted && (
-                <div className="relative w-5 h-5">
-                  <Sun
-                    size={20}
-                    className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'dark'
-                      ? 'rotate-0 scale-100 opacity-100'
-                      : 'rotate-90 scale-0 opacity-0'
-                      }`}
-                  />
-                  <Image src="/icons/moon.svg"
-                    alt="Moon"
-                    width={20}
-                    height={20}
-                    className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'light'
-                      ? 'rotate-0 scale-100 opacity-100'
-                      : '-rotate-90 scale-0 opacity-0'
-                      }`}
-                  />
-                </div>
-              )}
-            </button>
-          </div>
-          {/* Search Bar */}
-          <div className="relative mb-4">
+          {/* Logo */}
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <span className="flex items-center gap-2 font-bold text-xl text-shades-black">
+              <Image
+                src="/logo.svg"
+                alt="EventBridge Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
+              <span>Event Bridge</span>
+            </span>
+          </Link>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 border-neutrals-04 ${textColorClass} hover:border-primary-01 flex-shrink-0 bg-neutrals-01/50`}
+            aria-label="Toggle theme"
+          >
+            {mounted && (
+              <div className="relative w-5 h-5">
+                <Image
+                  src="/icons/moon.svg" // Assuming dark mode icon
+                  alt="Dark Mode"
+                  width={20}
+                  height={20}
+                  className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'dark'
+                    ? 'rotate-0 scale-100 opacity-100'
+                    : 'rotate-90 scale-0 opacity-0'
+                    }`}
+                />
+                <Image
+                  src="/icons/moon_black.svg" // Assuming light mode icon
+                  alt="Light Mode"
+                  width={20}
+                  height={20}
+                  className={`absolute inset-0 transition-all duration-500 ${resolvedTheme === 'light'
+                    ? 'rotate-0 scale-100 opacity-100'
+                    : '-rotate-90 scale-0 opacity-0'
+                    }`}
+                />
+              </div>
+            )}
+          </button>
+        </div>
+
+        {/* Middle Row: Centered Search Bar */}
+        <div className="flex justify-center mb-4">
+          <div className="relative w-full max-w-lg">
             <div className="flex items-center bg-shades-white border border-neutrals-03 rounded-full shadow-lg p-1.5 pl-5 transition-all focus-within:ring-2 focus-within:ring-primary-01/20 focus-within:border-primary-01">
               <input
                 type="text"
@@ -97,37 +99,30 @@ export default function Customerheader() {
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Tabs */}
-          {/*if the tab == to Find Vendors* then man let it go to this thenext page */}
-          <div className="flex items-center justify-center gap-6 sm:gap-8">
-            {TABS.map((tab) => (
+        {/* Bottom Row: Navigation Links */}
+        <div className="flex items-center justify-center gap-8 mt-4">
+          {TABS.map((tab) => {
+            const isActive = pathname === tab.href;
+            return (
               <Link
                 href={tab.href}
                 key={tab.name}
-                onClick={() => setActiveTab(tab.name)}
                 className={cn(
-                  "pb-2 text-xs sm:text-sm font-semibold transition-all relative whitespace-nowrap",
-                  activeTab === tab.name
+                  "pb-2 text-sm font-semibold transition-all relative",
+                  isActive
                     ? "text-shades-black"
                     : "text-neutrals-06 hover:text-neutrals-07",
                 )}
               >
                 {tab.name}
-                {activeTab === tab.name && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-primary-01 rounded-t-full" />
-                )}
               </Link>
-            ))}
-            {/*  */}
-          </div>
+            )
+          })}
         </div>
       </div>
-
-
-
     </div>
   );
 }
 
-{/*if the tab == to Find Vendors* then man let it go to this thenext page */ }
