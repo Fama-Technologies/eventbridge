@@ -1,23 +1,47 @@
+// app/api/auth/logout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
-  const response = NextResponse.json({ message: 'Logout successful' }, { status: 200 });
+  try {
+    console.log('Logout endpoint called');
 
-  // Clear custom auth token
-  response.cookies.set('auth-token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    expires: new Date(0),
-    path: '/',
-  });
+    // Create response
+    const response = NextResponse.json(
+      { success: true, message: 'Logged out successfully' },
+      { status: 200 }
+    );
 
-  // Clear potential NextAuth cookies
-  response.cookies.set('next-auth.session-token', '', { expires: new Date(0), path: '/' });
-  response.cookies.set('__Secure-next-auth.session-token', '', { expires: new Date(0), path: '/' });
-  response.cookies.set('next-auth.callback-url', '', { expires: new Date(0), path: '/' });
-  response.cookies.set('__Secure-next-auth.callback-url', '', { expires: new Date(0), path: '/' });
-  response.cookies.set('session', '', { expires: new Date(0), path: '/' });
+    // Delete all auth cookies with proper settings
+    response.cookies.delete('auth-token');
+    response.cookies.set('auth-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
 
-  return response;
+    // If using NextAuth, clear those cookies too
+    response.cookies.delete('next-auth.session-token');
+    response.cookies.delete('next-auth.csrf-token');
+    response.cookies.delete('next-auth.callback-url');
+
+    console.log('Cookies cleared successfully');
+
+    return response;
+  } catch (error) {
+    console.error('Logout error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Logout failed' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  return NextResponse.json(
+    { success: false, message: 'Use POST method for logout' },
+    { status: 405 }
+  );
 }

@@ -152,18 +152,39 @@ export default function AccountSecurity() {
     };
     
     const completeDeletion = async () => {
-        // Clear auth token cookie
-        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        
-        // Optional: Call logout endpoint if you have one
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            // 1. Call logout endpoint first
+            await fetch('/api/auth/logout', { 
+                method: 'POST',
+                credentials: 'include'
+            }).catch(err => console.error('Logout API error:', err));
+
+            // 2. Clear all auth-related cookies
+            const cookiesToClear = [
+                'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+                'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=.eventbridge.africa',
+                'next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+                'next-auth.csrf-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+            ];
+
+            cookiesToClear.forEach(cookie => {
+                document.cookie = cookie;
+            });
+
+            // 3. Clear storage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // 4. Small delay to ensure everything is processed
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // 5. Force reload and redirect
+            window.location.replace('/');
+            
         } catch (error) {
             console.error('Logout error:', error);
+            window.location.replace('/');
         }
-        
-        // Redirect to home page
-        window.location.href = "/";
     };
 
     return (
