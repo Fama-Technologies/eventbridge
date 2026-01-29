@@ -86,7 +86,7 @@ export default function CustomerDashboardPage() {
               Explore Services by Event type
             </h2>
             <Link
-              href="/categories"
+              href="/customer/dashboard/find-vendors"
               className="flex items-center gap-1 text-primary-01 hover:text-primary-02 font-medium transition-colors text-xs sm:text-sm"
             >
               View all <ArrowRight size={16} />

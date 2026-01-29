@@ -13,6 +13,8 @@ export async function middleware(request: NextRequest) {
         '/forgot-password',
         '/reset-password',
         '/auth/error',
+        '/categories',
+        '/category',
     ];
 
     // Public API routes

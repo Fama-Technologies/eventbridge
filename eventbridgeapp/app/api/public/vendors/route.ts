@@ -17,12 +17,20 @@ export async function GET(request: NextRequest) {
     const conditions: any[] = [];
 
     if (category) {
-      conditions.push(
-        or(
-          ilike(vendorServices.name, `%${category}%`),
-          ilike(vendorProfiles.businessName, `%${category}%`)
-        )
-      );
+      const categoryConditions = [
+        ilike(vendorServices.name, `%${category}%`),
+        ilike(vendorProfiles.businessName, `%${category}%`)
+      ];
+
+      // Handle plural/singular mismatch (e.g. category "weddings" searching for "Wedding Service")
+      // Simple heuristic: if ends with 's', try removing it
+      if (category.toLowerCase().endsWith('s')) {
+        const singular = category.slice(0, -1);
+        categoryConditions.push(ilike(vendorServices.name, `%${singular}%`));
+        categoryConditions.push(ilike(vendorProfiles.businessName, `%${singular}%`));
+      }
+
+      conditions.push(or(...categoryConditions));
     }
 
     if (search) {
@@ -86,14 +94,14 @@ export async function GET(request: NextRequest) {
 
     const reviewStats: ReviewStatsRow[] = vendorIds.length
       ? await db
-          .select({
-            vendorId: reviews.vendorId,
-            avgRating: sql<number>`avg(${reviews.rating})`,
-            reviewCount: sql<number>`count(${reviews.id})`,
-          })
-          .from(reviews)
-          .where(inArray(reviews.vendorId, vendorIds))
-          .groupBy(reviews.vendorId)
+        .select({
+          vendorId: reviews.vendorId,
+          avgRating: sql<number>`avg(${reviews.rating})`,
+          reviewCount: sql<number>`count(${reviews.id})`,
+        })
+        .from(reviews)
+        .where(inArray(reviews.vendorId, vendorIds))
+        .groupBy(reviews.vendorId)
       : [];
 
     const ratingMap = new Map<number, number>();
@@ -109,12 +117,12 @@ export async function GET(request: NextRequest) {
 
     const availabilityRows: AvailabilityRow[] = vendorIds.length
       ? await db
-          .select({
-            vendorId: vendorAvailability.vendorId,
-            activeDays: vendorAvailability.activeDays,
-          })
-          .from(vendorAvailability)
-          .where(inArray(vendorAvailability.vendorId, vendorIds))
+        .select({
+          vendorId: vendorAvailability.vendorId,
+          activeDays: vendorAvailability.activeDays,
+        })
+        .from(vendorAvailability)
+        .where(inArray(vendorAvailability.vendorId, vendorIds))
       : [];
 
     const availabilityMap = new Map<number, number[]>();
@@ -130,13 +138,13 @@ export async function GET(request: NextRequest) {
 
     const packageRows: PackageRow[] = vendorIds.length
       ? await db
-          .select({
-            vendorId: vendorPackages.vendorId,
-            minPrice: sql<number>`min(${vendorPackages.price})`,
-          })
-          .from(vendorPackages)
-          .where(and(inArray(vendorPackages.vendorId, vendorIds), eq(vendorPackages.isActive, true)))
-          .groupBy(vendorPackages.vendorId)
+        .select({
+          vendorId: vendorPackages.vendorId,
+          minPrice: sql<number>`min(${vendorPackages.price})`,
+        })
+        .from(vendorPackages)
+        .where(and(inArray(vendorPackages.vendorId, vendorIds), eq(vendorPackages.isActive, true)))
+        .groupBy(vendorPackages.vendorId)
       : [];
 
     const packagePriceMap = new Map<number, number>();
