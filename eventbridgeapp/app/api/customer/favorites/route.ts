@@ -1,14 +1,62 @@
 // app/api/customer/favorites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { userFavorites, vendorProfiles, eventCategories, users } from '@/drizzle/schema';
+import { users, sessions, userFavorites, vendorProfiles, eventCategories } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { getAuthUser } from '@/lib/auth';
+import { verifyToken } from '@/lib/jwt';
 
-// GET - Fetch all favorites for a user
+export const dynamic = 'force-dynamic';
+
+async function getCurrentUser() {
+  try {
+    const cookieStore = await cookies();
+    const authToken = cookieStore.get('auth-token')?.value;
+    const sessionToken = cookieStore.get('session')?.value;
+
+    if (authToken) {
+      try {
+        const payload = await verifyToken(authToken);
+        if (payload && payload.userId) {
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, payload.userId as number))
+            .limit(1);
+          return user || null;
+        }
+      } catch (error) {
+        console.error('Token verification failed:', error);
+      }
+    }
+
+    if (sessionToken) {
+      const [session] = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.token, sessionToken))
+        .limit(1);
+
+      if (session && new Date(session.expiresAt) >= new Date()) {
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, session.userId))
+          .limit(1);
+        return user || null;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('getCurrentUser error:', error);
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const user = await getAuthUser(req);
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
@@ -17,88 +65,78 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const userId = user.id;
+    const validCustomerTypes = ['CUSTOMER', 'C'];
+    if (!validCustomerTypes.includes(user.accountType)) {
+      return NextResponse.json(
+        { success: false, error: 'Only customers can access favorites' },
+        { status: 403 }
+      );
+    }
 
-    // Fetch favorites with vendor details
-    const favorites = await db
+    const favoritesData = await db
       .select({
         favoriteId: userFavorites.id,
-        createdAt: userFavorites.createdAt,
-        vendor: {
-          id: vendorProfiles.id,
-          businessName: vendorProfiles.businessName,
-          description: vendorProfiles.description,
-          city: vendorProfiles.city,
-          state: vendorProfiles.state,
-          rating: vendorProfiles.rating,
-          reviewCount: vendorProfiles.reviewCount,
-          profileImage: vendorProfiles.profileImage,
-          coverImage: vendorProfiles.coverImage,
-          isVerified: vendorProfiles.isVerified,
-          hourlyRate: vendorProfiles.hourlyRate,
-          user: {
-            id: users.id,
-            firstName: users.firstName,
-            lastName: users.lastName,
-          }
-        },
-        category: {
-          id: eventCategories.id,
-          name: eventCategories.name,
-        }
+        favoriteVendorId: userFavorites.vendorId,
+        favoriteCreatedAt: userFavorites.createdAt,
+        vendorId: vendorProfiles.id,
+        businessName: vendorProfiles.businessName,
+        description: vendorProfiles.description,
+        city: vendorProfiles.city,
+        rating: vendorProfiles.rating,
+        reviewCount: vendorProfiles.reviewCount,
+        profileImage: vendorProfiles.profileImage,
+        coverImage: vendorProfiles.coverImage,
+        isVerified: vendorProfiles.isVerified,
+        hourlyRate: vendorProfiles.hourlyRate,
+        categoryId: eventCategories.id,
+        categoryName: eventCategories.name,
       })
       .from(userFavorites)
-      .innerJoin(vendorProfiles, eq(userFavorites.vendorId, vendorProfiles.id))
-      .innerJoin(users, eq(vendorProfiles.userId, users.id))
+      .leftJoin(vendorProfiles, eq(userFavorites.vendorId, vendorProfiles.id))
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
-      .where(eq(userFavorites.userId, userId))
+      .where(eq(userFavorites.userId, user.id))
       .orderBy(desc(userFavorites.createdAt));
 
-    // Transform the data to match your frontend expectations
-    const formattedFavorites = favorites.map((fav: { favoriteId: any; vendor: { id: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; hourlyRate: any; user: any; }; createdAt: any; category: any; }) => ({
+    const formattedFavorites = favoritesData.map((fav: { favoriteId: any; favoriteVendorId: any; favoriteCreatedAt: { toISOString: () => any; }; vendorId: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; categoryId: any; categoryName: any; hourlyRate: any; }) => ({
       id: fav.favoriteId,
-      vendorId: fav.vendor.id,
-      createdAt: fav.createdAt,
+      vendorId: fav.favoriteVendorId,
+      createdAt: fav.favoriteCreatedAt?.toISOString(),
       vendor: {
-        id: fav.vendor.id,
-        businessName: fav.vendor.businessName,
-        description: fav.vendor.description,
-        city: fav.vendor.city,
-        rating: fav.vendor.rating,
-        reviewCount: fav.vendor.reviewCount,
-        profileImage: fav.vendor.profileImage,
-        coverImage: fav.vendor.coverImage,
-        isVerified: fav.vendor.isVerified,
-        hourlyRate: fav.vendor.hourlyRate,
-        user: fav.vendor.user
+        id: fav.vendorId,
+        businessName: fav.businessName,
+        description: fav.description,
+        city: fav.city,
+        rating: fav.rating,
+        reviewCount: fav.reviewCount,
+        profileImage: fav.profileImage,
+        coverImage: fav.coverImage,
+        isVerified: fav.isVerified,
       },
-      category: fav.category,
-      startingPrice: fav.vendor.hourlyRate
+      category: fav.categoryId
+        ? {
+            id: fav.categoryId,
+            name: fav.categoryName,
+          }
+        : null,
+      startingPrice: fav.hourlyRate,
     }));
 
     return NextResponse.json({
       success: true,
       favorites: formattedFavorites,
-      count: formattedFavorites.length
     });
-
-  } catch (error: any) {
-    console.error('Database error fetching favorites:', error);
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch favorites from database',
-        details: error.message
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-// POST - Add a vendor to favorites
 export async function POST(req: NextRequest) {
   try {
-    const user = await getAuthUser(req);
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
@@ -107,7 +145,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { vendorId } = await req.json();
+    const validCustomerTypes = ['CUSTOMER', 'C'];
+    if (!validCustomerTypes.includes(user.accountType)) {
+      return NextResponse.json(
+        { success: false, error: 'Only customers can add favorites' },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { vendorId } = body;
 
     if (!vendorId) {
       return NextResponse.json(
@@ -116,72 +163,74 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userId = user.id;
+    const [vendor] = await db
+      .select()
+      .from(vendorProfiles)
+      .where(eq(vendorProfiles.id, vendorId))
+      .limit(1);
 
-    // Check if already favorited
-    const existingFavorite = await db
+    if (!vendor) {
+      return NextResponse.json(
+        { success: false, error: 'Vendor not found' },
+        { status: 404 }
+      );
+    }
+
+    const [existingFavorite] = await db
       .select()
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, userId),
+          eq(userFavorites.userId, user.id),
           eq(userFavorites.vendorId, vendorId)
         )
       )
       .limit(1);
 
-    if (existingFavorite.length > 0) {
+    if (existingFavorite) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Already in favorites',
-          favoriteId: existingFavorite[0].id
-        },
-        { status: 400 }
+        { success: true, message: 'Already in favorites', alreadyExists: true },
+        { status: 200 }
       );
     }
 
-    // Insert new favorite
-    const [newFavorite] = await db
+    await db
       .insert(userFavorites)
       .values({
-        userId: userId,
+        userId: user.id,
         vendorId: vendorId,
-        createdAt: new Date()
-      })
-      .returning();
+        createdAt: new Date(),
+      });
 
+    return NextResponse.json({
+      success: true,
+      message: 'Vendor added to favorites',
+    });
+  } catch (error) {
+    console.error('Error adding favorite:', error);
     return NextResponse.json(
-      {
-        success: true,
-        favorite: newFavorite,
-        message: 'Added to favorites successfully'
-      },
-      { status: 201 }
-    );
-
-  } catch (error: any) {
-    console.error('Database error adding favorite:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to add favorite',
-        details: error.message
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-// DELETE - Remove a vendor from favorites
 export async function DELETE(req: NextRequest) {
   try {
-    const user = await getAuthUser(req);
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    const validCustomerTypes = ['CUSTOMER', 'C'];
+    if (!validCustomerTypes.includes(user.accountType)) {
+      return NextResponse.json(
+        { success: false, error: 'Only customers can remove favorites' },
+        { status: 403 }
       );
     }
 
@@ -195,45 +244,41 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const userId = user.id;
-
-    // Delete the favorite
-    const deletedFavorites = await db
-      .delete(userFavorites)
+    const [existingFavorite] = await db
+      .select()
+      .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, userId),
+          eq(userFavorites.userId, user.id),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       )
-      .returning();
+      .limit(1);
 
-    if (deletedFavorites.length === 0) {
+    if (!existingFavorite) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Favorite not found'
-        },
-        { status: 404 }
+        { success: true, message: 'Favorite not found', notFound: true },
+        { status: 200 }
       );
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Removed from favorites successfully',
-        removedId: deletedFavorites[0].id
-      }
-    );
+    await db
+      .delete(userFavorites)
+      .where(
+        and(
+          eq(userFavorites.userId, user.id),
+          eq(userFavorites.vendorId, parseInt(vendorId))
+        )
+      );
 
-  } catch (error: any) {
-    console.error('Database error removing favorite:', error);
+    return NextResponse.json({
+      success: true,
+      message: 'Vendor removed from favorites',
+    });
+  } catch (error) {
+    console.error('Error removing favorite:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to remove favorite',
-        details: error.message
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

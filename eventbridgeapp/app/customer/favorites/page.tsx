@@ -7,11 +7,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-// Types based on your schema
-interface FavoriteVendor {
+interface Favorite {
     id: number;
     vendorId: number;
-    createdAt: Date;
+    createdAt: string;
     vendor: {
         id: number;
         businessName: string | null;
@@ -32,11 +31,10 @@ interface FavoriteVendor {
 
 export default function FavoritesPage() {
     const router = useRouter();
-    const [favorites, setFavorites] = useState<FavoriteVendor[]>([]);
+    const [favorites, setFavorites] = useState<Favorite[]>([]);
     const [loading, setLoading] = useState(true);
     const [removingId, setRemovingId] = useState<number | null>(null);
 
-    // Fetch favorites from API
     useEffect(() => {
         fetchFavorites();
     }, []);
@@ -44,17 +42,29 @@ export default function FavoritesPage() {
     const fetchFavorites = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/customer/favorites');
+            const response = await fetch('/api/customer/favorites', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
             
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    setFavorites(data.favorites);
-                } else {
-                    toast.error(data.error || 'Failed to load favorites');
+            if (!response.ok) {
+                if (response.status === 401) {
+                    toast.error('Please log in to view favorites');
+                    router.push('/login');
+                    return;
                 }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                setFavorites(data.favorites || []);
             } else {
-                toast.error('Failed to load favorites');
+                toast.error(data.error || 'Failed to load favorites');
             }
         } catch (error) {
             console.error('Error fetching favorites:', error);
@@ -70,18 +80,23 @@ export default function FavoritesPage() {
             
             const response = await fetch(`/api/customer/favorites?vendorId=${vendorId}`, {
                 method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    setFavorites(prev => prev.filter(f => f.vendorId !== vendorId));
-                    toast.success('Removed from favorites');
-                } else {
-                    toast.error(data.error || 'Failed to remove favorite');
-                }
+            if (!response.ok) {
+                throw new Error('Failed to remove favorite');
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                setFavorites(prev => prev.filter(f => f.vendorId !== vendorId));
+                toast.success('Removed from favorites');
             } else {
-                toast.error('Failed to remove favorite');
+                toast.error(data.error || 'Failed to remove favorite');
             }
         } catch (error) {
             console.error('Error removing favorite:', error);
@@ -91,32 +106,9 @@ export default function FavoritesPage() {
         }
     };
 
-    const addFavorite = async (vendorId: number) => {
-        try {
-            const response = await fetch('/api/customer/favorites', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ vendorId }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    toast.success('Added to favorites!');
-                    // Refresh the list
-                    fetchFavorites();
-                } else {
-                    toast.error(data.error || 'Failed to add favorite');
-                }
-            } else {
-                toast.error('Failed to add favorite');
-            }
-        } catch (error) {
-            console.error('Error adding favorite:', error);
-            toast.error('Error adding favorite');
-        }
+    const formatRating = (rating: number | null) => {
+        if (rating === null) return '0.0';
+        return (rating / 10).toFixed(1);
     };
 
     const isEmpty = favorites.length === 0;
@@ -134,11 +126,10 @@ export default function FavoritesPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
             <div className="bg-white sticky top-0 z-10 shadow-sm px-4 py-4 flex items-center justify-between">
                 <button 
                     onClick={() => router.back()} 
-                    className="p-1 text-foreground"
+                    className="p-1 text-foreground hover:text-primary-01 transition-colors"
                     aria-label="Go back"
                 >
                     <ArrowLeft size={24} />
@@ -150,7 +141,7 @@ export default function FavoritesPage() {
                 </div>
 
                 <button 
-                    className="p-1 text-foreground"
+                    className="p-1 text-foreground hover:text-primary-01 transition-colors"
                     aria-label="Search"
                     onClick={() => toast.info('Search feature coming soon!')}
                 >
@@ -159,7 +150,6 @@ export default function FavoritesPage() {
             </div>
 
             {isEmpty ? (
-                // Empty State
                 <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
                     <div className="relative mb-8">
                         <div className="w-40 h-40 bg-primary-01/10 rounded-full flex items-center justify-center">
@@ -182,27 +172,31 @@ export default function FavoritesPage() {
                     </Link>
                 </div>
             ) : (
-                // List State
                 <div className="p-4 space-y-6 pb-20">
-                    {favorites.map(({ vendor, category, startingPrice, id }) => (
-                        <div key={id} className="bg-white rounded-[2rem] shadow-sm border border-neutrals-03 overflow-hidden mb-6">
-                            {/* Image Section */}
+                    {favorites.map((fav) => (
+                        <Link 
+                            key={fav.id} 
+                            href={`/customer/vendor-profile/${fav.vendorId}`}
+                            className="block bg-white rounded-[2rem] shadow-sm border border-neutrals-03 overflow-hidden hover:shadow-md transition-shadow"
+                        >
                             <div className="relative h-72 bg-neutrals-02">
-                                {/* Featured Badge */}
-                                {vendor.isVerified && (
+                                {fav.vendor.isVerified && (
                                     <span className="absolute bottom-4 left-4 bg-white text-green-600 text-[10px] font-bold px-3 py-1.5 rounded-full z-10 uppercase tracking-widest shadow-sm">
                                         Verified
                                     </span>
                                 )}
 
-                                {/* Heart Button */}
                                 <button
-                                    onClick={() => removeFavorite(vendor.id)}
-                                    disabled={removingId === vendor.id}
-                                    className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm active:scale-95 transition-transform disabled:opacity-50"
-                                    aria-label={`Remove ${vendor.businessName} from favorites`}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        removeFavorite(fav.vendorId);
+                                    }}
+                                    disabled={removingId === fav.vendorId}
+                                    className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center z-10 shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-50"
+                                    aria-label={`Remove ${fav.vendor.businessName} from favorites`}
                                 >
-                                    {removingId === vendor.id ? (
+                                    {removingId === fav.vendorId ? (
                                         <Loader2 className="h-5 w-5 animate-spin text-primary-01" />
                                     ) : (
                                         <Heart className="text-primary-01 fill-primary-01" size={20} />
@@ -211,62 +205,62 @@ export default function FavoritesPage() {
 
                                 <div className="relative w-full h-full">
                                     <Image
-                                        src={vendor.coverImage || vendor.profileImage || '/placeholder.jpg'}
-                                        alt={vendor.businessName || 'Vendor'}
+                                        src={fav.vendor.coverImage || fav.vendor.profileImage || '/placeholder.jpg'}
+                                        alt={fav.vendor.businessName || 'Vendor'}
                                         fill
                                         className="object-cover"
                                         sizes="(max-width: 768px) 100vw, 50vw"
-                                        priority={vendor.id === 1}
                                     />
                                 </div>
                             </div>
 
-                            {/* Content Section */}
                             <div className="p-5 pt-4">
                                 <div className="flex justify-between items-start mb-1">
                                     <h3 className="text-xl font-bold text-foreground leading-tight tracking-tight">
-                                        {vendor.businessName || 'Unnamed Vendor'}
+                                        {fav.vendor.businessName || 'Unnamed Vendor'}
                                     </h3>
-                                    {(vendor.rating || vendor.rating === 0) && (
+                                    {fav.vendor.rating !== null && (
                                         <div className="flex items-center gap-1.5 bg-neutrals-02 px-2.5 py-1 rounded-lg shrink-0 mt-1">
                                             <Star size={11} className="text-primary-01 fill-current" />
                                             <span className="text-xs font-bold text-foreground">
-                                                {vendor.rating.toFixed(1)}
-                                                <span className="text-neutrals-06 font-normal ml-1">
-                                                    ({vendor.reviewCount || 0})
-                                                </span>
+                                                {formatRating(fav.vendor.rating)}
                                             </span>
                                         </div>
                                     )}
                                 </div>
 
                                 <p className="text-neutrals-06 text-sm mb-4 font-medium">
-                                    {category?.name || 'Various Services'} • {vendor.city || 'Multiple Locations'}
+                                    {fav.category?.name || 'Various Services'} • {fav.vendor.city || 'Uganda'}
                                 </p>
 
-                                <div className="flex items-baseline gap-1 mb-5">
-                                    {startingPrice ? (
-                                        <>
-                                            <span className="text-lg font-bold text-foreground">UGX {startingPrice.toLocaleString()}</span>
-                                            <span className="text-sm text-neutrals-06 font-normal">/ hour</span>
-                                        </>
-                                    ) : (
-                                        <span className="text-lg font-bold text-foreground">Contact for pricing</span>
-                                    )}
-                                </div>
+                                {fav.startingPrice && (
+                                    <div className="flex items-baseline gap-1 mb-5">
+                                        <span className="text-lg font-bold text-foreground">
+                                            UGX {fav.startingPrice.toLocaleString()}
+                                        </span>
+                                        <span className="text-sm text-neutrals-06 font-normal">/ hour</span>
+                                    </div>
+                                )}
 
-                                {/* Actions */}
                                 <div className="flex gap-3">
                                     <button 
                                         className="flex items-center justify-center gap-2 bg-neutrals-02 hover:bg-neutrals-03 text-foreground font-semibold px-6 py-3 rounded-full text-sm transition-colors min-w-[100px]"
-                                        onClick={() => toast.info('Chat feature coming soon!')}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            toast.info('Chat feature coming soon!');
+                                        }}
                                     >
                                         <MessageSquare size={16} strokeWidth={2.5} />
                                         Chat
                                     </button>
                                     <button 
                                         className="flex items-center justify-center gap-2 bg-neutrals-02 hover:bg-neutrals-03 text-foreground font-semibold px-5 py-3 rounded-full text-sm transition-colors"
-                                        onClick={() => toast.info('Add to Event feature coming soon!')}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            toast.info('Add to Event feature coming soon!');
+                                        }}
                                     >
                                         <div className="w-4 h-4 rounded-full border border-foreground flex items-center justify-center">
                                             <Plus size={10} strokeWidth={3} />
@@ -275,7 +269,7 @@ export default function FavoritesPage() {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}

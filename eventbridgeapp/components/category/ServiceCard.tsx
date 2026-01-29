@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Heart, Star } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export interface ServiceCardProps {
   id: string;
@@ -37,36 +38,54 @@ export default function ServiceCard({
     e.preventDefault();
     e.stopPropagation();
 
-    // Optimistic update
     const newStatus = !favorite;
     setFavorite(newStatus);
 
     try {
       if (newStatus) {
-        // Add to favorites
         const res = await fetch('/api/customer/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ vendorId: parseInt(id) })
         });
-        if (!res.ok) throw new Error('Failed to add favorite');
+        
+        if (!res.ok) {
+          throw new Error('Failed to add favorite');
+        }
+        
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to add favorite');
+        }
+        
+        toast.success('Added to favorites');
       } else {
-        // Remove from favorites
         const res = await fetch(`/api/customer/favorites?vendorId=${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          credentials: 'include',
         });
-        if (!res.ok) throw new Error('Failed to remove favorite');
+        
+        if (!res.ok) {
+          throw new Error('Failed to remove favorite');
+        }
+        
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to remove favorite');
+        }
+        
+        toast.success('Removed from favorites');
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert on error
       setFavorite(!newStatus);
+      toast.error('Failed to update favorites');
     }
   };
 
   return (
     <Link href={`/customer/vendor-profile/${id}`} className="group block">
-      {/* Image Container */}
       <div className="relative aspect-4/3 rounded-xl overflow-hidden mb-3">
         <Image
           src={images[currentImageIndex] || '/categories/placeholder.jpg'}
@@ -75,7 +94,6 @@ export default function ServiceCard({
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
 
-        {/* Favorite Button */}
         <button
           onClick={handleFavoriteClick}
           aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
@@ -87,13 +105,11 @@ export default function ServiceCard({
           <Heart size={16} fill={favorite ? 'currentColor' : 'none'} />
         </button>
 
-        {/* Rating Badge */}
         <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
           <Star size={12} className="text-white" fill="white" />
           <span className="text-white text-xs font-medium">{rating.toFixed(2)}</span>
         </div>
 
-        {/* Image Dots */}
         {images.length > 1 && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
             {images.map((_, index) => (
@@ -114,7 +130,6 @@ export default function ServiceCard({
         )}
       </div>
 
-      {/* Card Content */}
       <div>
         <h3 className="font-semibold text-foreground text-sm mb-0.5">{name}</h3>
         <p className="text-neutrals-06 text-xs mb-0.5">
