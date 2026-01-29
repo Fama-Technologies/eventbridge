@@ -41,54 +41,10 @@ export default function CustomerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-neutrals-01 pb-20">
-      {/* Hero / Search Section - Sticky */}
-      <div className="bg-shades-white shadow-sm pt-6 pb-4 px-4 sm:px-6 sticky top-0 z-30">
-        <div className="max-w-2xl mx-auto">
-          {/* Search Bar */}
-          <div className="relative mb-4">
-            <div className="flex items-center bg-shades-white border border-neutrals-03 rounded-full shadow-lg p-1.5 pl-5 transition-all focus-within:ring-2 focus-within:ring-primary-01/20 focus-within:border-primary-01">
-              <input
-                type="text"
-                placeholder="Start your search"
-                className="flex-1 bg-transparent border-none outline-none text-shades-black placeholder:text-neutrals-06 text-sm sm:text-base font-medium"
-              />
-              <button
-                className="bg-primary-01 hover:bg-primary-02 text-shades-white p-2.5 sm:p-3 rounded-full transition-colors flex items-center justify-center"
-                aria-label="Search"
-              >
-                <Search size={18} strokeWidth={2.5} />
-              </button>
-            </div>
-          </div>
 
-          {/* Tabs */}
-          {/*if the tab == to Find Vendors* then man let it go to this thenext page */}
-          <div className="flex items-center justify-center gap-6 sm:gap-8">
-            {TABS.map((tab) => (
-              <Link
-                href={tab.href}
-                key={tab.name}
-                onClick={() => setActiveTab(tab.name)}
-                className={cn(
-                  "pb-2 text-xs sm:text-sm font-semibold transition-all relative whitespace-nowrap",
-                  activeTab === tab.name
-                    ? "text-shades-black"
-                    : "text-neutrals-06 hover:text-neutrals-07",
-                )}
-              >
-                {tab.name}
-                {activeTab === tab.name && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-primary-01 rounded-t-full" />
-                )}
-              </Link>
-            ))}
-            {/*  */}
-          </div>
-        </div>
-      </div>
       {/*the context will display the event categories in 2 for mobile and 4 for desktop*/}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        (
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
           {categories.map((category) => (
             <CategoryCard
@@ -101,7 +57,7 @@ export default function CustomerDashboardPage() {
             />
           ))}
         </div>
-        )
+
       </div>
     </div>
   );

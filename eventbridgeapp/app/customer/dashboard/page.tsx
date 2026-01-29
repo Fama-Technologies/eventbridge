@@ -144,7 +144,7 @@ export default function CustomerDashboardPage() {
                   Top Recommended in {eventType.label}
                 </h3>
                 <Link
-                  href={`/search?event=${eventType.query}`}
+                  href={`/customer/recommended?event=${eventType.query}`}
                   className="text-xs sm:text-sm text-primary-01 hover:text-primary-02 font-medium transition-colors flex items-center gap-1"
                 >
                   View all <ArrowRight size={14} />
