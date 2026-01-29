@@ -1,0 +1,5 @@
+﻿{
+  "installCommand": "npm ci --legacy-peer-deps --no-audit --prefer-offline",
+  "buildCommand": "CI=false npm run build",
+  "maxDuration": 60
+}
