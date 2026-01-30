@@ -1,21 +1,67 @@
 // app/api/customer/favorites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { userFavorites, vendorProfiles, eventCategories } from '@/drizzle/schema';
+import { userFavorites, vendorProfiles, eventCategories, sessions, users } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
+// Helper function to get current user (same as messages endpoint)
+async function getCurrentUser() {
+  try {
+    const cookieStore = await cookies();
+    
+    const sessionToken = cookieStore.get('session')?.value || 
+                        cookieStore.get('next-auth.session-token')?.value;
+    
+    if (sessionToken) {
+      const [session] = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.token, sessionToken))
+        .limit(1);
+
+      if (session && new Date(session.expiresAt) > new Date()) {
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, session.userId))
+          .limit(1);
+
+        return user || null;
+      }
+    }
+
+    // For development/testing
+    if (process.env.NODE_ENV === 'development') {
+      const [testUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, 'test@example.com'))
+        .limit(1);
+      
+      return testUser || null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('getCurrentUser error:', error);
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const user = await getCurrentUser();
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID is required' },
-        { status: 400 }
-      );
+    if (!user) {
+      // Return empty array instead of error for better UX
+      return NextResponse.json({
+        success: true,
+        favorites: [],
+        message: 'Not authenticated - returning empty favorites'
+      });
     }
 
     const favoritesData = await db
@@ -39,10 +85,10 @@ export async function GET(req: NextRequest) {
       .from(userFavorites)
       .leftJoin(vendorProfiles, eq(userFavorites.vendorId, vendorProfiles.id))
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
-      .where(eq(userFavorites.userId, parseInt(userId)))
+      .where(eq(userFavorites.userId, user.id))
       .orderBy(desc(userFavorites.createdAt));
 
-    const formattedFavorites = favoritesData.map((fav: { favoriteId: any; favoriteVendorId: any; favoriteCreatedAt: { toISOString: () => any; }; vendorId: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; categoryId: any; categoryName: any; hourlyRate: any; }) => ({
+    const formattedFavorites = favoritesData.map((fav: any) => ({
       id: fav.favoriteId,
       vendorId: fav.favoriteVendorId,
       createdAt: fav.favoriteCreatedAt?.toISOString(),
@@ -81,12 +127,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { vendorId, userId } = body;
-
-    if (!vendorId || !userId) {
+    const user = await getCurrentUser();
+    
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Vendor ID and User ID are required' },
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { vendorId } = body;
+
+    if (!vendorId) {
+      return NextResponse.json(
+        { success: false, error: 'Vendor ID is required' },
         { status: 400 }
       );
     }
@@ -109,7 +164,7 @@ export async function POST(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, userId),
+          eq(userFavorites.userId, user.id),
           eq(userFavorites.vendorId, vendorId)
         )
       )
@@ -125,7 +180,7 @@ export async function POST(req: NextRequest) {
     await db
       .insert(userFavorites)
       .values({
-        userId: userId,
+        userId: user.id,
         vendorId: vendorId,
         createdAt: new Date(),
       });
@@ -145,13 +200,21 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const vendorId = searchParams.get('vendorId');
-    const userId = searchParams.get('userId');
 
-    if (!vendorId || !userId) {
+    if (!vendorId) {
       return NextResponse.json(
-        { success: false, error: 'Vendor ID and User ID are required' },
+        { success: false, error: 'Vendor ID is required' },
         { status: 400 }
       );
     }
@@ -161,7 +224,7 @@ export async function DELETE(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, parseInt(userId)),
+          eq(userFavorites.userId, user.id),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       )
@@ -178,7 +241,7 @@ export async function DELETE(req: NextRequest) {
       .delete(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, parseInt(userId)),
+          eq(userFavorites.userId, user.id),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       );

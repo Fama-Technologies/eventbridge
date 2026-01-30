@@ -9,15 +9,14 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 interface MessageThread {
-    id: number; // Changed from string to number
-    vendorId: number; // Changed from string to number
+    id: number;
+    vendorId: number;
     vendorName: string;
     vendorAvatar?: string;
     lastMessage: string;
     lastMessageTime: Date;
     unreadCount: number;
     online: boolean;
-    // Add these fields from your API response
     vendor?: {
         businessName: string;
         city: string;
@@ -53,27 +52,68 @@ export default function MessagesPage() {
     const [showSearch, setShowSearch] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [socket, setSocket] = useState<WebSocket | null>(null);
+    const [socketConnected, setSocketConnected] = useState(false);
+
+    // Get WebSocket URL based on environment
+    const getWebSocketUrl = () => {
+        if (typeof window === 'undefined') return '';
+        
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        
+        return `${protocol}//${host}/api/socketio`;
+    };
 
     // Fetch message threads
     useEffect(() => {
         fetchMessageThreads();
         
         // Initialize WebSocket connection
-        const ws = new WebSocket('ws://localhost:3000/api/socketio');
+        const wsUrl = getWebSocketUrl();
+        console.log('Connecting to WebSocket:', wsUrl);
+        
+        const ws = new WebSocket(wsUrl);
         setSocket(ws);
         
         ws.onopen = () => {
-            console.log('WebSocket connected');
-            // You can add authentication here if needed
-            // ws.send(JSON.stringify({ type: 'authenticate', token: 'your-token' }));
+            console.log('WebSocket connected successfully');
+            setSocketConnected(true);
+            
+            // Send authentication if user is logged in
+            // You can add your authentication logic here
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            if (token) {
+                ws.send(JSON.stringify({ 
+                    type: 'authenticate', 
+                    token: token 
+                }));
+            }
         };
         
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type === 'new_message' || data.type === 'new_message_notification') {
+                console.log('WebSocket message received:', data.type);
+                
+                if (data.type === 'new_message' || 
+                    data.type === 'message_received' || 
+                    data.type === 'message_notification') {
                     // Refresh threads when new message arrives
                     fetchMessageThreads();
+                }
+                
+                // Handle other message types
+                switch(data.type) {
+                    case 'connection_established':
+                        console.log('WebSocket connection established');
+                        break;
+                    case 'error':
+                        console.error('WebSocket error:', data.message);
+                        break;
+                    case 'ping':
+                        // Respond to ping
+                        ws.send(JSON.stringify({ type: 'pong' }));
+                        break;
                 }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
@@ -82,16 +122,34 @@ export default function MessagesPage() {
         
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
+            setSocketConnected(false);
         };
         
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
+        ws.onclose = (event) => {
+            console.log('WebSocket disconnected:', event.code, event.reason);
+            setSocketConnected(false);
+            
+            // Attempt reconnection after 5 seconds
+            setTimeout(() => {
+                if (ws.readyState === WebSocket.CLOSED) {
+                    console.log('Attempting to reconnect WebSocket...');
+                    // Reconnection logic could go here
+                }
+            }, 5000);
         };
+        
+        // Send periodic ping to keep connection alive
+        const pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000); // Every 30 seconds
         
         // Cleanup
         return () => {
+            clearInterval(pingInterval);
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
+                ws.close(1000, 'Component unmounting');
             }
         };
     }, []);
@@ -100,7 +158,11 @@ export default function MessagesPage() {
         try {
             setLoading(true);
             setError(null);
-            const response = await fetch('/api/customer/messages/threads');
+            const response = await fetch('/api/customer/messages/threads', {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                },
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -135,7 +197,6 @@ export default function MessagesPage() {
     const filteredThreads = threads.filter(thread => {
         if (activeFilter === "Unread") return thread.unreadCount > 0;
         if (activeFilter === "Urgent") {
-            // Example urgent filter - you can customize this
             return thread.unreadCount > 3 || 
                    thread.vendorName.toLowerCase().includes("urgent") ||
                    (thread.lastMessage && thread.lastMessage.toLowerCase().includes("urgent"));
@@ -162,7 +223,12 @@ export default function MessagesPage() {
                 <button onClick={() => router.back()} className="p-1">
                     <ArrowLeft size={24} className="text-shades-black" />
                 </button>
-                <h1 className="text-lg font-bold text-shades-black">Messages</h1>
+                <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-bold text-shades-black">Messages</h1>
+                    {socketConnected && (
+                        <div className="w-2 h-2 bg-green-500 rounded-full" title="WebSocket connected"></div>
+                    )}
+                </div>
                 <button 
                     onClick={() => setShowSearch(!showSearch)} 
                     className="p-1"
@@ -189,7 +255,7 @@ export default function MessagesPage() {
                                 onClick={() => setSearchQuery('')}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutrals-06 hover:text-shades-black"
                             >
-                                ✕
+                                X
                             </button>
                         )}
                     </div>
@@ -214,6 +280,15 @@ export default function MessagesPage() {
                         </button>
                     ))}
                 </div>
+
+                {/* Connection Status */}
+                {!socketConnected && !loading && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                            Real-time updates are temporarily unavailable. Messages will update when you refresh.
+                        </p>
+                    </div>
+                )}
 
                 {/* Error State */}
                 {error && !loading && (
@@ -325,11 +400,11 @@ export default function MessagesPage() {
                                     {thread.vendor?.city && (
                                         <div className="flex items-center gap-1 mt-1">
                                             <span className="text-xs text-neutrals-06">
-                                                📍 {thread.vendor.city}
+                                                Location: {thread.vendor.city}
                                             </span>
                                             {thread.vendor.rating && (
                                                 <span className="text-xs text-neutrals-06 ml-2">
-                                                    ⭐ {thread.vendor.rating}
+                                                    Rating: {thread.vendor.rating}
                                                 </span>
                                             )}
                                         </div>
