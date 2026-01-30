@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, ArrowLeft, Send, Paperclip, Smile, Phone, Video, MoreVertical } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -17,28 +17,6 @@ interface MessageThread {
     lastMessageTime: Date;
     unreadCount: number;
     online: boolean;
-    vendor?: {
-        businessName: string;
-        city: string;
-        rating: number;
-        responseTime: string;
-    };
-}
-
-interface Message {
-    id: string;
-    threadId: string;
-    senderId: string;
-    senderType: 'customer' | 'vendor';
-    content: string;
-    attachments?: Array<{
-        type: 'image' | 'document' | 'audio' | 'video';
-        url: string;
-        name?: string;
-        size?: number;
-    }>;
-    timestamp: Date;
-    read: boolean;
 }
 
 const FILTERS = ["All", "Unread", "Urgent"];
@@ -50,145 +28,50 @@ export default function MessagesPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [showSearch, setShowSearch] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [socket, setSocket] = useState<WebSocket | null>(null);
-    const [socketConnected, setSocketConnected] = useState(false);
 
-    // Get WebSocket URL based on environment
-    const getWebSocketUrl = () => {
-        if (typeof window === 'undefined') return '';
-        
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        
-        return `${protocol}//${host}/api/socketio`;
-    };
-
-    // Fetch message threads
+    // Fetch message threads - NO AUTH CHECK
     useEffect(() => {
         fetchMessageThreads();
         
-        // Initialize WebSocket connection
-        const wsUrl = getWebSocketUrl();
-        console.log('Connecting to WebSocket:', wsUrl);
+        // Simple polling for updates every 30 seconds
+        const pollInterval = setInterval(() => {
+            fetchMessageThreads();
+        }, 30000);
         
-        const ws = new WebSocket(wsUrl);
-        setSocket(ws);
-        
-        ws.onopen = () => {
-            console.log('WebSocket connected successfully');
-            setSocketConnected(true);
-            
-            // Send authentication if user is logged in
-            // You can add your authentication logic here
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            if (token) {
-                ws.send(JSON.stringify({ 
-                    type: 'authenticate', 
-                    token: token 
-                }));
-            }
-        };
-        
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('WebSocket message received:', data.type);
-                
-                if (data.type === 'new_message' || 
-                    data.type === 'message_received' || 
-                    data.type === 'message_notification') {
-                    // Refresh threads when new message arrives
-                    fetchMessageThreads();
-                }
-                
-                // Handle other message types
-                switch(data.type) {
-                    case 'connection_established':
-                        console.log('WebSocket connection established');
-                        break;
-                    case 'error':
-                        console.error('WebSocket error:', data.message);
-                        break;
-                    case 'ping':
-                        // Respond to ping
-                        ws.send(JSON.stringify({ type: 'pong' }));
-                        break;
-                }
-            } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
-            }
-        };
-        
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            setSocketConnected(false);
-        };
-        
-        ws.onclose = (event) => {
-            console.log('WebSocket disconnected:', event.code, event.reason);
-            setSocketConnected(false);
-            
-            // Attempt reconnection after 5 seconds
-            setTimeout(() => {
-                if (ws.readyState === WebSocket.CLOSED) {
-                    console.log('Attempting to reconnect WebSocket...');
-                    // Reconnection logic could go here
-                }
-            }, 5000);
-        };
-        
-        // Send periodic ping to keep connection alive
-        const pingInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'ping' }));
-            }
-        }, 30000); // Every 30 seconds
-        
-        // Cleanup
-        return () => {
-            clearInterval(pingInterval);
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close(1000, 'Component unmounting');
-            }
-        };
+        return () => clearInterval(pollInterval);
     }, []);
 
     const fetchMessageThreads = async () => {
         try {
             setLoading(true);
-            setError(null);
-            const response = await fetch('/api/customer/messages/threads', {
-                headers: {
-                    'Cache-Control': 'no-cache',
-                },
-            });
+            const response = await fetch('/api/customer/messages/threads');
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                const formattedThreads = data.threads.map((thread: any) => ({
-                    id: thread.id || 0,
-                    vendorId: thread.vendorId || 0,
-                    vendorName: thread.vendorName || thread.vendor?.businessName || 'Vendor',
-                    vendorAvatar: thread.vendorAvatar || thread.vendor?.profileImage,
-                    lastMessage: thread.lastMessage || 'No messages yet',
-                    lastMessageTime: new Date(thread.lastMessageTime),
-                    unreadCount: thread.unreadCount || 0,
-                    online: thread.online || false,
-                    vendor: thread.vendor
-                }));
-                setThreads(formattedThreads);
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success) {
+                    const formattedThreads = data.threads.map((thread: any) => ({
+                        id: thread.id || 0,
+                        vendorId: thread.vendorId || 0,
+                        vendorName: thread.vendorName || thread.vendor?.businessName || 'Vendor',
+                        vendorAvatar: thread.vendorAvatar || thread.vendor?.profileImage,
+                        lastMessage: thread.lastMessage || 'No messages yet',
+                        lastMessageTime: new Date(thread.lastMessageTime),
+                        unreadCount: thread.unreadCount || 0,
+                        online: thread.online || false,
+                    }));
+                    setThreads(formattedThreads);
+                } else {
+                    // If API returns error but we have threads from previous fetch, keep them
+                    console.log('API returned error, keeping existing threads');
+                }
             } else {
-                setError(data.error || 'Failed to fetch messages');
+                // If HTTP error, just keep existing threads
+                console.log('HTTP error, keeping existing threads');
             }
-        } catch (error: any) {
-            console.error('Error fetching message threads:', error);
-            setError(error.message || 'Failed to load messages');
+        } catch (error) {
+            console.log('Error fetching threads:', error);
+            // Don't set error state, just show empty or existing threads
         } finally {
             setLoading(false);
         }
@@ -223,12 +106,7 @@ export default function MessagesPage() {
                 <button onClick={() => router.back()} className="p-1">
                     <ArrowLeft size={24} className="text-shades-black" />
                 </button>
-                <div className="flex items-center gap-2">
-                    <h1 className="text-lg font-bold text-shades-black">Messages</h1>
-                    {socketConnected && (
-                        <div className="w-2 h-2 bg-green-500 rounded-full" title="WebSocket connected"></div>
-                    )}
-                </div>
+                <h1 className="text-lg font-bold text-shades-black">Messages</h1>
                 <button 
                     onClick={() => setShowSearch(!showSearch)} 
                     className="p-1"
@@ -280,34 +158,6 @@ export default function MessagesPage() {
                         </button>
                     ))}
                 </div>
-
-                {/* Connection Status */}
-                {!socketConnected && !loading && (
-                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-800">
-                            Real-time updates are temporarily unavailable. Messages will update when you refresh.
-                        </p>
-                    </div>
-                )}
-
-                {/* Error State */}
-                {error && !loading && (
-                    <div className="text-center py-8 bg-red-50 rounded-xl mb-4">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                            <div className="text-red-500 text-xl">!</div>
-                        </div>
-                        <h3 className="text-lg font-bold text-shades-black mb-2">
-                            Error Loading Messages
-                        </h3>
-                        <p className="text-neutrals-06 mb-4">{error}</p>
-                        <button
-                            onClick={fetchMessageThreads}
-                            className="inline-block bg-primary-01 text-white px-6 py-2 rounded-full font-medium hover:bg-primary-02 transition-colors"
-                        >
-                            Try Again
-                        </button>
-                    </div>
-                )}
 
                 {/* Message List */}
                 {loading ? (
@@ -395,20 +245,6 @@ export default function MessagesPage() {
                                             </div>
                                         )}
                                     </div>
-                                    
-                                    {/* Optional: Show vendor location if available */}
-                                    {thread.vendor?.city && (
-                                        <div className="flex items-center gap-1 mt-1">
-                                            <span className="text-xs text-neutrals-06">
-                                                Location: {thread.vendor.city}
-                                            </span>
-                                            {thread.vendor.rating && (
-                                                <span className="text-xs text-neutrals-06 ml-2">
-                                                    Rating: {thread.vendor.rating}
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
                             </Link>
                         ))}
