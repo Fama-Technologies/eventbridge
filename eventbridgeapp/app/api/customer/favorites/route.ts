@@ -1,75 +1,20 @@
 // app/api/customer/favorites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { users, sessions, userFavorites, vendorProfiles, eventCategories } from '@/drizzle/schema';
+import { userFavorites, vendorProfiles, eventCategories } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { verifyToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
 
-async function getCurrentUser() {
-  try {
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get('auth-token')?.value;
-    const sessionToken = cookieStore.get('session')?.value;
-
-    if (authToken) {
-      try {
-        const payload = await verifyToken(authToken);
-        if (payload && payload.userId) {
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, payload.userId as number))
-            .limit(1);
-          return user || null;
-        }
-      } catch (error) {
-        console.error('Token verification failed:', error);
-      }
-    }
-
-    if (sessionToken) {
-      const [session] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.token, sessionToken))
-        .limit(1);
-
-      if (session && new Date(session.expiresAt) >= new Date()) {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, session.userId))
-          .limit(1);
-        return user || null;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error('getCurrentUser error:', error);
-    return null;
-  }
-}
-
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const validCustomerTypes = ['CUSTOMER', 'C'];
-    if (!validCustomerTypes.includes(user.accountType)) {
-      return NextResponse.json(
-        { success: false, error: 'Only customers can access favorites' },
-        { status: 403 }
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
       );
     }
 
@@ -94,7 +39,7 @@ export async function GET(req: NextRequest) {
       .from(userFavorites)
       .leftJoin(vendorProfiles, eq(userFavorites.vendorId, vendorProfiles.id))
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
-      .where(eq(userFavorites.userId, user.id))
+      .where(eq(userFavorites.userId, parseInt(userId)))
       .orderBy(desc(userFavorites.createdAt));
 
     const formattedFavorites = favoritesData.map((fav: { favoriteId: any; favoriteVendorId: any; favoriteCreatedAt: { toISOString: () => any; }; vendorId: any; businessName: any; description: any; city: any; rating: any; reviewCount: any; profileImage: any; coverImage: any; isVerified: any; categoryId: any; categoryName: any; hourlyRate: any; }) => ({
@@ -136,29 +81,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const validCustomerTypes = ['CUSTOMER', 'C'];
-    if (!validCustomerTypes.includes(user.accountType)) {
-      return NextResponse.json(
-        { success: false, error: 'Only customers can add favorites' },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
-    const { vendorId } = body;
+    const { vendorId, userId } = body;
 
-    if (!vendorId) {
+    if (!vendorId || !userId) {
       return NextResponse.json(
-        { success: false, error: 'Vendor ID is required' },
+        { success: false, error: 'Vendor ID and User ID are required' },
         { status: 400 }
       );
     }
@@ -181,7 +109,7 @@ export async function POST(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, user.id),
+          eq(userFavorites.userId, userId),
           eq(userFavorites.vendorId, vendorId)
         )
       )
@@ -197,7 +125,7 @@ export async function POST(req: NextRequest) {
     await db
       .insert(userFavorites)
       .values({
-        userId: user.id,
+        userId: userId,
         vendorId: vendorId,
         createdAt: new Date(),
       });
@@ -217,29 +145,13 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const validCustomerTypes = ['CUSTOMER', 'C'];
-    if (!validCustomerTypes.includes(user.accountType)) {
-      return NextResponse.json(
-        { success: false, error: 'Only customers can remove favorites' },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const vendorId = searchParams.get('vendorId');
+    const userId = searchParams.get('userId');
 
-    if (!vendorId) {
+    if (!vendorId || !userId) {
       return NextResponse.json(
-        { success: false, error: 'Vendor ID is required' },
+        { success: false, error: 'Vendor ID and User ID are required' },
         { status: 400 }
       );
     }
@@ -249,7 +161,7 @@ export async function DELETE(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, user.id),
+          eq(userFavorites.userId, parseInt(userId)),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       )
@@ -266,7 +178,7 @@ export async function DELETE(req: NextRequest) {
       .delete(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, user.id),
+          eq(userFavorites.userId, parseInt(userId)),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       );
