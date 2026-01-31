@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { messageThreads, users, vendorProfiles, messages } from '@/drizzle/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, or } from 'drizzle-orm';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -12,14 +12,23 @@ export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser(req);
     
-    if (!authUser || authUser.accountType !== 'CUSTOMER') {
+    if (!authUser) {
+      console.log('GET /api/customer/messages/threads - No auth user found');
       return NextResponse.json(
-        { success: false, error: 'Unauthorized - Customer access required' },
+        { success: false, error: 'Unauthorized - Please log in' },
         { status: 401 }
       );
     }
 
-    console.log('GET /api/customer/messages/threads - customerId:', authUser.id);
+    if (authUser.accountType !== 'CUSTOMER') {
+      console.log('GET /api/customer/messages/threads - User is not a customer:', authUser.accountType);
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - Customer access required' },
+        { status: 403 }
+      );
+    }
+
+    console.log('GET /api/customer/messages/threads - customerId:', authUser.id, 'email:', authUser.email);
     
     // Get threads for this authenticated customer
     const threads = await db
@@ -37,6 +46,8 @@ export async function GET(req: NextRequest) {
       .where(eq(messageThreads.customerId, authUser.id))
       .orderBy(desc(messageThreads.lastMessageTime))
       .limit(50);
+
+    console.log('GET /api/customer/messages/threads - Found', threads.length, 'threads');
 
     // Format response
     const formattedThreads = threads.map((thread: any) => ({
@@ -72,17 +83,26 @@ export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUser(req);
     
-    if (!authUser || authUser.accountType !== 'CUSTOMER') {
+    if (!authUser) {
+      console.log('POST /api/customer/messages/threads - No auth user found');
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - Please log in' },
+        { status: 401 }
+      );
+    }
+
+    if (authUser.accountType !== 'CUSTOMER') {
+      console.log('POST /api/customer/messages/threads - User is not a customer:', authUser.accountType);
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Customer access required' },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
     const body = await req.json();
     const { vendorId, content } = body;
 
-    console.log('POST /api/customer/messages/threads - vendorId:', vendorId, 'customerId:', authUser.id);
+    console.log('POST /api/customer/messages/threads - vendorId:', vendorId, 'customerId:', authUser.id, 'content:', content?.substring(0, 50));
 
     if (!vendorId) {
       return NextResponse.json(
@@ -98,19 +118,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify vendor exists
-    const [vendor] = await db
-      .select({ id: users.id })
+    // Verify vendor exists (check if user exists, regardless of account type for flexibility)
+    const [vendorUser] = await db
+      .select({ 
+        id: users.id,
+        accountType: users.accountType 
+      })
       .from(users)
-      .where(and(eq(users.id, vendorId), eq(users.accountType, 'VENDOR')))
+      .where(eq(users.id, vendorId))
       .limit(1);
 
-    if (!vendor) {
+    if (!vendorUser) {
+      console.log('POST /api/customer/messages/threads - Vendor not found for id:', vendorId);
       return NextResponse.json(
         { success: false, error: 'Vendor not found' },
         { status: 404 }
       );
     }
+
+    console.log('POST /api/customer/messages/threads - Vendor found:', vendorUser.id, 'accountType:', vendorUser.accountType);
 
     // Check if a thread already exists for this customer-vendor pair
     const existingThread = await db
@@ -163,6 +189,8 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
+    console.log('Created message:', newMessage.id, 'in thread:', threadId);
+
     // Update the thread's last message and increment vendor's unread count
     await db
       .update(messageThreads)
@@ -176,7 +204,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Inquiry sent successfully',
+      message: 'Chat started successfully',
       threadId: threadId,
       messageId: newMessage.id,
       timestamp: new Date().toISOString(),
@@ -185,7 +213,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error creating thread/message:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to send inquiry' },
+      { success: false, error: 'Failed to start chat: ' + (error.message || 'Unknown error') },
       { status: 500 }
     );
   }

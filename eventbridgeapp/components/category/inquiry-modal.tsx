@@ -86,7 +86,8 @@ export function InquiryModal({ isOpen, onClose, vendorName, vendorId }: InquiryM
             if (response.ok) {
                 router.push('/customer/messages');
             } else {
-                toast.error('Failed to start chat');
+                const error = await response.json();
+                toast.error(error.error || 'Failed to start chat');
             }
         } catch (error) {
             console.error('Chat error:', error);
