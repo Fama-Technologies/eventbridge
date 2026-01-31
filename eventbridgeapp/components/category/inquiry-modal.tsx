@@ -85,6 +85,10 @@ export function InquiryModal({ isOpen, onClose, vendorName, vendorId }: InquiryM
 
             if (response.ok) {
                 router.push('/customer/messages');
+            } else if (response.status === 401) {
+                // Session expired or not logged in
+                toast.error('Please log in to start a chat');
+                router.push('/login?callbackUrl=' + window.location.pathname);
             } else {
                 const error = await response.json();
                 toast.error(error.error || 'Failed to start chat');
