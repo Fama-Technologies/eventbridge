@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { messages, messageThreads, users } from '@/drizzle/schema';
-import { eq, and, desc, asc, lt, gt, inArray, ne } from 'drizzle-orm'; // Added 'ne'
+import { eq, and, desc, asc, lt, gt, inArray, ne } from 'drizzle-orm';
 import { getAuthUser } from '@/lib/auth';
 import { sql } from 'drizzle-orm';
 
@@ -10,6 +10,8 @@ export async function GET(
     { params }: { params: { threadId: string } }
 ) {
     try {
+        const db = getDb(); // Fresh connection
+        
         // Authenticate user using existing auth helper
         const authUser = await getAuthUser(req);
         
@@ -67,7 +69,7 @@ export async function GET(
         const limit = parseInt(url.searchParams.get('limit') || '100');
         const offset = parseInt(url.searchParams.get('offset') || '0');
         const before = url.searchParams.get('before'); // timestamp for pagination
-        const sort = url.searchParams.get('sort') || 'desc'; // asc or desc
+        const sort = url.searchParams.get('sort') || 'asc'; // asc or desc (default: asc - oldest first)
 
         // Build query conditions
         let conditions = [eq(messages.threadId, threadId)];
@@ -112,12 +114,12 @@ export async function GET(
 
         // Mark messages as read if user is viewing them
         if (messageList.length > 0) {
-            await markMessagesAsRead(threadId, userId, userType);
+            await markMessagesAsRead(db, threadId, userId, userType);
         }
 
         // Get total message count for this thread
-        const [totalCountResult] = await db
-            .select({ count: db.fn.count(messages.id).mapWith(Number) })
+        const totalCountResult = await db
+            .select({ count: sql`count(${messages.id})`.mapWith(Number) })
             .from(messages)
             .where(eq(messages.threadId, threadId));
 
@@ -147,15 +149,18 @@ export async function GET(
         // Group messages by date for easier frontend display
         const messagesByDate = groupMessagesByDate(formattedMessages);
 
+        // Safe access to count
+        const totalCount = totalCountResult[0]?.count || 0;
+
         return NextResponse.json({
             success: true,
             messages: formattedMessages,
             messagesByDate,
             pagination: {
-                total: totalCountResult?.count || 0,
+                total: totalCount,
                 limit,
                 offset,
-                hasMore: totalCountResult?.count > offset + messageList.length
+                hasMore: totalCount > offset + messageList.length
             },
             thread: {
                 id: threadId,
@@ -187,6 +192,8 @@ export async function POST(
     { params }: { params: { threadId: string } }
 ) {
     try {
+        const db = getDb(); // Fresh connection
+        
         const authUser = await getAuthUser(req);
         
         if (!authUser) {
@@ -322,6 +329,8 @@ export async function PATCH(
     { params }: { params: { threadId: string } }
 ) {
     try {
+        const db = getDb(); // Fresh connection
+        
         const authUser = await getAuthUser(req);
         
         if (!authUser) {
@@ -344,7 +353,7 @@ export async function PATCH(
 
         const { messageIds } = await req.json();
 
-        await markMessagesAsRead(threadId, userId, userType, messageIds);
+        await markMessagesAsRead(db, threadId, userId, userType, messageIds);
 
         return NextResponse.json({
             success: true,
@@ -366,6 +375,7 @@ export async function PATCH(
 
 // Helper function to mark messages as read
 async function markMessagesAsRead(
+    db: any,
     threadId: number, 
     userId: number, 
     userType: 'customer' | 'vendor',

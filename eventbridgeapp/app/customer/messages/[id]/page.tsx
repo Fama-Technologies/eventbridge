@@ -150,7 +150,8 @@ export default function ChatPage() {
                     timestamp: new Date(msg.timestamp),
                     read: msg.read,
                     status: 'sent',
-                    sender: msg.sender
+                    sender: msg.sender,
+                    isOwn: msg.isOwn
                 }));
                 setMessages(formattedMessages);
                 
@@ -655,7 +656,7 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto bg-neutrals-01 p-4">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {messages.map((message, index) => {
-                        const isCustomer = message.senderType === 'CUSTOMER';
+                        const isOwn = message.isOwn;
                         const showDate = index === 0 || 
                             formatDate(message.timestamp) !== formatDate(messages[index - 1].timestamp);
                         
@@ -669,11 +670,11 @@ export default function ChatPage() {
                                     </div>
                                 )}
                                 
-                                <div className={`flex ${isCustomer ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] ${isCustomer ? 'order-2' : 'order-1'}`}>
+                                <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`max-w-[80%] ${isOwn ? 'order-2' : 'order-1'}`}>
                                         <div className={cn(
                                             "rounded-2xl px-4 py-3",
-                                            isCustomer 
+                                            isOwn 
                                                 ? 'bg-primary-01 text-white rounded-br-none' 
                                                 : 'bg-white border border-neutrals-03 rounded-bl-none'
                                         )}>
@@ -692,10 +693,10 @@ export default function ChatPage() {
                                             {/* Message Footer */}
                                             <div className={cn(
                                                 "flex items-center gap-1 mt-1 text-xs",
-                                                isCustomer ? 'justify-end text-primary-01/70' : 'justify-start text-neutrals-06'
+                                                isOwn ? 'justify-end text-primary-01/70' : 'justify-start text-neutrals-06'
                                             )}>
                                                 <span>{formatTime(message.timestamp)}</span>
-                                                {isCustomer && (
+                                                {isOwn && (
                                                     <span className="ml-1">
                                                         {renderMessageStatus(message.status, message.read)}
                                                     </span>
