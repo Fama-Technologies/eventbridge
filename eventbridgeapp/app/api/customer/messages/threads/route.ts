@@ -19,6 +19,7 @@ async function debugSession(req: NextRequest) {
   console.log('=== SESSION DEBUG ===');
   console.log('NextAuth Token exists:', !!nextAuthToken);
   if (nextAuthToken) {
+    console.log('NextAuth Token id:', nextAuthToken.id);
     console.log('NextAuth Token userId:', nextAuthToken.userId);
     console.log('NextAuth Token email:', nextAuthToken.email);
     console.log('NextAuth Token name:', nextAuthToken.name);
@@ -39,9 +40,11 @@ async function debugSession(req: NextRequest) {
   console.log('===================');
 
   // Return the most complete token available
-  if (nextAuthToken && nextAuthToken.userId && nextAuthToken.email) {
+  // Check for NextAuth token - use 'id' field which is set by JWT callback
+  const nextAuthUserId = nextAuthToken?.id || nextAuthToken?.userId;
+  if (nextAuthToken && nextAuthUserId && nextAuthToken.email) {
     return {
-      userId: Number(nextAuthToken.userId),
+      userId: Number(nextAuthUserId),
       email: nextAuthToken.email,
       name: nextAuthToken.name || 'User',
       accountType: nextAuthToken.accountType || 'CUSTOMER',

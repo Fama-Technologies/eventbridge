@@ -297,12 +297,15 @@ export async function getAuthUser(
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (token && token.userId && token.email && token.name && token.accountType) {
+  // Check for 'id' or 'userId' - NextAuth JWT uses 'id' by default
+  const tokenUserId = token?.id || token?.userId;
+  
+  if (token && tokenUserId && token.email && token.name && token.accountType) {
     const name = token.name;
     const [firstName, ...rest] = name?.split(' ') ?? [];
     
     return {
-      id: Number(token.userId),
+      id: Number(tokenUserId),
       email: token.email,
       firstName: firstName || '',
       lastName: rest.join(' '),
