@@ -36,11 +36,10 @@ export function InquiryModal({ isOpen, onClose, vendorName, vendorId }: InquiryM
 
         setLoading(true);
         try {
-            // 1. Create content for the message
+            // Create content for the message
             const content = `Inquiry for ${vendorName}\n\nBudget: UGX ${budget}\nDate: ${date}\nGuests: ${guests}`;
 
-            // 2. Create thread and send message
-            // We'll use the API route for customer messages
+            // Create thread and send message (API gets customerId from session)
             const response = await fetch('/api/customer/messages/threads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -53,7 +52,7 @@ export function InquiryModal({ isOpen, onClose, vendorName, vendorId }: InquiryM
             if (response.ok) {
                 toast.success('Inquiry sent successfully!');
                 onClose();
-                // Optional: Redirect to messages or stay
+                router.push('/customer/messages');
             } else {
                 const error = await response.json();
                 toast.error(error.message || 'Failed to send inquiry');
@@ -74,21 +73,17 @@ export function InquiryModal({ isOpen, onClose, vendorName, vendorId }: InquiryM
 
         setLoading(true);
         try {
-            // Create empty thread or get existing one
+            // Create thread or get existing one (API gets customerId from session)
             const response = await fetch('/api/customer/messages/threads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     vendorId: parseInt(vendorId),
-                    content: "Hi! I'm interested in your services." // Initial message to start chat if new
+                    content: "Hi! I'm interested in your services."
                 })
             });
 
             if (response.ok) {
-                const data = await response.json();
-                // Redirect to customer messages with this thread
-                // Assuming the API returns the thread or we can fetch list.
-                // For now, redirect to /customer/messages
                 router.push('/customer/messages');
             } else {
                 toast.error('Failed to start chat');
