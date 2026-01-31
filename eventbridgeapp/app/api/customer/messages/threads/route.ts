@@ -4,59 +4,80 @@ import { db } from '@/lib/db';
 import { messageThreads, users, vendorProfiles, messages } from '@/drizzle/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { getToken } from 'next-auth/jwt';
+import { verifyToken } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
 
 // Debug helper to check session
 async function debugSession(req: NextRequest) {
-  const token = await getToken({
+  // First try NextAuth token
+  const nextAuthToken = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
   });
+
   console.log('=== SESSION DEBUG ===');
-  console.log('Token exists:', !!token);
-  if (token) {
-    console.log('Token userId:', token.userId);
-    console.log('Token email:', token.email);
-    console.log('Token name:', token.name);
-    console.log('Token accountType:', token.accountType);
-    console.log('All token keys:', Object.keys(token));
+  console.log('NextAuth Token exists:', !!nextAuthToken);
+  if (nextAuthToken) {
+    console.log('NextAuth Token userId:', nextAuthToken.userId);
+    console.log('NextAuth Token email:', nextAuthToken.email);
+    console.log('NextAuth Token name:', nextAuthToken.name);
+    console.log('NextAuth Token accountType:', nextAuthToken.accountType);
+  }
+
+  // Also check for custom auth-token cookie
+  const authToken = req.cookies.get('auth-token')?.value;
+  console.log('Custom auth-token exists:', !!authToken);
+  if (authToken) {
+    const customPayload = await verifyToken(authToken);
+    if (customPayload) {
+      console.log('Custom Token userId:', customPayload.userId);
+      console.log('Custom Token email:', customPayload.email);
+      console.log('Custom Token accountType:', customPayload.accountType);
+    }
   }
   console.log('===================');
-  return token;
+
+  // Return the most complete token available
+  if (nextAuthToken && nextAuthToken.userId && nextAuthToken.email) {
+    return {
+      userId: Number(nextAuthToken.userId),
+      email: nextAuthToken.email,
+      name: nextAuthToken.name || 'User',
+      accountType: nextAuthToken.accountType || 'CUSTOMER',
+      source: 'nextauth'
+    };
+  }
+
+  if (authToken) {
+    const customPayload = await verifyToken(authToken);
+    if (customPayload && customPayload.userId && customPayload.email) {
+      return {
+        userId: customPayload.userId,
+        email: customPayload.email,
+        name: `${customPayload.firstName || ''} ${customPayload.lastName || ''}`.trim() || 'User',
+        accountType: customPayload.accountType || 'CUSTOMER',
+        source: 'custom'
+      };
+    }
+  }
+
+  return null;
 }
 
 // GET - Fetch threads for the authenticated customer
 export async function GET(req: NextRequest) {
   try {
-    const token = await debugSession(req);
+    const session = await debugSession(req);
     
-    if (!token) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Please log in' },
         { status: 401 }
       );
     }
 
-    // Check if token has required fields
-    const userId = token.userId ? Number(token.userId) : null;
-    if (!userId || !token.email || !token.name) {
-      console.log('Token missing required fields:', { userId, email: token.email, name: token.name });
-      return NextResponse.json(
-        { success: false, error: 'Session incomplete - Please log in again' },
-        { status: 401 }
-      );
-    }
-
-    const accountType = token.accountType;
-    if (accountType !== 'CUSTOMER') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Customer access required' },
-        { status: 403 }
-      );
-    }
-
-    console.log('GET /api/customer/messages/threads - customerId:', userId);
+    console.log('GET /api/customer/messages/threads - customerId:', session.userId, 'source:', session.source);
     
     // Get threads for this authenticated customer
     const threads = await db
@@ -71,7 +92,7 @@ export async function GET(req: NextRequest) {
       .from(messageThreads)
       .innerJoin(users, eq(messageThreads.vendorId, users.id))
       .leftJoin(vendorProfiles, eq(messageThreads.vendorId, vendorProfiles.userId))
-      .where(eq(messageThreads.customerId, userId))
+      .where(eq(messageThreads.customerId, session.userId))
       .orderBy(desc(messageThreads.lastMessageTime))
       .limit(50);
 
@@ -107,37 +128,19 @@ export async function GET(req: NextRequest) {
 // POST - Create a new thread or add message to existing thread
 export async function POST(req: NextRequest) {
   try {
-    const token = await debugSession(req);
+    const session = await debugSession(req);
     
-    if (!token) {
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Please log in' },
         { status: 401 }
       );
     }
 
-    // Check if token has required fields
-    const userId = token.userId ? Number(token.userId) : null;
-    if (!userId || !token.email || !token.name) {
-      console.log('Token missing required fields:', { userId, email: token.email, name: token.name });
-      return NextResponse.json(
-        { success: false, error: 'Session incomplete - Please log in again' },
-        { status: 401 }
-      );
-    }
-
-    const accountType = token.accountType;
-    if (accountType !== 'CUSTOMER') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Customer access required' },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
     const { vendorId, content } = body;
 
-    console.log('POST /api/customer/messages/threads - vendorId:', vendorId, 'customerId:', userId);
+    console.log('POST /api/customer/messages/threads - vendorId:', vendorId, 'customerId:', session.userId, 'source:', session.source);
 
     if (!vendorId) {
       return NextResponse.json(
@@ -177,7 +180,7 @@ export async function POST(req: NextRequest) {
       .from(messageThreads)
       .where(
         and(
-          eq(messageThreads.customerId, userId),
+          eq(messageThreads.customerId, session.userId),
           eq(messageThreads.vendorId, vendorId)
         )
       )
@@ -192,7 +195,7 @@ export async function POST(req: NextRequest) {
       const [newThread] = await db
         .insert(messageThreads)
         .values({
-          customerId: userId,
+          customerId: session.userId,
           vendorId: vendorId,
           lastMessage: content.substring(0, 200),
           lastMessageTime: new Date(),
@@ -212,7 +215,7 @@ export async function POST(req: NextRequest) {
       .insert(messages)
       .values({
         threadId: threadId,
-        senderId: userId,
+        senderId: session.userId,
         senderType: 'CUSTOMER',
         content: content,
         read: false,
