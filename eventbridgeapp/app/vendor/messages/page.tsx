@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, MoreVertical, Calendar, MapPin, Users, Paperclip, Smile, Send, Download, CheckCircle, Mic, X, FileText, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 import type {
     Conversation,
     Message,
@@ -17,6 +18,7 @@ import {
     getMessages,
     sendMessage
 } from '@/lib/messages-data';
+import { useSocket } from '@/hooks/useSocket';
 
 interface LocalBooking {
     id: string;
@@ -37,6 +39,7 @@ interface User {
 
 export default function MessagesPage() {
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [recentBookings, setRecentBookings] = useState<LocalBooking[]>([]);
@@ -48,10 +51,19 @@ export default function MessagesPage() {
     const [isSending, setIsSending] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [activeEmojiCategory, setActiveEmojiCategory] = useState(0);
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User & { id?: number } | null>(null);
     const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+    const [customerTyping, setCustomerTyping] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Initialize WebSocket for real-time messaging
+    const { isConnected, joinThread, sendMessage: sendWsMessage, onNewMessage, onTypingIndicator } = useSocket(
+        user?.id || 0,
+        'vendor',
+        session?.user?.email || ''
+    );
 
     // Fetch user profile, conversations, and bookings
     useEffect(() => {
@@ -144,6 +156,68 @@ export default function MessagesPage() {
         loadMessages();
     }, [selectedConversation?.id]);
 
+    // Join thread when conversation is selected and WebSocket is connected
+    useEffect(() => {
+        if (isConnected && selectedConversation) {
+            const threadId = parseInt(selectedConversation.id);
+            if (!isNaN(threadId)) {
+                joinThread(threadId);
+                console.log(`Vendor joined thread ${threadId} via WebSocket`);
+            }
+        }
+    }, [isConnected, selectedConversation?.id, joinThread]);
+
+    // Handle incoming WebSocket messages
+    useEffect(() => {
+        if (!selectedConversation) return;
+
+        const threadId = parseInt(selectedConversation.id);
+        
+        const unsubscribeNewMessage = onNewMessage((message: any) => {
+            if (message.threadId === threadId) {
+                // Add new message to conversation
+                setSelectedConversation(prev => {
+                    if (!prev) return prev;
+                    
+                    // Avoid duplicates
+                    const exists = prev.messages.some(m => m.id === String(message.id));
+                    if (exists) return prev;
+                    
+                    const newMessage: Message = {
+                        id: String(message.id),
+                        conversationId: String(message.threadId),
+                        content: message.content,
+                        timestamp: new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        sender: message.senderType === 'VENDOR' ? 'vendor' : 'user',
+                        attachments: message.attachments || []
+                    };
+                    
+                    return {
+                        ...prev,
+                        messages: [...prev.messages, newMessage],
+                        lastMessage: message.content
+                    };
+                });
+                
+                // Scroll to bottom
+                setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            }
+        });
+        
+        const unsubscribeTyping = onTypingIndicator((data: any) => {
+            if (data.threadId === threadId && data.userType === 'customer') {
+                setCustomerTyping(data.isTyping);
+            }
+        });
+        
+        return () => {
+            if (unsubscribeNewMessage) unsubscribeNewMessage();
+            if (unsubscribeTyping) unsubscribeTyping();
+        };
+    }, [selectedConversation?.id, onNewMessage, onTypingIndicator]);
+
     // Close emoji picker when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -176,9 +250,12 @@ export default function MessagesPage() {
             if (selectedConversation) {
                 try {
                     setIsSending(true);
+                    const messageContent = messageInput;
+                    
+                    // Send via REST API for persistence
                     const newMessage = await sendMessage(
                         selectedConversation.id,
-                        messageInput,
+                        messageContent,
                         attachments
                     );
 
@@ -186,7 +263,7 @@ export default function MessagesPage() {
                         ...selectedConversation,
                         messages: [...selectedConversation.messages, newMessage],
                         lastMessage:
-                            messageInput ||
+                            messageContent ||
                             `Sent ${attachments.length} attachment(s)`,
                     };
 
@@ -198,6 +275,18 @@ export default function MessagesPage() {
                                 : c
                         )
                     );
+                    
+                    // Also send via WebSocket for real-time delivery to customer
+                    if (isConnected) {
+                        const threadId = parseInt(selectedConversation.id);
+                        if (!isNaN(threadId)) {
+                            try {
+                                await sendWsMessage(threadId, messageContent);
+                            } catch (wsError) {
+                                console.error('WebSocket send failed:', wsError);
+                            }
+                        }
+                    }
                 } catch (error) {
                     console.error('Failed to send message', error);
                 } finally {

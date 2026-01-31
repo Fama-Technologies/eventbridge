@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { 
-    ArrowLeft, MoreHorizontal, Paperclip, Smile, Send, 
-    Image as ImageIcon, FileText, X, Phone, Video, 
+import {
+    ArrowLeft, MoreHorizontal, Paperclip, Smile, Send,
+    Image as ImageIcon, FileText, X, Phone, Video,
     Check, CheckCheck, Loader2, Upload, AlertCircle
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSocket } from "@/hooks/useSocket";
+import { useSession } from "next-auth/react";
 
 interface Message {
     id: number;
@@ -65,6 +66,7 @@ interface Quote {
 export default function ChatPage() {
     const router = useRouter();
     const params = useParams();
+    const { data: session } = useSession();
     const threadId = parseInt(params.id as string);
     
     const [messages, setMessages] = useState<Message[]>([]);
@@ -77,18 +79,43 @@ export default function ChatPage() {
     const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [showVendorMenu, setShowVendorMenu] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
-    // Initialize WebSocket
-    const { isConnected, sendMessage: sendWsMessage, onNewMessage, onTypingIndicator } = useSocket(
-        1, // Replace with actual user ID from auth
+    // Get current user ID from session or API
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const response = await fetch('/api/users/me');
+                if (response.ok) {
+                    const userData = await response.json();
+                    setCurrentUserId(userData.id);
+                }
+            } catch (error) {
+                console.error('Error fetching current user:', error);
+            }
+        };
+        fetchCurrentUser();
+    }, []);
+    
+    // Initialize WebSocket with actual user data
+    const { isConnected, joinThread, sendMessage: sendWsMessage, onNewMessage, onTypingIndicator, sendTypingIndicator: sendWsTyping } = useSocket(
+        currentUserId || 0,
         'customer',
-        'your-token' // Replace with actual token
+        session?.user?.email || '' // Use email as token for now
     );
+
+    // Join thread when WebSocket is connected
+    useEffect(() => {
+        if (isConnected && threadId) {
+            joinThread(threadId);
+            console.log(`Joined thread ${threadId} via WebSocket`);
+        }
+    }, [isConnected, threadId, joinThread]);
 
     // Fetch messages and vendor info
     useEffect(() => {
@@ -100,19 +127,26 @@ export default function ChatPage() {
         markAsRead();
         
         // Set up WebSocket listeners
-        onNewMessage((message: any) => {
+        const unsubscribeNewMessage = onNewMessage((message: any) => {
             if (message.threadId === threadId) {
-                setMessages(prev => [...prev, {
-                    id: message.id,
-                    threadId: message.threadId,
-                    senderId: message.senderId,
-                    senderType: message.senderType,
-                    content: message.content,
-                    attachments: message.attachments || [],
-                    timestamp: new Date(message.timestamp),
-                    read: message.read,
-                    status: 'delivered'
-                }]);
+                // Avoid duplicate messages - check if message already exists
+                setMessages(prev => {
+                    const exists = prev.some(m => m.id === message.id);
+                    if (exists) return prev;
+                    
+                    return [...prev, {
+                        id: message.id,
+                        threadId: message.threadId,
+                        senderId: message.senderId,
+                        senderType: message.senderType,
+                        content: message.content,
+                        attachments: message.attachments || [],
+                        timestamp: new Date(message.timestamp),
+                        read: message.read,
+                        status: 'delivered',
+                        isOwn: message.senderType === 'CUSTOMER' // Customer's own messages
+                    }];
+                });
                 
                 setTimeout(() => {
                     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -120,7 +154,7 @@ export default function ChatPage() {
             }
         });
         
-        onTypingIndicator((data: any) => {
+        const unsubscribeTyping = onTypingIndicator((data: any) => {
             if (data.threadId === threadId && data.userType === 'vendor') {
                 setTyping(data.isTyping);
             }
@@ -131,8 +165,11 @@ export default function ChatPage() {
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
+            // Unsubscribe from WebSocket events
+            if (unsubscribeNewMessage) unsubscribeNewMessage();
+            if (unsubscribeTyping) unsubscribeTyping();
         };
-    }, [threadId]);
+    }, [threadId, onNewMessage, onTypingIndicator]);
 
     const fetchMessages = async () => {
         try {
@@ -245,23 +282,29 @@ export default function ChatPage() {
             
             // Create temporary message for optimistic UI
             const tempId = Date.now();
+            const messageContent = inputValue;
             const tempMessage: Message = {
                 id: tempId,
                 threadId,
-                senderId: 1, // Replace with actual user ID
+                senderId: currentUserId || 0,
                 senderType: 'CUSTOMER',
-                content: inputValue,
+                content: messageContent,
                 timestamp: new Date(),
                 read: false,
                 status: 'sending',
+                isOwn: true, // Customer's own message
             };
             
             setMessages(prev => [...prev, tempMessage]);
             setInputValue("");
             
-            // Send via WebSocket first
+            // Send via WebSocket for real-time delivery to vendor
             if (isConnected) {
-                sendWsMessage(threadId, inputValue);
+                try {
+                    await sendWsMessage(threadId, messageContent);
+                } catch (wsError) {
+                    console.error('WebSocket send failed:', wsError);
+                }
             }
             
             // Also send via REST API for persistence
@@ -345,6 +388,7 @@ export default function ChatPage() {
                     timestamp: new Date(),
                     read: false,
                     status: 'sending',
+                    isOwn: true, // Customer's own message
                 };
                 
                 setMessages(prev => [...prev, fileMessage]);
