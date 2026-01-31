@@ -31,7 +31,8 @@ interface Message {
         id: number;
         name: string;
         avatar?: string;
-    };
+    } | null;
+    isOwn?: boolean;
 }
 
 interface VendorInfo {

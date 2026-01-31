@@ -129,7 +129,7 @@ export async function GET(
             : threadData.vendorUnreadCount;
 
         // Format messages with better structure
-        const formattedMessages = messageList.map((msg: { id: any; threadId: any; sender: { id: any; firstName: any; lastName: any; image: any; }; senderId: number; senderType: any; content: any; attachments: any; timestamp: any; read: any; }) => ({
+        const formattedMessages = messageList.map((msg) => ({
             id: msg.id,
             threadId: msg.threadId,
             sender: {
@@ -255,7 +255,7 @@ export async function POST(
             .values({
                 threadId,
                 senderId: userId,
-                senderType: userType.toUpperCase(),
+                senderType: userType.toUpperCase() as 'CUSTOMER' | 'VENDOR',
                 content: content?.trim() || null,
                 attachments: attachments || [],
                 read: false,

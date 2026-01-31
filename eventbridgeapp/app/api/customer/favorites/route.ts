@@ -1,61 +1,36 @@
 // app/api/customer/favorites/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { db } from '@/lib/db';
-import { userFavorites, vendorProfiles, eventCategories, sessions, users } from '@/drizzle/schema';
+import { getDb } from '@/lib/db';
+import { userFavorites, vendorProfiles, eventCategories } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// Helper function to get current user (same as messages endpoint)
-async function getCurrentUser() {
-  try {
-    const cookieStore = await cookies();
-    
-    const sessionToken = cookieStore.get('session')?.value || 
-                        cookieStore.get('next-auth.session-token')?.value;
-    
-    if (sessionToken) {
-      const [session] = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.token, sessionToken))
-        .limit(1);
-
-      if (session && new Date(session.expiresAt) > new Date()) {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, session.userId))
-          .limit(1);
-
-        return user || null;
-      }
-    }
-
-    // For development/testing
-    if (process.env.NODE_ENV === 'development') {
-      const [testUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, 'test@example.com'))
-        .limit(1);
-      
-      return testUser || null;
-    }
-
-    return null;
-  } catch (error) {
-    console.error('getCurrentUser error:', error);
-    return null;
+// Debug helper to check session
+async function debugSession(req: NextRequest) {
+  const authUser = await getAuthUser(req);
+  
+  console.log('=== FAVORITES SESSION DEBUG ===');
+  console.log('Auth user exists:', !!authUser);
+  if (authUser) {
+    console.log('Auth user id:', authUser.id);
+    console.log('Auth user email:', authUser.email);
+    console.log('Auth user accountType:', authUser.accountType);
   }
+  console.log('===================');
+  
+  return authUser;
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const db = getDb(); // Fresh connection
+    
+    await debugSession(req);
+    const authUser = await getAuthUser(req);
 
-    if (!user) {
+    if (!authUser) {
       // Return empty array instead of error for better UX
       return NextResponse.json({
         success: true,
@@ -85,7 +60,7 @@ export async function GET(req: NextRequest) {
       .from(userFavorites)
       .leftJoin(vendorProfiles, eq(userFavorites.vendorId, vendorProfiles.id))
       .leftJoin(eventCategories, eq(vendorProfiles.categoryId, eventCategories.id))
-      .where(eq(userFavorites.userId, user.id))
+      .where(eq(userFavorites.userId, authUser.id))
       .orderBy(desc(userFavorites.createdAt));
 
     const formattedFavorites = favoritesData.map((fav: any) => ({
@@ -127,9 +102,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const db = getDb(); // Fresh connection
     
-    if (!user) {
+    await debugSession(req);
+    const authUser = await getAuthUser(req);
+    
+    if (!authUser) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -164,7 +142,7 @@ export async function POST(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, user.id),
+          eq(userFavorites.userId, authUser.id),
           eq(userFavorites.vendorId, vendorId)
         )
       )
@@ -180,7 +158,7 @@ export async function POST(req: NextRequest) {
     await db
       .insert(userFavorites)
       .values({
-        userId: user.id,
+        userId: authUser.id,
         vendorId: vendorId,
         createdAt: new Date(),
       });
@@ -200,9 +178,12 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const db = getDb(); // Fresh connection
     
-    if (!user) {
+    await debugSession(req);
+    const authUser = await getAuthUser(req);
+    
+    if (!authUser) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -224,7 +205,7 @@ export async function DELETE(req: NextRequest) {
       .from(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, user.id),
+          eq(userFavorites.userId, authUser.id),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       )
@@ -241,7 +222,7 @@ export async function DELETE(req: NextRequest) {
       .delete(userFavorites)
       .where(
         and(
-          eq(userFavorites.userId, user.id),
+          eq(userFavorites.userId, authUser.id),
           eq(userFavorites.vendorId, parseInt(vendorId))
         )
       );
