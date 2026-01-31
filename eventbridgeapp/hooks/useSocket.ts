@@ -56,6 +56,7 @@ export const useSocket = (userId: number, userType: 'customer' | 'vendor', token
 
     try {
       const wsConfig = await getWebSocketUrl();
+      console.log('Attempting to connect to WebSocket:', wsConfig.url + wsConfig.path);
       
       const socket = io(wsConfig.url, {
         path: wsConfig.path,
@@ -65,13 +66,14 @@ export const useSocket = (userId: number, userType: 'customer' | 'vendor', token
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
         timeout: 20000,
-        withCredentials: true
+        withCredentials: true,
+        forceNew: true
       });
 
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('WebSocket connected to:', wsConfig.url);
+        console.log('WebSocket connected successfully to:', wsConfig.url + wsConfig.path);
         setIsConnected(true);
         
         // Authenticate with server
@@ -79,7 +81,7 @@ export const useSocket = (userId: number, userType: 'customer' | 'vendor', token
       });
 
       socket.on('authenticated', () => {
-        console.log('Socket authenticated');
+        console.log('Socket authenticated successfully');
       });
 
       socket.on('disconnect', (reason) => {
@@ -88,7 +90,18 @@ export const useSocket = (userId: number, userType: 'customer' | 'vendor', token
       });
 
       socket.on('connect_error', (error) => {
-        console.error('WebSocket connection error:', error);
+        console.error('WebSocket connection error:', error.message);
+        // Use type guard to safely access extended error properties
+        if ('code' in error) {
+          console.error('Error code:', (error as any).code);
+        }
+        if ('context' in error) {
+          console.error('Error context:', (error as any).context);
+        }
+      });
+
+      socket.on('error', (error) => {
+        console.error('Socket error:', error);
       });
 
       socket.on('user_status', (data: { userId: number; isOnline: boolean }) => {
@@ -106,6 +119,7 @@ export const useSocket = (userId: number, userType: 'customer' | 'vendor', token
       // Return cleanup function
       return () => {
         if (socket.connected) {
+          console.log('Disconnecting WebSocket...');
           socket.disconnect();
         }
       };

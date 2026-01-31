@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
             .orderBy(desc(messageThreads.lastMessageTime));
 
         // Get the first message for each thread to use as inquiry details
-        const threadIds = threads.map((t: ThreadData) => t.id);
+        const threadIds = threads.map((thread: ThreadData) => thread.id);
         
         let firstMessages: Record<number, MessageData> = {};
         if (threadIds.length > 0) {

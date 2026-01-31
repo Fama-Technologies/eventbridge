@@ -20,13 +20,25 @@ app.prepare().then(() => {
   // Initialize Socket.IO
   const io = new Server(server, {
     path: '/api/socketio',
+    addTrailingSlash: false,
     cors: {
       origin: dev ? 'http://localhost:3000' : ['https://eventbridge.africa', 'https://www.eventbridge.africa'],
       methods: ['GET', 'POST'],
       credentials: true
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    allowUpgrades: true,
+    pingTimeout: 60000,
+    pingInterval: 25000
   });
+
+  // Log when Socket.IO is ready
+  io.engine.on('connection_error', (err) => {
+    console.error('Socket.IO connection error:', err.message);
+    console.error('Error details:', err);
+  });
+
+  console.log('Socket.IO server initialized on path /api/socketio');
 
   // Socket.IO connection handling
   io.on('connection', (socket) => {
