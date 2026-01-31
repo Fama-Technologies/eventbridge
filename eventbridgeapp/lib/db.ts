@@ -14,14 +14,41 @@ function getDatabaseUrl(): string {
 }
 
 const databaseUrl = getDatabaseUrl();
-let sql: any = null;
+
+// Create a fresh database client for each request (recommended for Neon + Next.js)
+export function getDb() {
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is not configured');
+  }
+  
+  const sql = neon(databaseUrl, {
+    fetchOptions: {
+      cache: 'no-store',
+      timeout: 15000, // 15 second timeout
+      retry: {
+        retries: 5,
+        backoff: (attempt: number) => Math.min(200 * Math.pow(2, attempt), 2000),
+      },
+    },
+    fullResults: false,
+  });
+  
+  return drizzle({ client: sql, schema });
+}
+
+// Keep the singleton for backward compatibility
 let db: any = null;
 
 if (databaseUrl) {
   try {
-    sql = neon(databaseUrl, {
+    const sql = neon(databaseUrl, {
       fetchOptions: {
         cache: 'no-store',
+        timeout: 15000,
+        retry: {
+          retries: 5,
+          backoff: (attempt: number) => Math.min(200 * Math.pow(2, attempt), 2000),
+        },
       },
       fullResults: false,
     });
@@ -32,4 +59,4 @@ if (databaseUrl) {
   }
 }
 
-export { db, sql };
+export { db };

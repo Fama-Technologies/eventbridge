@@ -1,6 +1,6 @@
 // app/api/customer/messages/threads/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { messageThreads, users, vendorProfiles, messages } from '@/drizzle/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { getToken } from 'next-auth/jwt';
@@ -71,6 +71,7 @@ async function debugSession(req: NextRequest) {
 // GET - Fetch threads for the authenticated customer
 export async function GET(req: NextRequest) {
   try {
+    const db = getDb(); // Fresh connection for each request
     const session = await debugSession(req);
     
     if (!session) {
@@ -131,6 +132,7 @@ export async function GET(req: NextRequest) {
 // POST - Create a new thread or add message to existing thread
 export async function POST(req: NextRequest) {
   try {
+    const db = getDb(); // Fresh connection for each request
     const session = await debugSession(req);
     
     if (!session) {
