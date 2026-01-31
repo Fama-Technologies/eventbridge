@@ -46,7 +46,10 @@ export default function CategoryCard({
           throw new Error('Failed to fetch category vendors');
         }
 
-        const vendors: VendorResult[] = await response.json();
+        const data = await response.json();
+        
+        // Ensure we have an array
+        const vendors: VendorResult[] = Array.isArray(data) ? data : [];
 
         setVendorCount(vendors.length);
 
